@@ -2259,6 +2259,9 @@ scope Render {
         jal     ZCancel.setup_
         nop
 
+        // Register item spawn routine for VS mode
+        register_routine(Item.item_spawn_routine_)
+
         b       _end
         nop
 
@@ -2412,7 +2415,6 @@ scope Render {
         b       _end
         nop
     }
-
 }
 
 } // __RENDER__

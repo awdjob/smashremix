@@ -2572,6 +2572,104 @@ scope Item {
         nop
     }
 
+    // @ Description
+    // Label for item spawn value storage
+    sf_item_spawn_id:
+    dw 0xFEEDFACE                                // initialize to -17958194
+    
+    sf_item_spawn_x:
+    dw  0x00000000
+    
+    sf_item_spawn_y:
+    dw  0x00000000
+    
+    sf_item_spawn_z:
+    dw  0x00000000
+
+    // @ Description
+    // Routine that checks for sf_item_spawn_id and spawns items in vs mode
+    scope item_spawn_routine_: {
+        addiu   sp, sp, -0x0020              // allocate stack space
+        sw      ra, 0x0004(sp)              // save return address
+
+        // Check if an item ID is set
+        li      t0, sf_item_spawn_id        // t0 = address of sf_item_spawn_id
+        lw      a1, 0x0000(t0)              // a1 = item ID
+        li      t2, 0xFEEDFACE              // t2 = initial value
+        beq     a1, t2, _end                // if value is initial value (0xFEEDFACE), skip to end
+        nop
+        beqz    a1, _end                    // if no item ID (0), skip spawning
+        nop
+
+        // Set skip flags
+        li      t0, skip_item_spawn_gfx_.flag
+        lli     t3, OS.FALSE               // t3 = FALSE (don't skip gfx)
+        sw      t3, 0x0000(t0)             // set flag to show spawn gfx
+
+        li      t0, skip_item_pickup_sound_.flag
+        lli     t3, OS.FALSE               // t3 = FALSE (don't skip sound)
+        sw      t3, 0x0000(t0)             // set flag to not skip pickup sound
+
+        // Set up parameters for item creation
+        or      a0, r0, r0                  // a0 = 0 (no owner)
+        
+        addiu   sp, sp, -0x0030             // allocate stack space (0x8016EA78 is unsafe)
+        
+        // Create Vec3f for position
+        addiu   a2, sp, 0x0024              // a2 = address for position Vec3f
+        
+        // Load X coordinate (as float directly)
+        li      t0, sf_item_spawn_x         // t0 = address of sf_item_spawn_x
+        lw      t1, 0x0000(t0)              // t1 = X position (float)
+        sw      t1, 0x0000(a2)              // Store X position
+        
+        // Load Y coordinate (as float directly)
+        li      t0, sf_item_spawn_y         // t0 = address of sf_item_spawn_y
+        lw      t1, 0x0000(t0)              // t1 = Y position (float)
+        sw      t1, 0x0004(a2)              // Store Y position
+        
+        // Load Z coordinate (as float directly)
+        li      t0, sf_item_spawn_z         // t0 = address of sf_item_spawn_z
+        lw      t1, 0x0000(t0)              // t1 = Z position (float)
+        sw      t1, 0x0008(a2)              // Store Z position
+        
+        // Create Vec3f for velocity
+        addiu   a3, sp, 0x0014              // a3 = address for velocity Vec3f
+        sw      r0, 0x0000(a3)              // X velocity = 0
+        
+        // Set Y velocity to 30.0 (upward)
+        lui     t5, 0x41F0                  // t5 = 30.0 as float (0x41F00000)
+        sw      t5, 0x0004(a3)              // Y velocity = 30.0 (upward)
+        
+        sw      r0, 0x0008(a3)              // Z velocity = 0
+        
+        // Set spawn flags
+        lli     t6, 0x0001                  // t6 = 1 (standard spawn flag)
+        sw      t6, 0x0010(sp)              // 0x0010(sp) = 1 (parameter 5)
+        
+        // Call the item creation function
+        jal     0x8016EA78                  // create item
+        nop
+        
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        // Clear skip flags
+        li      t0, skip_item_spawn_gfx_.flag
+        sw      r0, 0x0000(t0)              // clear skip gfx flag
+
+        li      t0, skip_item_pickup_sound_.flag
+        sw      r0, 0x0000(t0)              // clear skip sound flag
+
+        // Clear the item ID
+        li      t0, sf_item_spawn_id        // t0 = address of sf_item_spawn_id
+        li      t3, 0xFEEDFACE              // t3 = initial value
+        sw      t3, 0x0000(t0)              // reset sf_item_spawn_id to initial value
+
+        _end:
+        lw      ra, 0x0004(sp)              // restore return address
+        jr      ra                          // return
+        addiu   sp, sp, 0x0020              // deallocate stack space
+    }
 }
 
 } // __ITEM__
