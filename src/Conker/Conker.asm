@@ -68,11 +68,27 @@ scope Conker {
     insert SELECTED,"moveset/SELECTED.bin"
     insert WALK1,"moveset/WALK1.bin"
     insert SFALL,"moveset/SFALL.bin"
+	
+	
+	CLIFF_CATCH:; insert "moveset/CLIFF_CATCH.bin"
+	CLIFF_WAIT:; insert "moveset/CLIFF_WAIT.bin"
+	
+	PIPEENTER:
+	dw 0xAC000007
+	dw 0xAC100005 
+	Moveset.AFTER(8);
+	Moveset.HURTBOXES(3);
+	dw 0
+	
+	PIPEEXIT:
+	dw 0xAC000007
+	dw 0xAC100005 
+	Moveset.AFTER(24);
+	Moveset.HURTBOXES(1);
+	dw 0
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action                   // Animation                    // Moveset Data             // Flags
     Character.edit_action_parameters(CONKER, Action.Teeter,             -1,                             TEETERING,                  -1)
@@ -160,8 +176,8 @@ scope Conker {
     Character.edit_action_parameters(CONKER, Action.RayGunShoot,        File.CONKER_RAYGUN_GROUND,      -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.FireFlowerShoot,    File.CONKER_RAYGUN_GROUND,      -1,                         -1)
 
-    Character.edit_action_parameters(CONKER, Action.CliffCatch,         File.CONKER_CLIFF_CATCH,        -1,                         -1)
-    Character.edit_action_parameters(CONKER, Action.CliffWait,          File.CONKER_CLIFF_WAIT,         -1,                         -1)
+    Character.edit_action_parameters(CONKER, Action.CliffCatch,         File.CONKER_CLIFF_CATCH,        CLIFF_CATCH,                -1)
+    Character.edit_action_parameters(CONKER, Action.CliffWait,          File.CONKER_CLIFF_WAIT,         CLIFF_WAIT,                 -1)
     Character.edit_action_parameters(CONKER, Action.CliffQuick,         File.CONKER_CLIFF_QUICK,        -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.CliffClimbQuick1,   File.CONKER_CLIFF_CLIMB_QUICK1, -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.CliffClimbQuick2,   File.CONKER_CLIFF_CLIMB_QUICK2, -1,                         -1)
@@ -183,6 +199,7 @@ scope Conker {
     Character.edit_action_parameters(CONKER, Action.ThrowB,             File.CONKER_THROWB,             BTHROW,                     0x10000000)
     Character.edit_action_parameters(CONKER, Action.CapturePulled,      File.CONKER_CAPTURE_PULLED,     -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.EggLayPulled,       File.CONKER_CAPTURE_PULLED,     -1,                         -1)
+    Character.edit_action_parameters(CONKER, Action.ThrownFoxB,         0x2C8,                          -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.Jab1,               File.CONKER_JAB1,               JAB1,                       -1)
     Character.edit_action_parameters(CONKER, Action.Jab2,               File.CONKER_JAB2,               JAB2,                       -1)
     Character.edit_action_parameters(CONKER, 0xDC,                      File.CONKER_JAB_LOOP_START,     JAB_LOOP_START,             -1)
@@ -204,6 +221,10 @@ scope Conker {
     Character.edit_action_parameters(CONKER, Action.AttackAirD,         File.CONKER_DAIR,               DAIR,                       -1)
     Character.edit_action_parameters(CONKER, Action.AttackAirN,         File.CONKER_NAIR,               -1,                         -1)
     Character.edit_action_parameters(CONKER, Action.AttackAirU,         File.CONKER_UAIR,               UAIR,                       -1)
+	
+	
+    Character.edit_action_parameters(CONKER, Action.EnterPipe,               File.CONKER_ENTER_PIPE,          PIPEENTER,            -1)
+    Character.edit_action_parameters(CONKER, Action.ExitPipe,                File.CONKER_EXIT_PIPE,           PIPEEXIT,             -1)
 
 
     Character.edit_action_parameters(CONKER, 0xDF,                      File.CONKER_ENTRY,              ENTRY,                -1)
@@ -305,37 +326,6 @@ scope Conker {
 
     // Shield colors for costume matching
     Character.set_costume_shield_colors(CONKER, AZURE, PINK, RED, GREEN, BLACK, WHITE, YELLOW, NA)
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.CONKER, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  12,   16,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  8,   23,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  20,  134, -10, 500, -500, 500)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  20,  134, -10, 500, -500, 500)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  9,   16,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  6,   9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  9,   14,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,   14,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,  -1,  -1, -1, -1, -1) // todo: check range
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  2,   3,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,   31,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  19,  47,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  19,  47,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  5,   13,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  3,   59,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  3,   59,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  9,   30,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,   13,  -1, -1, -1, -1)
-
-	// Prevents Conker from using grenade when it can't be used
-    Character.table_patch_start(ai_attack_prevent, Character.id.CONKER, 0x4)
-    dw	AI.PREVENT_ATTACK.ROUTINE.CONKER_GRENADE
-    OS.patch_end()
 
     // @ Description
     // Conker's extra actions
@@ -457,5 +447,10 @@ scope Conker {
     db      Character.id.NCONKER
     db      Character.id.NONE
     db      Character.id.NONE
+    OS.patch_end()
+    
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.CONKER, 0x2)
+    dh {MIDI.id.CONKER_THE_KING}
     OS.patch_end()
 }

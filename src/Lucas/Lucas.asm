@@ -54,9 +54,7 @@ scope Lucas {
 	insert PKVICTORY,"moveset/PKVICTORY.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-	OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(LUCAS, Action.Jab1,            File.LUCAS_JAB1,            JAB1,                       0x00000000)
@@ -122,8 +120,8 @@ scope Lucas {
 	Character.edit_action(LUCAS, 0xDE,              -1,             0x8013DA94,                         -1,                             -1,                       -1)
     Character.edit_action(LUCAS, 0xE2,              -1,             -1,                         -1,                             0x800D8CCC,                       -1)
     Character.edit_action(LUCAS, 0xE3,              -1,             -1,                         LucasNSP.air_move_,             -1,                               -1)
-    Character.edit_action(LUCAS, 0xF1,              -1,             -1,                         -1,                             -1,                             0x800DE99C)
-    Character.edit_action(LUCAS, 0xF2,              -1,             -1,                         -1,                             -1,                             0x800DE99C)
+    Character.edit_action(LUCAS, 0xF1,              -1,             -1,                         -1,                             -1,                             0x800DE978)
+    Character.edit_action(LUCAS, 0xF2,              -1,             -1,                         -1,                             -1,                             0x800DE978)
 
     // Modify Menu Action Parameters             // Action          // Animation                // Moveset Data             // Flags
 	Character.edit_menu_action_parameters(LUCAS, 0x1,               File.LUCAS_NEEDLE_ANIM,     NEEDLE,                             0x10000000)
@@ -154,7 +152,7 @@ scope Lucas {
     OS.patch_end()
 
     // Set default costumes
-    Character.set_default_costumes(Character.id.LUCAS, 0, 1, 2, 4, 0, 2, 5)
+    Character.set_default_costumes(Character.id.LUCAS, 0, 1, 2, 4, 6, 3, 5)
     Teams.add_team_costume(YELLOW, LUCAS, 0x4)
 
     Character.table_patch_start(variants, Character.id.LUCAS, 0x4)
@@ -165,25 +163,20 @@ scope Lucas {
     OS.patch_end()
 
     Character.table_patch_start(variant_original, Character.id.NLUCAS, 0x4)
-    dw      Character.id.WARIO // set Wario as original character (not Ness, who NLUCAS is a clone of)
+    dw      Character.id.LUCAS // set Lucas as original character (not Ness, who NLUCAS is a clone of)
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.LUCAS, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.LUCAS, 0x2)
+    dh {MIDI.id.TAZMILY}
     OS.patch_end()
 
-    // Edit cpu attack behaviours
-    // Timing values are already set in Lucas's .bin file, just need to adjust floats
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  1,  1,  -90,     270,     60,      410)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1, -1, -1,  -115,    115,     80,      1000)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1, -1, -1,  -1,      580.0,   -1,      -1)  // x max was 720.0
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1, -1, -1,  -1,      520.0,   -1,      -1)  // x max was 580.0
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1, -1, -1,  -457,    180,     -200,    200) // change coords
+    // Set special Jump2 physics
+    Character.table_patch_start(ness_jump, Character.id.LUCAS, 0x1)
+    db      OS.TRUE;     OS.patch_end();
 
     // Shield colors for costume matching
-    Character.set_costume_shield_colors(LUCAS, YELLOW, ORANGE, PINK, BROWN, BROWN, GREEN, NA, NA)
+    Character.set_costume_shield_colors(LUCAS, YELLOW, ORANGE, PINK, BROWN, BROWN, GREEN, RED, NA)
 
     // @ Description
     // Lucas's extra actions
@@ -309,17 +302,9 @@ scope Lucas {
         sw      t2, 0x0008(sp)              // ~
         sw      t3, 0x000C(sp)              // ~
 
-        lw      t3, 0x0078(v0)              // load player struct from projectile struct as placed in previously by pkfire1pointer
-        lw      t1, 0x0008(t3)              // load character ID
+        lw      t1, 0x0078(v0)              // load character ID from projectile struct as placed in previously by pkfire1pointer
 
-        lli     t2, Character.id.KIRBY      // t2 = id.KIRBY
-        beql    t1, t2, pc() + 8            // if Kirby, get held power character_id
-        lw      t1, 0x0ADC(t3)              // t1 = character id of copied power
-        lli     t2, Character.id.JKIRBY     // t2 = id.JKIRBY
-        beql    t1, t2, pc() + 8            // if J Kirby, get held power character_id
-        lw      t1, 0x0ADC(t3)              // t1 = character id of copied power
-
-        ori     t2, r0, Character.id.LUCAS  // t1 = id.JNESS
+        ori     t2, r0, Character.id.LUCAS  // t2 = id.LUCAS
         beq     t1, t2, lucas_explosion_
         nop
 
@@ -634,7 +619,7 @@ scope Lucas {
         j       _return
         nop
     }
-    
+
     // @ Description
     // Prevent Lucas from turning around
     scope dsp_absorption_turnaround_prevent: {
@@ -643,7 +628,7 @@ scope Lucas {
         lwc1    f6, 0xC610(at)      // og line 2
         _return:
         OS.patch_end()
-        
+
         lw      at, 0x0008(v0)      // at = character id
         addiu   t9, r0, Character.id.LUCAS
         beq     at, t9, _continue

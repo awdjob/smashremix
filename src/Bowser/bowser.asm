@@ -67,9 +67,7 @@ scope Bowser {
 	insert TURN, "moveset/TURN.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters                 // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(BOWSER,    Action.Entry,      		File.BOWSER_IDLE,   		 -1,                        -1)
@@ -229,6 +227,7 @@ scope Bowser {
 	Character.edit_action_parameters(BOWSER,    Action.AttackAirF,      File.BOWSER_FAIR,           FAIR,                       -1)
     Character.edit_action_parameters(BOWSER,    Action.LandingAirF,     File.BOWSER_FAIR_LAND,      -1,                         -1)
     Character.edit_action_parameters(BOWSER,    Action.LandingAirN,     File.BOWSER_LANDING,        -1,                         -1)
+    Character.edit_action_parameters(BOWSER,    Action.LandingAirX,     File.BOWSER_LANDING,        -1,                         -1)
     Character.edit_action_parameters(BOWSER,    Action.Grab,            File.BOWSER_GRAB,           GRAB,                       0x10000000)
     Character.edit_action_parameters(BOWSER,    Action.FSmash,          File.BOWSER_FSMASH,         FSMASH,                     0x40000000)
     Character.edit_action_parameters(BOWSER,    Action.FSmashHigh,      0,                          0x80000000,                 0)
@@ -429,7 +428,7 @@ scope Bowser {
         string_0x0E4:; String.insert("FlameBreath")
         string_0x0E5:; String.insert("BowserForwardThrow1")
         string_0x0E6:; String.insert("BowserForwardThrow2")
-        string_0x0E7:; String.insert("FireBreathAir")
+        string_0x0E7:; String.insert("FlameBreathAir")
         string_0x0E8:; String.insert("BowserForwardThrow3")
 
         action_string_table:
@@ -459,36 +458,10 @@ scope Bowser {
     // Shield colors for costume matching
     Character.set_costume_shield_colors(BOWSER, GREEN, RED, BLUE, BLACK, ORANGE, YELLOW, NA, NA)
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.BOWSER, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.BOWSER, 0x2)
+    dh {MIDI.id.KING_OF_THE_KOOPAS}
     OS.patch_end()
-
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.BOWSER, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.BOWSER_USP_DSP	// no risky down or up specials
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  10,  21,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  8,   44,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  24,  35,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  8,   48,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  8,   39,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  6,   22,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  26,  32,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  12,  15,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,  -1,  -1, -1, -1, -1) // todo: check range
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  6,   9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,   31,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  20,  80,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  20,  80,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  7,   32,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   0x0D, 6,   50,  -1, -1, -1, -1) // don't want to use Yoshis USP logic
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   0x0D, 5,   49,  -1, -1, -1, -1) // don't want to use Yoshis USP logic
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  15,  24,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  8,   17,  -1, -1, -1, -1)
 
     // @ Description
     // Sets Bowser's Jab 3 action.

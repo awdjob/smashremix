@@ -29,4 +29,9 @@ scope JLuigi {
     Character.table_patch_start(action_string, Character.id.JLUIGI, 0x4)
     dw  Action.LUIGI.action_string_table
     OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JLUIGI, 0x2)
+    dh {MIDI.id.SMB2_MEDLEY}
+    OS.patch_end()
 }

@@ -327,7 +327,11 @@ scope NMewtwo {
     Character.table_patch_start(action_string, Character.id.NMTWO, 0x4)
     dw  Mewtwo.Action.action_string_table
     OS.patch_end()
-    
+
+    // Set special Jump2 physics
+    Character.table_patch_start(ness_jump, Character.id.NMTWO, 0x1)
+    db      OS.TRUE;     OS.patch_end();
+
     // Handles common things for Polygons
     Character.polygon_setup(NMTWO, MTWO)
    }

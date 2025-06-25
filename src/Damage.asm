@@ -180,8 +180,8 @@ scope Damage {
         dw ICE                              // 0x5 - ice (mostly unfinished/removed)
         dw NORMAL                           // 0x6 - sleep
         dw NORMAL                           // 0x7 - stun (mewtwo)
-        dw NORMAL                           // 0x8 - 
-        dw NORMAL                           // 0x9 - 
+        dw NORMAL                           // 0x8 -
+        dw NORMAL                           // 0x9 -
         dw DEKU_STUN                        // 0xA - deku stun
         dw BURY                             // 0xB - bury
         dw NORMAL                           // 0xC - flashbang
@@ -240,7 +240,7 @@ scope Damage {
         lw      at, 0x014C(t9)              // at = kinetic state
         bnez    at, _branch                 // skip/take original branch if character is aerial (failsafe)
         nop
-        
+
         jal     stun_initial_modified_      // initial subroutine for Stun action
         nop
         j       _stun_return                // return
@@ -260,7 +260,7 @@ scope Damage {
         lw      t9, 0x0084(a0)              // ~
         j       _stun_return                // return
         nop
-		
+
         // if damage type = BURY
         _bury_branch:
         lw      t9, 0x0084(a0)              // t9 = player struct
@@ -357,16 +357,16 @@ scope Damage {
         addiu   a1, r0, 0x006C       // argument = deku stun id
         jal     0x800e9814
         or      a2, r0, r0
-		
+
         _end:
         lw      ra, 0x0024 (sp)
         lw      s0, 0x0020 (sp)
         jr      ra
         addiu   sp, sp, 0x28
     }
-	
-	
-	// Based on melees bury time formula but 
+
+
+	// Based on melees bury time formula but
 	constant initial_buried_time(99)				// frames
 	constant buried_percent_multiplier(0x3F333333)	// 0.7
 	constant buried_action(Action.DownBounceU)
@@ -380,7 +380,7 @@ scope Damage {
         sw      a0, 0x0028(sp)              // ~
         beqz    a1, _end                    // skip action change if boolean was set to 0
         lw      s0, 0x0084(a0)              // original logic
-		
+
 		// get buried timer
 		lw		at, 0x002C(s0)				// s0 = players percent
 		mtc1	at, f4
@@ -390,37 +390,37 @@ scope Damage {
 		mul.s	f4, f6, f4					// f4 = player damage% * 0.7
 		nop
 		cvt.w.s f4, f4						// f4 = buried time(int)
-		
+
 		// set buried timer
 		mfc1	at, f4						// at = buried time (int)
 		addiu	at, at, initial_buried_time // at = inital time plus player percent thing
 		sw		at, 0x026C(s0)				// save buried timer
-		
+
 		// check kinetic state
         lw      at, 0x14C(s0)               // at = kinetic state
         bnez    at, _aerial                 // skip bury if aerial
 		nop
-		
+
 		// set buried
 		jal		bury_player_
         lw      a0, 0x0028(sp)              // a0 = player object
 		b		_end
         lw      a0, 0x0028(sp)
-		
+
 		_aerial:
 		// set aerial plunge downward to bury
 		jal		plunge_player_
         lw      a0, 0x0028(sp)              // a0 = player object
 		b		_end
         lw      a0, 0x0028(sp)              // a0 = player object
-		
+
         _end:
         lw      ra, 0x0024(sp)
         lw      s0, 0x0020(sp)
         jr      ra
         addiu   sp, sp, 0x28
     }
-    
+
     // @ Description
     // Buries an opponent.
     scope bury_initial_: {
@@ -439,19 +439,19 @@ scope Damage {
         mul.s   f4, f6, f4                  // f4 = player damage% * 0.7
         nop
         cvt.w.s f4, f4                      // f4 = buried time(int)
-        
+
         // set buried timer
         mfc1    at, f4                      // at = buried time (int)
         addiu   at, at, initial_buried_time // at = inital time plus player percent thing
         sw      at, 0x026C(s0)              // save buried timer
-        
- 
+
+
         // set buried
         jal     bury_player_
         lw      a0, 0x0028(sp)              // a0 = player object
         lw      a0, 0x0028(sp)
-        
-        
+
+
         _end:
         lw      ra, 0x0024(sp)
         lw      s0, 0x0020(sp)
@@ -488,7 +488,7 @@ scope Damage {
         sw      r0, 0x0010(sp)              // argument 4 = 0 (idk what this is)
         jal     0x800E6F24                  // change action
         lui     a3, 0x3F80                  // animation speed = 1
-        
+
         addiu   a0, s0, 0
         lw      at, 0x14C(s0)               // at = kinetic state
         beqzl   at, _continue               // branch if grounded
@@ -500,7 +500,7 @@ scope Damage {
         // retain current aerial velocity (thrown)
         // lui     at, FLASHBANG_AERIAL_STUN_Y_VELOCITY
         // sw      at, 0x0058(s0)              // overwrite air y velocity
-        
+
         lui     at, 0x3F00
         mtc1    at, f6
         lwc1    f4, 0x0048(s0)              // f4 = x velocity
@@ -510,7 +510,7 @@ scope Damage {
         lwc1    f4, 0x004C(s0)              // f4 = y velocity
         mul.s   f4, f6
         nop
-        
+
         swc1    f4, 0x004C(s0)              // y velocity / 2
 
         _continue:
@@ -533,7 +533,7 @@ scope Damage {
         jr      ra
         addiu   sp, sp, 0x28
     }
-    
+
     // @ Description
     // main routine for stunned players who are aerial (flashbang)
     scope stun_main_aerial_: {
@@ -541,7 +541,7 @@ scope Damage {
         sw  ra, 0x0014(sp)
         sw  a0, 0x0020(sp)                  // store player object
         lw  a0, 0x0084(a0)                  // a0 = player struct
-        
+
         lw      t6, 0x026C(a0)              // get stunned timer
         addiu   t7, t6, -1                  // -1
         sw      t7, 0x026C(a0)              // stunned--;
@@ -550,7 +550,7 @@ scope Damage {
         sw      a0, 0x001C(sp)              // save player struct to sp
         lw      a0, 0x001C(sp)              // load player struct
         lw      v0, 0x026C(a0)              // get stunned timer
-        
+
         lw      t2, 0x0018(sp)              // get previous stunned timer
         subu    t3, v0, t2                  // wizard magic stuff from 0x80149874
         sll     t4, t3, 2                   // ~
@@ -558,7 +558,7 @@ scope Damage {
         addu    t5, v0, t4                  // ~
         bgtz    v0, _end                    // branch if timer is not up
         sw      t5, 0x026C(a0)              // save timer again
-        
+
         // unbury player if timer is up
         jal     0x8013F9E0                  // common routine set player to aerial idle
         lw      a0, 0x0020(sp)              // restore player object
@@ -569,7 +569,7 @@ scope Damage {
         jr      ra
         addiu   sp, sp, 0x20
     }
-    
+
 
     // @ Description
 	// Buries a grounded player.
@@ -584,12 +584,12 @@ scope Damage {
 		andi	t0, at, 0x4000				// t0 = second byte only
 		beqz	t0, _continue               // skip if not a soft platform
 		andi	t0, at, 0x00FF				// v0 = second byte only
-		
+
         lw      at, 0x0024(v0)              // at = players current action
 		addiu	t1, r0, PLUNGE_ACTION		// t1 = plunge action
 		beq		t1, at, _continue			// continue normally if already aerial
 		nop
-		
+
 		_soft_platform_aerial:
 		jal		0x800DEEC8					// put player under the platform?
 		move	a0, v0						// a0 = player struct
@@ -600,19 +600,21 @@ scope Damage {
 		lui		at, 0x4120					// at = 10.0
 		mtc1	at, f4
 		lwc1	f6, 0x0020(v1)				// f6 = players y position
-		sub.s	f4, f6, f4					// f4 = player.y - 10.0	
+		sub.s	f4, f6, f4					// f4 = player.y - 10.0
 		swc1	f4, 0x0020(v1)				// put player underneath the platform
-		b 		_end						
+		b 		_end
 		nop
-		
+
 		_continue:
 		bnez	t0, _hazard_platform_check
 		nop
-        
+
 		_bury:
 		lw		a0, 0x0084(a0)				// a0 = player struct
         lw      v0, 0x00EC(a0)              // v0 = clipping id of clipping cirectly under player
         addiu   at, r0, 0xFFFF              // at = -1 (no clipping)
+        beq     at, v0, _end                // skip bury if player is not above a platform (keep plunging player)
+        addiu   at, r0, 0xFFFE              // at = -2 (no clipping)
         beq     at, v0, _end                // skip bury if player is not above a platform (keep plunging player)
         nop
 		jal		0x800DEE98					// set grounded?
@@ -623,7 +625,7 @@ scope Damage {
         sw      r0, 0x0010(sp)              // argument 4 = 0
         jal     0x800E6F24                  // change action
         lui     a3, 0x0000                  // animation speed = 0
-		
+
         lw      a0, 0x0028(sp)              // restore a0
         lw      v0, 0x0084(a0)              // v0 = player struct
 		li		at, buried_main_
@@ -638,26 +640,26 @@ scope Damage {
 		FGM.play(0x11F)						// play fgm that sounds good
 		b		_end
 		nop
-		
+
 		_hazard_platform_check:
         li      at, Toggles.entry_hazard_mode
         lw      at, 0x0004(at)              // at = hazard_mode (hazards disabled when at = 1 or 3)
         andi    at, at, 0x0001              // at = 1 if hazard_mode is 1 or 3, 0 otherwise
         bnezl   at, _bury                   // bury if hazards are disabled
 		nop
-		
+
 		_hazards_on:
         jal     0x800DEE54                  // transition player to to idle
         nop
-		
+
 		_end:
 		lw		ra, 0x0014(sp)
 		jr		ra
 		addiu	sp, sp, 0x30
 	}
-	
+
 	constant BURIED_Y_OFFSET(0xC240)
-	
+
 	// @ Description
 	// main routine for bury
 	// todo: make this a shared action
@@ -666,7 +668,7 @@ scope Damage {
 		sw		ra, 0x0014(sp)
 		sw		a0, 0x0020(sp)				// store player object
 		lw		a0, 0x0084(a0)				// a0 = player struct
-		
+
 		lw		t6, 0x026C(a0)				// get stunned timer
 		addiu	t7, t6, -1					// -1
 		sw		t7, 0x026C(a0)				// stunned--;
@@ -675,7 +677,7 @@ scope Damage {
 		sw		a0, 0x001C(sp)				// save player struct to sp
 		lw		a0, 0x001C(sp)				// load player struct
 		lw		v0, 0x026C(a0)				// get stunned timer
-		
+
 		lw		t2, 0x0018(sp)				// get previous stunned timer
 		subu	t3, v0, t2					// wizard magic stuff from 0x80149874
 		sll		t4, t3, 2					// ~
@@ -683,13 +685,13 @@ scope Damage {
 		addu	t5, v0, t4					// ~
 		bgtz	v0, _set_y_offset			// branch if timer is not up
 		sw		t5, 0x026C(a0)				// save timer again
-		
+
 		// unbury player if timer is up
 		jal 	unbury_player_				// common routine sets players state to jump
 		lw		a0, 0x0020(sp)				// restore player object
 		b		_end
 		nop
-		
+
 		_set_y_offset:
 		lw		a0, 0x001C(sp)				// load player struct from sp
 		lw		v0, 0x08F8(a0)				// get player joint
@@ -699,40 +701,40 @@ scope Damage {
 		add.s	f4, f4, f6					// f1 = current y - buried y offset
 		nop
 		swc1 	f4, 0x0020(v0)              // save new y offset
-		
+
 		_end:
 		lw		ra, 0x0014(sp)
 		jr		ra
 		addiu	sp, sp, 0x20
 	}
-		
+
 	// @ Description
 	// interrupt routine for bury
 	scope buried_interrupt_: {
 		addiu	sp, sp, -0x18
 		sw		ra, 0x0014(sp)
-		
+
 		// idk what goes here
-		
+
 		_end:
 		jr		ra
 		addiu	sp, sp, 0x18
 	}
-	
+
 	// @ Description
 	// Sets player to jump if unburied
 	scope buried_collision_: {
-		addiu	sp, sp, -0x18	
+		addiu	sp, sp, -0x18
 		sw		ra, 0x0014(sp)
 		sw		a0, 0x0008(sp)			// store a0
 		li		a1, unbury_player_		// a1 = routine to run if aerial
 		jal		0x800DDDDC				// runs a1 if aerial or touching a wall
 		nop
-		
+
 		beqz	v0, _end				// branch if not aerial
 		lw		a0, 0x0008(sp)			// restore a0
-		
-		lli		at, buried_action		// at = 
+
+		lli		at, buried_action		// at =
 		lw		v1, 0x0084(a0)			// v1 = player struct
 		lw		t0, 0x0024(v1)			// t0 = current action
 		bne		at, t0, _end			// branch if action is not the same
@@ -741,11 +743,11 @@ scope Damage {
 		nop
 		jal		unbury_player_			// unbury if moving into a wall.
 		nop
-		
+
 		_end:
-		lw		ra, 0x0014 (sp)	
-		jr		ra				
-		addiu	sp, sp, 0x18				
+		lw		ra, 0x0014 (sp)
+		jr		ra
+		addiu	sp, sp, 0x18
 	}
 
 	// @ Description
@@ -771,9 +773,9 @@ scope Damage {
 		jr		ra
 		addiu	sp, sp, 0x18
 	}
-	
+
 	constant PLUNGE_ACTION(Action.ShieldBreakFall)
-	
+
 	constant INITIAL_PLUNGE_SPEED(0xC248)	// y speed -50
     // @ Description
 	// plunges a aerial player downwards to be buried
@@ -788,7 +790,7 @@ scope Damage {
         sw      r0, 0x0010(sp)              // argument 4 = 0
         jal     0x800E6F24                  // change action
         lui     a3, 0x0000                  // animation speed = 0
-		
+
         lw      a0, 0x0028(sp)              // restore a0
 		lui		at, INITIAL_PLUNGE_SPEED	// at = INITIAL_PLUNGE_SPEED
         lw      s0, 0x0084(a0)              // restore s0
@@ -799,30 +801,39 @@ scope Damage {
 		sw		at, 0x004C(s0)				// overwrite y velocity
 		li		at, plunge_main_
 		sw		at, 0x09D4(s0)				// overwrite main routine
-		
+
 		li		at, plunge_interrupt_
 		sw		at, 0x09D8(s0)				// overwrite interrupt routine
 		sw		r0, 0x09DC(s0)				// remove interrupt action routine
-		
+
 		li		at, plunge_collision_
 		sw		at, 0x09E0(s0)				// overwrite collision routine
-        
+
         // prevent stun transition
-        li      at, 0x800DEDF0              // some routine that does not transition to stun?
+        li      at, plunge_ground_transition  // transition to bury when grounded
         sw      at, 0x09E4(s0)              // overwrite current routine
-        
+
 		lw		ra, 0x0014(sp)
 		jr		ra
 		addiu	sp, sp, 0x30
 	}
-	
+
+    // original was 0x80149720
+    scope plunge_ground_transition: {
+        OS.routine_begin(0x20)
+        li      a1, bury_player_         // routine to run if grounded?
+        jal     0x800DE6E4
+        nop
+        OS.routine_end(0x20)
+    }
+
 	// @ Description
 	// main routine for plunge
 	scope plunge_main_: {
 		addiu	sp, sp, -0x18
 		sw		ra, 0x0014(sp)
 		lw		v0, 0x0084(a0)
-        
+
         lwc1    f4, 0x0090(v0)      // get y velocity
         lui     at, 0xC300          // minimum y velocity
         mtc1    at, f6
@@ -839,25 +850,25 @@ scope Damage {
 		jr		ra
 		addiu	sp, sp, 0x18
 	}
-	
+
 	// @ Description
 	// interrupt routine for plunge
 	scope plunge_interrupt_: {
 		addiu	sp, sp, -0x18
 		sw		ra, 0x0014(sp)
-		
+
 		// lw		v1, 0x0084(a0)		// v1 = player struct
 		// lw		at, 0x014C(a0)		// get kinetic state
 		// bnez	at, _end
 		// nop
-		
+
 		// // set to buried if grounded
 
 		_end:
 		jr		ra
 		addiu	sp, sp, 0x18
 	}
-	
+
 	// @ Description
 	// interrupt routine for plunge
 	scope plunge_collision_: {
@@ -870,7 +881,7 @@ scope Damage {
         jr      ra
         addiu   sp, sp, 0x18
 	}
-	
+
 	// @ Description
 	// Don't allow buried fighters to be pushed by Whispy (DL)
 	scope prevent_wind_push_while_buried: {
@@ -887,7 +898,7 @@ scope Damage {
 		nop
 		j		_return					// push player as normal if not buried
 		lw 		t7, 0x0000(a1)			// original line 2
-		
+
 		_skip_wind_push:
 		j		0x800E86CC				// skip to end of this routine
 		lw		t7, 0x0008(a1)			// original line

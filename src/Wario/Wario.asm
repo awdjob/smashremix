@@ -83,9 +83,7 @@ scope Wario {
     insert POSE_1P, "moveset/POSE_1P.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(WARIO, Action.Entry,           File.WARIO_IDLE,            IDLE,                       -1)
@@ -238,7 +236,7 @@ scope Wario {
 
     // Set default costumes
     Character.set_default_costumes(Character.id.WARIO, 0, 1, 2, 3, 1, 2, 4)
-    Teams.add_team_costume(YELLOW, DEDEDE, 0x0)
+    Teams.add_team_costume(YELLOW, WARIO, 0x0)
 
     // Shield colors for costume matching
     Character.set_costume_shield_colors(WARIO, YELLOW, BLUE, TURQUOISE, PINK, LIME, WHITE, NA, NA)
@@ -252,37 +250,6 @@ scope Wario {
     Character.table_patch_start(kirby_inhale_struct, 0x2, Character.id.WARIO, 0xC)
     dh 0xF
     OS.patch_end()
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.WARIO, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-	// Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.WARIO, 0x4)
-    dw    	AI.LONG_RANGE.ROUTINE.NONE
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  6,   37,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  26,  63,  -230, 230, -54, 406)  // copied Yoshi dspa coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  26,  63,  630, 1085, -25, 1755) // copied Yoshi dspg coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  22,  28,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  5,   12,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  10,  29,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  12,  25,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  10,  11,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   6,   -1, -1, -1, -1) // todo: check range
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  5,   8,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  5,   32,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  11,  36,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  11,  36,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  8,   29,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  6,   41,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  6,   41,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  14,  19,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  7,   20,  -1, -1, -1, -1)
 
     // @ Description
     // Wario's extra actions
@@ -332,6 +299,16 @@ scope Wario {
     // Set Magnifying Glass Scale Override
     Character.table_patch_start(magnifying_glass_zoom, Character.id.WARIO, 0x2)
     dh  0x00A0
+    OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.WARIO, 0x2)
+    dh {MIDI.id.WL2_PERFECT}
+    OS.patch_end()
+
+    // Set CPU SD prevent routine
+    Character.table_patch_start(ai_attack_prevent, Character.id.WARIO, 0x4)
+    dw      AI.PREVENT_ATTACK.ROUTINE.WARIO
     OS.patch_end()
 
     // @ Description
@@ -643,123 +620,19 @@ scope Wario {
         body_slam_clang_patch(t6, v1, s1)
     }
 
-    // @ Description
-    // When an opponent is grabbed by Wario, they will be put into the ThrownDK action (0xB8)
-    // rather than the usual CapturePulled action (0xAB)
-    // Also used by Mad Piano.
+    // Use custom action for the grabbed character when grabbing
+    Character.table_patch_start(custom_capture_action, Character.id.WARIO, 0x4)
+    dw Action.ThrownDK
+    OS.patch_end()
+
+    // Fix the logic for breaking out of ThrownDK since we're using it for our grabbed opponent
     scope capture_action_fix_: {
-        OS.patch_start(0xC534C, 0x8014A90C)
-        j       capture_action_fix_
-        nop
-        _return:
-        OS.patch_end()
-
-        // v0 = grabbing player struct
-        ori     a1, r0, Character.id.WARIO  // a1 = id.WARIO
-        lw      a2, 0x0008(v0)              // a2 = grabbing player character id
-        beq     a1, a2, _wario              // if id = WARIO, load alternate action
-        ori     a1, r0, Action.CapturePulled// original line 1
-        ori     a1, r0, Character.id.PIANO  // a1 = id.PIANO
-        bne     a1, a2, _end                // if id != PIANO, skip
-        ori     a1, r0, Action.CapturePulled// original line 1
-
-        _wario:
-        // if id = WARIO or PIANO
-        ori     a1, r0, Action.ThrownDK     // captured player action = ThrownDK
-
-        _end:
-        addiu   a2, r0, 0x0000              // original line 2
-        j       _return                     // return
-        nop
+        jr ra
+        lli v0, 0x1 // return 1, which means it just skips the function completely
     }
-
-    // @ Description
-    // Attempts to fix the position of the grabbed character on frame 1 of Wario's GrabPull action.
-    // Not perfect, but a big improvement.
-    // Also used by Mad Piano.
-    scope capture_position_fix_: {
-        OS.patch_start(0xC539C, 0x8014A95C)
-        j       capture_position_fix_
-        nop
-        _return:
-        OS.patch_end()
-
-        lw      a0, 0x0044(sp)              // ~
-        lw      a0, 0x0084(a0)              // v0 = grabbing player struct
-        lw      a0, 0x0008(a0)              // a0 = grabbing player character id
-        ori     a1, r0, Character.id.PIANO  // a1 = id.PIANO
-        beq     a0, a1, _wario              // branch if id = PIANO
-        ori     a1, r0, Character.id.WARIO  // a1 = id.WARIO
-        beq     a0, a1, _wario              // branch if id = WARIO
-        nop
-        // if id != WARIO
-        jal     0x8014A6B4                  // original line 1
-        or      a0, s1, r0                  // original line 2
-        j       _return                     // return
-        nop
-
-        _wario:
-        // Usually, 8014A6B4 is used to set the captured player's position on the first frame of
-        // being grabbed, with 8014AB64 being used on subsequent frames.
-        // If the grabbing character is Wario or Piano, 8014AB64 will be used on the first frame instead.
-        jal     0x8014AB64                  // modified original line 1
-        or      a0, s1, r0                  // original line 2
-        j       _return                     // return
-        nop
-    }
-
-    // @ Description
-    // Modifies the subroutine which handles mashing/breaking out of the ThrownDK action.
-    // Skips if the throwing character is Wario.
-    // Also used by Mad Piano, and makes Mad Piano's captured opponent invisible.
-    scope capture_break_fix_: {
-        OS.patch_start(0xC8F14, 0x8014E4D4)
-        j       capture_break_fix_
-        nop
-        _return:
-        OS.patch_end()
-
-        lw      a2, 0x0084(a0)              // a2 = captured player struct
-        lw      a2, 0x0844(a2)              // a2 = player.entity_captured_by
-        lw      a2, 0x0084(a2)              // a2 = grabbing player struct
-        lw      t7, 0x0008(a2)              // a2 = grabbing player character id
-        ori     a3, r0, Character.id.PIANO  // a3 = id.PIANO
-        beq     t7, a3, _piano              // branch if id = PIANO
-        ori     a3, r0, Character.id.MARINA // a3 = id.MARINA
-        beq     t7, a3, _marina             // branch if id = MARINA
-        ori     a3, r0, Character.id.WARIO  // a3 = id.WARIO
-        beq     t7, a3, _end                // branch if id = WARIO
-        nop
-        // if id != WARIO
-        addiu   sp, sp, 0xFFD8              // original line 1
-        sw      ra, 0x0014(sp)              // original line 2
-        j       _return                     // return (and continue subroutine)
-        nop
-
-        _marina:
-        lli     a3, Action.ThrowF           // a3 = ThrowF
-        lw      t7, 0x0024(a2)              // t7 = grabbing player action
-        beq     a3, t7, _end                // end if action = ThrowF
-        nop
-        addiu   sp, sp, 0xFFD8              // original line 1
-        j       _return                     // return (and continue subroutine)
-        sw      ra, 0x0014(sp)              // original line 2
-
-
-        _piano:
-        lli     a3, Action.GrabWait         // a3 = GrabWait
-        lw      t7, 0x0024(a2)              // t7 = grabbing player action
-        bne     a3, t7, _end                // skip if action != GrabWait
-        lw      a2, 0x0084(a0)              // a2 = captured player struct
-        // if we're here, then the captured player is being held by Mad Piano's grab, so make them invisible.
-        lbu     t7, 0x018D(a2)              // t7 = bit field
-        ori     t7, t7, 0x0001              // enable bitflag for invisibility
-        sb      t7, 0x018D(a2)              // update bit field
-
-        _end:
-        jr      ra                          // end subroutine
-        nop
-    }
+    Character.table_patch_start(custom_capture_dk_interrupt, Character.id.WARIO, 0x4)
+    dw capture_action_fix_
+    OS.patch_end()
 
     // @ Description
     // Plays an alternate voice FGM for Wario's neutral special.

@@ -216,6 +216,14 @@ scope collide_mushroom_: {
     lw      t0, 0x002C(sp)              // t0 = player's match size state
     sw      t0, 0x005C(v0)              // save player's match size state
 
+    lw      t0, 0x0008(a0)      // t7 = fighter id
+    addiu   at, r0, Character.id.CRASH
+    bne     at, t0, _continue
+    nop
+    // play Crash FGM if here
+    FGM.play(0x5BF)
+
+    _continue:
     OS.restore_registers()
 
     // Continue after item collision check
@@ -629,10 +637,8 @@ scope handle_active_mushroom_: {
     jal     Render.DESTROY_OBJECT_
     nop
     lw      ra, 0x0004(sp)              // restore ra
-    addiu   sp, sp, 0x0010              // deallocate stack space
-
     jr      ra
-    nop
+    addiu   sp, sp, 0x0010              // deallocate stack space
 }
 
 // @ Description
@@ -642,10 +648,8 @@ scope clear_active_mushrooms_: {
     sw      r0, 0x0000(t0)              // clear shroom routine object pointer p1
     sw      r0, 0x0004(t0)              // clear shroom routine object pointer p1
     sw      r0, 0x0008(t0)              // clear shroom routine object pointer p3
-    sw      r0, 0x000C(t0)              // clear shroom routine object pointer p4
-
     jr      ra
-    nop
+    sw      r0, 0x000C(t0)              // clear shroom routine object pointer p4
 }
 
 // @ Description

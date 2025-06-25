@@ -55,6 +55,12 @@ scope ResultsScreen {
         _character:
         addu    t5, r0, ra                  // save ra
         lbu     s4, 0x0023(v0)              // s4 = character id (original line 1)
+
+        // check if remix character
+        slti    t6, s4, Character.id.BOSS   // t6 = 0 if > Ness character ID
+        beqz    t6, _skip_character
+        nop
+
         divu    t7, at                      // original line 2
         jal     _get_id                     // get id
         or      at, s4, r0                  // at = character id
@@ -65,6 +71,11 @@ scope ResultsScreen {
 
         _opponent:
         lbu     v0, 0x0023(v1)              // v0 = opponent id (original line 1)
+        // check if remix character
+        slti    t6, v0, Character.id.BOSS   // t6 = 0 if > Ness character ID
+        beqz    t6, _skip_opponent
+        nop
+
         sll     t6, s1, 0x2                 // original line 2
         addu    t0, t7, t6                  // original line 3
         or      at, v0, r0                  // at = opponent id
@@ -73,9 +84,16 @@ scope ResultsScreen {
         sll     at, at, 0x0002              // at = id * 4
         li      t6, Character.vs_record.table
         addu    t6, t6, at                  // t6 = vs_record.table + (id * 4)
-        lw      at, 0x0000(t6)              // at = new id
         jr      ra                          // return
-        nop
+        lw      at, 0x0000(t6)              // at = new id
+
+        _skip_character:
+        j       0x80131DD8
+        addiu   s2, s2, 0x0001              // increment port index
+
+        _skip_opponent:
+        j       0x80131DC8
+        addiu   s1, s1, 0x0001              // increment port index
     }
 
     // @ Description
@@ -422,6 +440,7 @@ scope ResultsScreen {
         constant MISCHIEF_MAKERS(0xAD18)
         constant GOEMON(0xB888)
         constant BANJO_KAZOOIE(0xC6B8)
+        constant CRASH_BANDICOOT(0xDBC8)
     }
 
     // @ Description
@@ -447,6 +466,7 @@ scope ResultsScreen {
         constant MISCHIEF_MAKERS(0xAE20)
         constant GOEMON(0xB990)
         constant BANJO_KAZOOIE(0xC7C0)
+        constant CRASH_BANDICOOT(0xDCD0)
     }
 
     // @ Description
@@ -472,6 +492,7 @@ scope ResultsScreen {
         constant MISCHIEF_MAKERS(0xAE78)
         constant GOEMON(0xB9E8)
         constant BANJO_KAZOOIE(0xC818)
+        constant CRASH_BANDICOOT(0xDD28)
     }
 
     // @ Description
@@ -660,18 +681,18 @@ scope ResultsScreen {
     // ADD CHARACTERS TO RESULTS SCREEN
                           // id                  fgm                                         logo             label_y               wins_lx  string           str_lx  str_scale  bgm
     add_to_results_screen(Character.id.METAL,    FGM.announcer.names.METAL_MARIO,            MARIO_BROS,      Character.id.MARIO,   185,     METAL MARIO,     20,     0.55,      0x0C)
-    add_to_results_screen(Character.id.NMARIO,   FGM.announcer.names.POLYGON_MARIO,          SMASH,           Character.id.MARIO,   185,     POLY MARIO,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NFOX,     FGM.announcer.names.POLYGON_FOX,            SMASH,           Character.id.MARIO,   185,     POLY FOX,        20,     0.8,       0x0B)
-    add_to_results_screen(Character.id.NDONKEY,  FGM.announcer.names.POLYGON_DONKEY_KONG,    SMASH,           Character.id.MARIO,   180,     POLY DK,         25,     0.85,      0x0B)
-    add_to_results_screen(Character.id.NSAMUS,   FGM.announcer.names.POLYGON_SAMUS,          SMASH,           Character.id.MARIO,   185,     POLY SAMUS,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NLUIGI,   FGM.announcer.names.POLYGON_LUIGI,          SMASH,           Character.id.MARIO,   185,     POLY LUIGI,      20,     0.75,      0x0B)
-    add_to_results_screen(Character.id.NLINK,    FGM.announcer.names.POLYGON_LINK,           SMASH,           Character.id.MARIO,   185,     POLY LINK,       20,     0.8,       0x0B)
-    add_to_results_screen(Character.id.NYOSHI,   FGM.announcer.names.POLYGON_YOSHI,          SMASH,           Character.id.MARIO,   185,     POLY YOSHI,      20,     0.65,      0x0B)
-    add_to_results_screen(Character.id.NCAPTAIN, FGM.announcer.names.POLYGON_CAPTAIN_FALCON, SMASH,           Character.id.MARIO,   185,     POLY FALCON,     20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NKIRBY,   FGM.announcer.names.POLYGON_KIRBY,          SMASH,           Character.id.MARIO,   185,     POLY KIRBY,      20,     0.7,       0x0B)
-    add_to_results_screen(Character.id.NPIKACHU, FGM.announcer.names.POLYGON_PIKACHU,        SMASH,           Character.id.MARIO,   185,     POLY PIKACHU,    20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NJIGGLY,  FGM.announcer.names.POLYGON_JIGGLYPUFF,     SMASH,           Character.id.MARIO,   185,     POLY PUFF,       20,     0.75,      0x0B)
-    add_to_results_screen(Character.id.NNESS,    FGM.announcer.names.POLYGON_NESS,           SMASH,           Character.id.MARIO,   185,     POLY NESS,       20,     0.75,      0x0B)
+    add_to_results_screen(Character.id.NMARIO,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY MARIO,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NFOX,     FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY FOX,        20,     0.8,       0x0B)
+    add_to_results_screen(Character.id.NDONKEY,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   180,     POLY DK,         25,     0.85,      0x0B)
+    add_to_results_screen(Character.id.NSAMUS,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY SAMUS,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NLUIGI,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY LUIGI,      20,     0.75,      0x0B)
+    add_to_results_screen(Character.id.NLINK,    FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY LINK,       20,     0.8,       0x0B)
+    add_to_results_screen(Character.id.NYOSHI,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY YOSHI,      20,     0.65,      0x0B)
+    add_to_results_screen(Character.id.NCAPTAIN, FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY FALCON,     20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NKIRBY,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY KIRBY,      20,     0.7,       0x0B)
+    add_to_results_screen(Character.id.NPIKACHU, FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY PIKACHU,    20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NJIGGLY,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY PUFF,       20,     0.75,      0x0B)
+    add_to_results_screen(Character.id.NNESS,    FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY NESS,       20,     0.75,      0x0B)
     add_to_results_screen(Character.id.GDONKEY,  FGM.announcer.names.GDK,                    DONKEY_KONG,     Character.id.DK,      185,     GIANT DK,        20,     0.8,       0x0E)
     add_to_results_screen(Character.id.BOSS,     FGM.announcer.names.MASTERHAND,             SMASH,           Character.id.BOSS,    185,     MASTER HAND,     20,     0.55,      0x0B)
 
@@ -691,7 +712,7 @@ scope ResultsScreen {
     add_to_results_screen(Character.id.JMARIO,   FGM.announcer.names.MARIO,                  MARIO_BROS,      Character.id.MARIO,   200,     J MARIO,         25,     1,         0x0C)
     add_to_results_screen(Character.id.JLUIGI,   FGM.announcer.names.LUIGI,                  MARIO_BROS,      Character.id.LUIGI,   180,     J LUIGI,         45,     1,         0x0C)
     add_to_results_screen(Character.id.JDK,      FGM.announcer.names.DK,                     DONKEY_KONG,     Character.id.DK,      195,     D.1KONG,         30,     1,         0x0E)
-    add_to_results_screen(Character.id.EPIKA,    FGM.announcer.names.PIKACHU,                POKEMON,         Character.id.PIKACHU, 185,     E PIKACHU,       25,     0.75,      0x14)
+    add_to_results_screen(Character.id.EPIKA,    FGM.announcer.names.EPIKA,                  POKEMON,         Character.id.PIKACHU, 185,     E PIKACHU,       25,     0.75,      0x14)
     add_to_results_screen(Character.id.JPUFF,    FGM.announcer.names.JPUFF,                  POKEMON,         Character.id.JIGGLYPUFF, 185,  P1U1R1I1N,       50,     1,         0x14)
     add_to_results_screen(Character.id.EPUFF,    FGM.announcer.names.EPUFF,                  POKEMON,         Character.id.JIGGLYPUFF, 185,  PUMMELUFF,       20,     0.7,       0x14)
     add_to_results_screen(Character.id.JKIRBY,   FGM.announcer.names.KIRBY,                  KIRBY,           Character.id.KIRBY,   190,     J KIRBY,         35,     1,         0x0F)
@@ -708,7 +729,7 @@ scope ResultsScreen {
     add_to_results_screen(Character.id.SONIC,    FGM.announcer.names.SONIC,                  SONIC,           Character.id.FOX,     165,     SONIC,           35,     1,         {MIDI.id.SONIC_VICTORY})
     add_to_results_screen(Character.id.SANDBAG,  FGM.announcer.names.MARTH,                  YOSHI,           Character.id.CAPTAIN, 175,     SANDBAG,         25,     1,         0x0B)
     add_to_results_screen(Character.id.SSONIC,   FGM.announcer.names.SSONIC,                 SONIC,           Character.id.FOX,     170,     SUPER SONIC,     20,     0.55,      {MIDI.id.SONIC_VICTORY})
-    add_to_results_screen(Character.id.SHEIK,    FGM.announcer.names.SHEIK,                  ZELDA,           Character.id.CAPTAIN, 165,     SHEIK,           30,     1,         {MIDI.id.SHEIK_VICTORY})
+    add_to_results_screen(Character.id.SHEIK,    FGM.announcer.names.SHEIK,                  ZELDA,           Character.id.CAPTAIN, 160,     SHEIK,           40,     1,         {MIDI.id.SHEIK_VICTORY})
     add_to_results_screen(Character.id.MARINA,   FGM.announcer.names.MARINA,                 MISCHIEF_MAKERS, Character.id.CAPTAIN, 180,     M1AR1I111NA,     25,     0.85,      {MIDI.id.MARINA_VICTORY})
     add_to_results_screen(Character.id.DEDEDE,   FGM.announcer.names.DEDEDE,                 KIRBY,           Character.id.CAPTAIN, 175,     DEDEDE,          25,     0.9,      {MIDI.id.DEDEDE_VICTORY})
     add_to_results_screen(Character.id.GOEMON,   FGM.announcer.names.GOEMON,                 GOEMON,          Character.id.CAPTAIN, 170,     GOEMON,          25,     0.75,      {MIDI.id.GOEMON_VICTORY})
@@ -718,26 +739,33 @@ scope ResultsScreen {
     add_to_results_screen(Character.id.MLUIGI,   FGM.announcer.names.MLUIGI,                 MARIO_BROS,      Character.id.MARIO,   185,     METAL LUIGI,     20,     0.65,      0x0C)
     add_to_results_screen(Character.id.EBI,      FGM.announcer.names.EBI,                    GOEMON,          Character.id.CAPTAIN, 180,     EBISUMARU,       20,     0.65,      {MIDI.id.GOEMON_VICTORY})
     add_to_results_screen(Character.id.DRAGONKING, FGM.announcer.names.DRAGONKING,           SMASH,           Character.id.CAPTAIN, 170,     D.1KING,         30,     1,         {MIDI.id.DKING_VICTORY})
+    add_to_results_screen(Character.id.CRASH,    FGM.announcer.names.CRASH,                  CRASH_BANDICOOT, Character.id.CAPTAIN, 170,     CRASH,           30,     1,         {MIDI.id.CRASH_VICTORY})
+    add_to_results_screen(Character.id.PEACH,    FGM.announcer.names.PEACH,                  MARIO_BROS,      Character.id.CAPTAIN, 170,     PEACH,           30,     1,         {MIDI.id.PEACH_VICTORY})
+    add_to_results_screen(Character.id.ROY,      FGM.announcer.names.ROY,                    FIRE_EMBLEM,     Character.id.CAPTAIN, 160,     ROY,             50,     1,         {MIDI.id.MARTH_VICTORY})
+    add_to_results_screen(Character.id.DRL,      FGM.announcer.names.DRL,                    DR_MARIO,        Character.id.LUIGI,   175,     DR. LUIGI,       25,     0.85,      {MIDI.id.DRMARIO_VICTORY})
+    add_to_results_screen(Character.id.LANKY,    FGM.announcer.names.LANKY,                  DONKEY_KONG,     Character.id.DK,      185,     LAN2KY KONG,      25,     0.55,     {MIDI.id.LANKY_VICTORY})
     // ADD NEW CHARACTERS HERE
 
     // REMIX POLYGONS
-    add_to_results_screen(Character.id.NFALCO,   FGM.announcer.names.NFALCO,                 SMASH,           Character.id.FOX,     185,     POLY FALCO,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NGND,     FGM.announcer.names.NGANONDORF,             SMASH,           Character.id.CAPTAIN, 185,     POLY GANON,      20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NWARIO,   FGM.announcer.names.NWARIO,                 SMASH,           Character.id.MARIO,   185,     POLY WARIO,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NLUCAS,   FGM.announcer.names.NLUCAS,                 SMASH,           Character.id.NESS,    185,     POLY LUCAS,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NBOWSER,  FGM.announcer.names.NBOWSER,                SMASH,           Character.id.YOSHI,   185,     POLY BOWSER,     20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NWOLF,    FGM.announcer.names.NWOLF,                  SMASH,           Character.id.FOX,     185,     POLY WOLF,       20,     0.65,      0x0B)
-    add_to_results_screen(Character.id.NDRM,     FGM.announcer.names.NDR_MARIO,              SMASH,           Character.id.MARIO,   185,     POLY DR. MARIO,  20,     0.45,      0x0B)
-    add_to_results_screen(Character.id.NSONIC,   FGM.announcer.names.NSONIC,                 SMASH,           Character.id.FOX,     185,     POLY SONIC,      20,     0.65,      0x0B)
-    add_to_results_screen(Character.id.NSHEIK,   FGM.announcer.names.NSHEIK,                 SMASH,           Character.id.CAPTAIN, 180,     POLY SHEIK,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NMARINA,  FGM.announcer.names.NMARINA,                SMASH,           Character.id.CAPTAIN, 180,     POLY MARINA,     20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NDSAMUS,  FGM.announcer.names.NDSAMUS,                SMASH,           Character.id.SAMUS,   180,     POLY D. SAMUS,   20,     0.5,       0x0B)
-    add_to_results_screen(Character.id.NMARTH,   FGM.announcer.names.NMARTH,                 SMASH,           Character.id.CAPTAIN, 185,     POLY MARTH,      20,     0.6,       0x0B)
-    add_to_results_screen(Character.id.NMTWO,    FGM.announcer.names.NMTWO,                  SMASH,           Character.id.SAMUS,   185,     POLY MEWTWO,     20,     0.52,      0x0B)
-    add_to_results_screen(Character.id.NDEDEDE,  FGM.announcer.names.NDEDEDE,                SMASH,           Character.id.CAPTAIN, 180,     POLY DEDEDE,     20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NYLINK,   FGM.announcer.names.NYLINK,                 SMASH,           Character.id.LINK,    180,     POLY Y. LINK,    20,     0.63,      0x0B)
-    add_to_results_screen(Character.id.NGOEMON,  FGM.announcer.names.NGOEMON,                SMASH,           Character.id.MARIO,   185,     POLY GOEMON,     20,     0.52,      0x0B)
-    add_to_results_screen(Character.id.NCONKER,  FGM.announcer.names.NCONKER,                SMASH,           Character.id.FOX,     180,     POLY CONKER,     20,     0.55,      0x0B)
-    add_to_results_screen(Character.id.NBANJO,   FGM.announcer.names.NBANJO,                 SMASH,           Character.id.CAPTAIN, 185,     POLY BANJO,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NFALCO,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.FOX,     185,     POLY FALCO,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NGND,     FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 185,     POLY GANON,      20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NWARIO,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY WARIO,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NLUCAS,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.NESS,    185,     POLY LUCAS,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NBOWSER,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.YOSHI,   185,     POLY BOWSER,     20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NWOLF,    FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.FOX,     185,     POLY WOLF,       20,     0.65,      0x0B)
+    add_to_results_screen(Character.id.NDRM,     FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY DR. MARIO,  20,     0.45,      0x0B)
+    add_to_results_screen(Character.id.NSONIC,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.FOX,     185,     POLY SONIC,      20,     0.65,      0x0B)
+    add_to_results_screen(Character.id.NSHEIK,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 180,     POLY SHEIK,      20,     0.66,      0x0B)
+    add_to_results_screen(Character.id.NMARINA,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 180,     POLY MARINA,     20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NDSAMUS,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.SAMUS,   180,     POLY D. SAMUS,   20,     0.5,       0x0B)
+    add_to_results_screen(Character.id.NMARTH,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 185,     POLY MARTH,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NMTWO,    FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.SAMUS,   185,     POLY MEWTWO,     20,     0.52,      0x0B)
+    add_to_results_screen(Character.id.NDEDEDE,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 180,     POLY DEDEDE,     20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NYLINK,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.LINK,    180,     POLY Y. LINK,    20,     0.63,      0x0B)
+    add_to_results_screen(Character.id.NGOEMON,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.MARIO,   185,     POLY GOEMON,     20,     0.52,      0x0B)
+    add_to_results_screen(Character.id.NCONKER,  FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.FOX,     180,     POLY CONKER,     20,     0.55,      0x0B)
+    add_to_results_screen(Character.id.NBANJO,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 185,     POLY BANJO,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NPEACH,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 185,     POLY PEACH,      20,     0.6,       0x0B)
+    add_to_results_screen(Character.id.NCRASH,   FGM.announcer.names.NFIGHTER,               SMASH,           Character.id.CAPTAIN, 185,     POLY CRASH,      20,     0.6,       0x0B)
 }
 }

@@ -362,8 +362,8 @@ scope Teams {
         OS.patch_start(0x1334A4, 0x80135224)
         j       classic_sonic_costume_fix_._team_battle_toggle
         nop
-        nop
         _team_battle_return:
+        sw      v0, 0x0050(s0)              // original line 4
         OS.patch_end()
 
         // team button toggle

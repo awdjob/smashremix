@@ -438,6 +438,23 @@ scope SinglePlayerMenus: {
     OS.patch_end()
 
     // @ Description
+    // Fixes a crash when pressing a or b button on the 1P Mode menu due to the function
+    // not being exited.
+    scope fix_a_and_b_button_crashes_: {
+        OS.patch_start(0x11EB70, 0x80132A60)
+        j       fix_a_and_b_button_crashes_
+        OS.patch_end()
+        OS.patch_start(0x11ED7C, 0x80132C6C)
+        j       fix_a_and_b_button_crashes_
+        OS.patch_end()
+
+        jal     0x80005C74                  // original line 1 - syTaskmanSetLoadScene()
+        nop
+        j       0x80132E90                  // exit routine
+        lw      ra, 0x0014(sp)              // restore ra
+    }
+
+    // @ Description
     // Loads in the KO amount for the selected character in Multiman and Cruel Multiman Modes
     // or distance (ft) for HRC
     scope _ko_amount_or_feet: {
@@ -531,6 +548,10 @@ scope SinglePlayerMenus: {
         beq     t7, t9, _time_count         // jump to time if Bonus 3
         nop
         bnez    t7, _platform_count         // if multiman, skip
+        nop
+
+        lli     t7, Character.id.PLACEHOLDER
+        beq     t7, a0, _platform_count     // if Random, skip
         nop
 
         beq     v0, r0, _platform_count     // modified original line 1

@@ -210,9 +210,8 @@ scope throw_initial_: {
     jal     0x80172EC8              // change item state
     addiu   a2, r0, 0x0003          // state = 3(thrown)
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -248,9 +247,8 @@ scope turn_initial_: {
     ori     at, at, 0x0020                  // ~
     sb      at, 0x02CF(t6)                  // enable bitflag for bonus damage
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -271,9 +269,8 @@ scope return_initial_: {
     ori     at, at, 0x0020                  // ~
     sb      at, 0x02CF(t6)                  // enable bitflag for bonus damage
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -288,9 +285,8 @@ scope falling_initial_: {
     jal     0x80172EC8                      // change item state
     addiu   a2, r0, 0x0006                  // state = 6(falling)
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -878,9 +874,8 @@ scope prepickup_: {
     addiu   a2, r0, 0x0002                  // state = 2 (picked up)
 
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description

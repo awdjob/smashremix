@@ -13,6 +13,23 @@ You must place your legally acquired patched ROM in the 'roms' folder for this t
 # Features
 (Note: Smash Remix requires the the 8 MB expansion pak to be enabled.)
 ## Gameplay
+
+### Hitstun
+- Available Hitstun options are: 'Normal', 'Melee'
+
+#### Toggle Name: _Hitstun_
+
+### Hitlag
+- Available Hitstun options are: 'Normal', 'Japanese', 'Melee', 'Ultimate', 'None'
+
+#### Toggle Name: _Hitlag_
+
+### DI
+- Available DI options are: 'Normal', 'Japanese', 'Ultimate'
+- "Ultimate" is not accurate, it's just weaker DI. Goes well with Ultimate hitlag.
+
+#### Toggle Name: _DI_
+
 ### AI Improvements
 Computer controlled players have received a variety of improvements.
 - They attempt to recover more than once.
@@ -21,7 +38,6 @@ Computer controlled players have received a variety of improvements.
 - CPU Level 10 added.
 
 #### Toggle Name: _Improved AI_
-
 
 ### Combo Meter Improvements
 - "Improved Combo Meter" prevents the combo meter from resetting when the character is grabbed or bounces off of a wall.
@@ -212,11 +228,28 @@ A menu for modifying certain character attributes is available on each panel.
 #### P-Wing
  - Player can jump continuously in midair.
  - Lasts 20 seconds.
+#### Mr. Saturn
+ - Throwable. Does heavy shield damage.
+#### Stopwatch
+ - Slows down opponents, Speeds up your character, or Backfires (changes Game Engine Speed).
+ - Lasts 10 seconds.
 
 ### Tripping
 - If enabled, characters will randomly trip when dashing or running.
 
 #### Toggle Name: Tripping
+
+### Rage
+- If enabled, moves will deal more knockback if the attacker is at high damage. Affects direct attacks and projectiles.
+- Rage starts at 35% and caps at 150%.
+- Starting at 100%, the player also starts emiting smoke. It gets more intense up to 150%.
+- Types:
+    - Ultimate: The maximum rage multiplier is 1.1x knockback. Does not affect fixed knockback moves.
+    - Smash 4: The maximum rage multiplier is 1.15x knockback. Also affects fixed knockback moves.
+    - Berserk: The maximum rage multiplier is 1.5x knockback. Also affects fixed knockback moves.
+    - Fatigue: Rage is inverted and can get to a minimum of 0.5x knockback. Also affects fixed knockback moves.
+
+#### Toggle Name: Rage
 
 ### Footstool Jumping
 - If enabled, you can jump off characters heads!
@@ -242,6 +275,12 @@ A menu for modifying certain character attributes is available on each panel.
 - If enabled, you can perform perfect/power shielding against your opponents attacks.
 
 #### Toggle Name: Perfect Shielding
+
+### Parrying
+- If enabled, you can perform parries that work similarly to Smash Ultimate.
+- Parries are activated whenever you get hit by an attack while on your shield drop animation.
+
+#### Toggle Name: Parrying
 
 ### Spot Dodging
 - If enabled, you can dodge opponents attacks while grounded with Z/R + Down.
@@ -274,10 +313,48 @@ A menu for modifying certain character attributes is available on each panel.
 
 #### Toggle Name: Item Containers
 
+### Game Speed
+- Allows changing the Game Engine Speed (similar to Training Speed).
+- Available Speed values range from '1/8' to '3.0x'
+
+#### Toggle Name: Game Speed
+
+### Special Zoom
+- Similarly to Super Smash Bros. Ultimate, causes a dramatic zoom along with a slow-motion effect to play out whenever an attack connects and is expected to KO an opponent. Note that this does not consider stage collision (walls, ceilings, for example) and is calculated before DI, which may lead to (intended) "fake" Special Zooms.
+- When enabled, a small selection of moves that are knowingly strong or hard to hit will cause a version of the Special Zoom effect even when no KO is expected. These moves include Jigglypuff's Rest, Captain Falcon's Falcon Punch, and so on. The list is mostly similar to Smash Ultimate's.
+- Options:
+    - MATCH END: KOs will only cause Special Zoom on a stock that will end the match.
+    - ANY KO: Any KO will trigger the Special Zoom.
+
+#### Toggle Name: Special Zoom
+
 ### Blastzone Warp *BETA
 - If enabled, fighters will warp across Blastzones instead of KOing.
 
 #### Toggle Name: Blastzone Warp *BETA
+
+### Single Button Mode
+- Restricts players to use of a single button.
+- Available options are: 'A', 'B', or 'R' (with optional inclusion of 'C' for jumping).
+
+#### Toggle Name: Single Button Mode
+
+### All Items R Drop (Aerial)
+- Allows dropping items in midair with 'R'.
+
+#### Toggle Name: All Items R Drop (Aerial)
+
+### Move Staling
+- Allows disabling move staling, or using alternative algorithms.
+- Available Staling options are: 'Default', 'Disabled', 'Strict', 'Wait For It', 'Reverse', 'Cheap Shot'
+
+#### Toggle Name: Move Staling
+
+### Stopwatch Item
+- Allows for selecting which Stopwatch Item effect to use (instead of random outcome).
+- Available options are: 'Slow', 'Fast', 'Backfire', 'No Backfire'
+
+#### Toggle Name: Stopwatch Item
 
 ## Customization
 ### Costume Selection Improvements
@@ -402,6 +479,7 @@ When Special Model Display is Hitbox or Hitbox+, these changes are applied:
 
 ### Crash Debugger
 - When a game crash occurs, attempts to display a screen with detailed information on what went wrong.
+- Note: Press Z+L+R to cycle through debugger pages.
 
 ### Cinematic Camera
 - Controls the cinematic camera zooms which occasionally occur at the start of a versus match.
@@ -536,15 +614,8 @@ When Special Model Display is Hitbox or Hitbox+, these changes are applied:
 #### Toggle Name: Skip Training Start Cheer
 
 ## Japanese Gameplay
-### Japanese Hitlag
-- Use the Japanese version's hitlag value.
 
-#### Toggle Name: _Japanese Hitlag_
-
-### Japanese DI
-- Use the Japanese version's DI value.
-
-#### Toggle Name: _Japanese DI_
+Many `Gameplay Settings` contain options that enable Japanese behavior: Hitstun, Hitlag, DI, Shield Stun, etc.
 
 ### Japanese Sounds
 - By default, J characters use Japanese sound effects.
@@ -648,26 +719,33 @@ Toggle                     | Community          | Tournament        | Netplay   
 ---------------------------|--------------------|-------------------|-------------------|-------------------
 Hitstun                    | Normal             | Normal            | Normal            | Normal
 Hitlag                     | Normal             | Normal            | Normal            | Japanese
-Japanese DI                | Off                | Off               | Off               | On
+DI                         | Normal             | Normal            | Normal            | Japanese
 Japanese Sounds            | Default            | Default           | Default           | Always
 Momentum Slide             | Off                | Off               | Off               | On
-Japanese Shield Stun       | Off                | Off               | Off               | On
+Shield Stun                | Normal             | Normal            | Normal            | Japanese
 Z-Cancel                   | Default            | Default           | Default           | Default
 Punish Failed Z-Cancel     | Off                | Off               | Off               | Off
 Improved AI                | On                 | Off               | On                | On
 Tripping                   | Off                | Off               | Off               | Off
+Rage                       | Off                | Off               | Off               | Off
 Footstool Jumping          | Off                | Off               | Off               | Off
 Air Dodging                | Off                | Off               | Off               | Off
 Jab Locking                | Off                | Off               | Off               | Off
 Edge C-Jumping             | Off                | Off               | Off               | Off
 Perfect Shielding          | Off                | Off               | Off               | Off
+Parrying                   | Off                | Off               | Off               | Off
 Spot Dodging               | Off                | Off               | Off               | Off
 Fast Fall Aerials          | Off                | Off               | Off               | Off
 Ledge Trumping             | Off                | Off               | Off               | Off
 Wall Teching               | Off                | Off               | Off               | Off
 Charged Smash Attacks      | Off                | Off               | Off               | Off
 Item Containers            | Default            | Default           | Default           | Default
+Game Speed                 | 1/1                | 1/1               | 1/1               | 1/1
 Blastzone Warp *BETA       | Off                | Off               | Off               | Off
+Single Button Mode         | Off                | Off               | Off               | Off
+All Items R Drop (Aerial)  | Off                | Off               | Off               | Off
+Move Staling               | Default            | Default           | Default           | Default
+Stopwatch Item             | Default            | Default           | Default           | Default
 
 #### Music Settings
 Toggle                          | Community          | Tournament        | Netplay           | Japanese

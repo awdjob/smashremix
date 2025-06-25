@@ -223,10 +223,19 @@ scope HRC {
         bnez    at, _check_grounded           // if time remaining, don't check cargo hold
         lw      t1, 0x0024(t0)                // t1 = sandbag action
         lli     t5, Action.ThrownDK           // t5 = Action.ThrownDK
-        bne     t1, t5, _check_grounded       // if not getting thrown by DK, JDK, or GDK, skip
+        bne     t1, t5, _check_lanky          // if not getting thrown by DK, JDK, or GDK, skip
         lw      t1, 0x0024(t9)                // t1 = human player action
         lli     t5, Action.DK.Cargo           // t5 = Action.DK.Cargo
         beq     t1, t5, _do_failure_or_complete // if in cargo hold, do failure/complete
+        nop
+        _check_lanky:
+        // Orangstand is also a special case
+        lli     t5, Character.id.LANKY
+        lw      t1, 0x000C(t9)                // t1 = char_id
+        bne     t1, t5, _check_grounded       // if not Lanky, skip
+        lw      t1, 0x0024(t9)                // t1 = human player action
+        sltiu   t5, t1, Lanky.Action.DSPGBegin // t5 = 0 if Orangstanding
+        beqz    t5, _do_failure_or_complete   // if in Orangstand, do failure/complete
         nop
 
         _check_grounded:
@@ -651,10 +660,11 @@ scope HRC {
     }
 
     // @ Description
-    // Keeps the bat alive indefinitely bu
-    scope prevent_bat_despawn_: {
+    // Keeps the bat alive indefinitely
+    // (Also keeps basketball alive on Smashketball)
+    scope prevent_item_despawn_: {
         OS.patch_start(0xEE64C, 0x80173C0C)
-        j       prevent_bat_despawn_
+        j       prevent_item_despawn_
         nop
         _return:
         OS.patch_end()
@@ -666,10 +676,23 @@ scope HRC {
         lli     at, SinglePlayerModes.HRC_ID
         li      t0, SinglePlayerModes.singleplayer_mode_flag
         lw      t0, 0x0000(t0)              // t0 = singleplayer_mode_flag
-        bne     t0, at, _end                // if not HRC, skip
+        beq     t0, at, _hrc                // if not HRC, skip
+        lli     at, VsRemixMenu.mode.SMASHKETBALL
+        OS.read_word(VsRemixMenu.vs_mode_flag, t0)
+        bne     t0, at, _end                // if not Smashketball, skip
+        lli     at, Item.Basketball.id
+
+        // Smashketball
+        b       _compare_item
+        lw      t0, 0x000C(s0)              // t0 = item_id
+
+        // HRC
+        _hrc:
         lli     at, Hazards.standard.HOME_RUN_BAT
         lw      t0, 0x000C(s0)              // t0 = item_id
-        beql    t0, at, _end                // if the bat, always force the random int result to be 1
+
+        _compare_item:
+        beql    t0, at, _end                // if the item, always force the random int result to be 1
         lli     v0, 0x0001                  // v0 = 1 (non-zero avoids despawning)
 
         _end:

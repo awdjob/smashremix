@@ -52,9 +52,7 @@ scope Wolf {
     insert CLAP, "moveset/CLAP.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action                   // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(WOLF,  Action.Idle,                File.WOLF_IDLE,         	IDLE,               	-1)
@@ -372,6 +370,11 @@ scope Wolf {
         dw Action.FOX.string_0x0F5
     }
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.WOLF, 0x2)
+    dh {MIDI.id.SURPRISE_ATTACK}
+    OS.patch_end()
+
     // Set action strings
     Character.table_patch_start(action_string, Character.id.WOLF, 0x4)
     dw  Action.action_string_table
@@ -381,37 +384,6 @@ scope Wolf {
 
     // Shield colors for costume matching
     Character.set_costume_shield_colors(WOLF, BROWN, PINK, AZURE, TURQUOISE, BLACK, PURPLE, YELLOW, NA)
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.WOLF, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.WOLF, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.USP
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  0,  27,  1100, 1500, 900, 1000) // removed to prevent SD in 1P
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  0,  27,  1100, 1500, 900, 1000) // removed to prevent SD in 1P
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  3,   4,   -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  12,  17,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  9,   18,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  8,   17,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,   8,   -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  5,   12,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  4,   7,   -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   6,   -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,   35,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  5,   10,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  7,   18,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  9,   18,  -1, -1, -1, -1) // shared with fair. todo: coords
 
     // @ Description
     // This adds a check to the reflection routine that looks to see if wolf is reflecting, if so it doubles speed
@@ -470,11 +442,11 @@ scope Wolf {
 
         lw      t6, 0x0008(v1)              // t6 = character ID
 
-		lli     t0, Character.id.WOLF       // t1 = id.WOLF
+		lli     t0, Character.id.WOLF       // t0 = id.WOLF
         beq     t6, t0, _wolf               // if Wolf, jump
         nop
 
-        lli     t0, Character.id.SLIPPY       // t1 = id.SLIPPY
+        lli     t0, Character.id.SLIPPY       // t0 = id.SLIPPY
         beq     t6, t0, _slippy               // if Slippy, jump
         nop
 

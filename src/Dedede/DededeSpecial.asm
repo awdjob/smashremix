@@ -11,7 +11,7 @@ scope DededeUSP {
     constant GRAVITY(0x4000)        // float 2
     constant GRAVITY_PEAK(0x3e4c)   // float 0.2
     constant GRAVITY_FALLING(0x4020) // float 2.5
-    constant MAX_FALLING(0x42c8)    // float 100
+    constant MAX_FALLING(0x42FA)    // float 125
     constant B_PRESSED(0x40)                // bitmask for b press
 
     // @ Description
@@ -151,6 +151,12 @@ scope DededeUSP {
         lw             a1, 0x0084 (a0)      // load player struct
         sw             a0, 0x0028 (sp)      // save player object to stack
 
+        // check if grounded
+        lw             t0, 0x0084(a0)       // t0 = fighter struct
+        lw             at, 0x014C(t0)       // get kinetic state
+        beqz           at, _grounded        // branch if grounded
+        nop
+
         jal            0x800de87c           // check to see if player has collided with clipping
         sw             a1, 0x0024 (sp)      // save player struct
 
@@ -169,6 +175,15 @@ scope DededeUSP {
         b              _end
         lw             ra, 0x001c (sp)      // load return address
 
+        _grounded:
+        // check if he is no longer grounded, if so then set him back to aerial kinetic state
+        li             a1, begin_set_aerial
+        jal            0x800DDDDC           // runs routine in a1 if no clipping underneath player
+        lw             a0, 0x0028 (sp)      // load player object
+
+        b               _end
+        nop
+
         _branch:
         beqzl          t7, _end             // branch if not a cliff
         lw             ra, 0x001c (sp)      // load return address
@@ -180,6 +195,14 @@ scope DededeUSP {
         lw             ra, 0x001c (sp)      // load return address
         jr             ra                   // return
         addiu          sp, sp, 0x28         // deallocate stack space
+    }
+
+    // Sets Dedede back to aerial if he leaves the ground while grounded
+    scope begin_set_aerial: {
+            lw      t0, 0x0084(a0)          // t0 = player struct
+            addiu   at, r0, 1               // at = aerial kinetic state
+            jr      ra
+            sw      at, 0x014C(t0)          // overwrite kinetic state
     }
 
     // @ Description
@@ -313,7 +336,7 @@ scope DededeUSP {
         beqz           t6, _cliff_check     // branch not colliding with a wall
         andi           t7, v0, 0x3000       // check if colliding with cliff
 
-		_ground:
+        _ground:
         jal            0x800dee98
         or             a0, a1, r0           // place player struct in a0
 
@@ -324,6 +347,10 @@ scope DededeUSP {
 
         jal            0x800e6f24           // change action routine
         sw             r0, 0x0010 (sp)
+        
+        lw             a0, 0x0028(sp)       // a0 = player object
+        lw             v0, 0x0084(a0)       // v0 = player struct
+        sw             r0, 0x0060(v0)       // ground x velocity = 0
 
         b              _end_2
         lw             ra, 0x001c (sp)      // load return address
@@ -2452,9 +2479,11 @@ scope DededeNSP {
 scope DededeDSP {
     constant FIRST_PULL(6)
     constant FIRST_STOW(32)
-    constant SECOND_PULL(61)
+    constant FIRST_CHARGE(54)
+    constant SECOND_PULL(60)
     constant SECOND_STOW(87)
-    constant FINAL_PULL(116)
+    constant SECOND_CHARGE(109)
+    constant FINAL_PULL(115)
     constant CHARGE_END(0x41A0)
 	constant MINION_RUMMAGE_TIME(12)      	// time until Dedede can toss out a minion
 
@@ -2792,36 +2821,42 @@ scope DededeDSP {
         lw      a3, 0x0084(a0)              // load player struct
         sw      a3, 0x0040(sp)              // 0x0040(sp) = player struct
 
-        lw      t0, 0x0AE4(a3)              // t0 = current charge level
-        lli     at, 0x0002                  // at = max charge
-        beql    t0, at, _check_end          // branch if full charge has been reached
-        lui     t1, CHARGE_END              // t1 = animation frame to end on
-
         lw      t5, 0x0B1C(a3)              // t5 = timer
         addiu   t5, t5, 0x0001              // increment timer
         sw      t5, 0x0B1C(a3)              // store updated timer
         lli     at, FIRST_PULL              // at = FIRST_PULL
-        beq     at, t5, _attach             // if timer = FIRST_PULL, attach a minion without updating charge
+        beq     at, t5, _attach             // if timer = FIRST_PULL, attach a minion
         lli     at, FIRST_STOW              // at = FIRST_STOW
         beq     at, t5, _destroy            // if timer = FIRST_STOW, destroy attached minion
+        lli     at, FIRST_CHARGE            // at = FIRST_CHARGE
+        beq     at, t5, _add_charge         // if timer = FIRST_CHARGE, update charge
         lli     at, SECOND_PULL             // at = SECOND_PULL
-        beq     at, t5, _add_charge         // if timer = SECOND_PULL, attach a minion and update charge
+        beq     at, t5, _attach             // if timer = SECOND_PULL, attach a minion
         lli     at, SECOND_STOW             // at = SECOND_STOW
         beq     at, t5, _destroy            // if timer = SECOND_STOW, destroy attached minion
+        lli     at, SECOND_CHARGE           // at = SECOND_CHARGE
+        beq     at, t5, _add_charge         // if timer = SECOND_CHARGE, update charge
         lli     at, FINAL_PULL              // at = FINAL_PULL
-        bne     at, t5, _end                // end if timer != FINAL_PULL
+        beq     at, t5, _attach             // if timer = FINAL_PULL, attach a minion
+        lw      t5, 0x0AE4(a3)              // t5 = current charge level
+        lli     at, 2                       // at = max charge
+        bne     at, t5, _end                // skip if max charge level hasn't been reached
+        lui     t1, CHARGE_END              // t1 = animation frame to end on
+
+        _check_end:
+        mtc1    t1, f6                      // ~
+        lwc1    f8, 0x0078(a0)              // ~
+        c.lt.s  f8, f6                      // ~
+        nop
+        bc1t   _end                         // skip if animation end has not been reached
         nop
 
-        _add_charge:
-        lw      t0, 0x0AE4(a3)              // t0 = current charge level
-        addiu   t0, t0, 0x0001              // increment charge level
-        sw      t0, 0x0AE4(a3)              // store updated charge level
-        lli     at, 0x0002                  // at = max charge
-        bne     t0, at, _attach             // branch if charge isn't max
-        lli     a1, GFXRoutine.id.DEDEDE_CHARGE // a1 = DEDEDE_CHARGE id
-        jal     0x800E9814                  // begin gfx routine which attaches white spark to hand
-        or      a2, r0, r0                  // a2 = 0
-        lw      a0, 0x0044(sp)              // 0x0044(sp) = player object
+        jal     0x800DEE54                  // transition to idle (ground and air)
+        nop
+        jal     destroy_attached_minion_    // destroy attached minion
+        lw      a0, 0x0040(sp)              // a0 = player struct
+        b       _end                        // branch to end
+        nop
 
         _attach:
         jal     attach_minion_              // create and attach minion
@@ -2836,18 +2871,15 @@ scope DededeDSP {
         b       _end                        // branch to end
         nop
 
-        _check_end:
-        mtc1    t1, f6                      // ~
-        lwc1    f8, 0x0078(a0)              // ~
-        c.lt.s  f8, f6                      // ~
-        nop
-        bc1t   _end                         // skip if animation end has not been reached
-        nop
-
-        jal     0x800DEE54                  // transition to idle (ground and air)
-        nop
-        jal     destroy_attached_minion_    // destroy attached minion
-        lw      a0, 0x0040(sp)              // a0 = player struct
+        _add_charge:
+        lw      t0, 0x0AE4(a3)              // t0 = current charge level
+        addiu   t0, t0, 0x0001              // increment charge level
+        sw      t0, 0x0AE4(a3)              // store updated charge level
+        lli     at, 0x0002                  // at = max charge
+        bne     t0, at, _end                // branch if charge isn't max
+        lli     a1, GFXRoutine.id.DEDEDE_CHARGE // a1 = DEDEDE_CHARGE id
+        jal     0x800E9814                  // begin gfx routine which attaches white spark to hand
+        or      a2, r0, r0                  // a2 = 0
 
         _end:
         lw      ra, 0x0014(sp)

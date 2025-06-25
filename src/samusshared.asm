@@ -15,7 +15,7 @@ scope SamusShared {
         nop
         _return:
         OS.patch_end()
-        
+
         addiu   sp, sp,-0x0010              // allocate stack space
         sw      t1, 0x0004(sp)              // ~
         sw      t2, 0x0008(sp)              // store t0, t1
@@ -34,7 +34,7 @@ scope SamusShared {
         beq     t1, t2, _end                // end if character id = ESAMUS
         nop
         li      a1, 0x80189070              // original line (load charge animation struct)
-        
+
         _end:
         lw      t1, 0x0004(sp)              // ~
         lw      t2, 0x0008(sp)              // load t0, t1
@@ -42,7 +42,7 @@ scope SamusShared {
         j       _return                     // return
         nop
     }
-        
+
     // Redirect hardcoding related to Dark Samus Neutral Special
     // @ Description
     // loads a Dark Samus instruction set, instead of Samus'. If Dark Samus uses charge shot.
@@ -52,7 +52,7 @@ scope SamusShared {
         nop
         _return:
         OS.patch_end()
-        
+
         addiu   sp, sp,-0x0010              // allocate stack space
         sw      t1, 0x0004(sp)              // ~
         sw      t2, 0x0008(sp)              // store t0, t1
@@ -82,7 +82,7 @@ scope SamusShared {
         beq     t1, t2, _end                // end if character id = MTWO
         nop
         li      a1, 0x80189030              // original line (load charge animation struct)
-        
+
         _end:
         lw      t1, 0x0004(sp)              // ~
         lw      t2, 0x0008(sp)              // load t0, t1
@@ -144,7 +144,7 @@ scope SamusShared {
         lli     at, Character.id.DEDEDE     // at = DEDEDE
         beq     v1, at, _dedede             // if DEDEDE, take Mewtwo branch
         lli     at, Character.id.PEPPY      // at = PEPPY
-        beq     v1, at, _peppy              
+        beq     v1, at, _peppy
         nop
 
         jr      ra
@@ -153,51 +153,51 @@ scope SamusShared {
         j_0x800E99D4:
         j       0x800E99D4
         nop
-        
+
         _peppy:
         lw      t0, 0x0AE0(a3)              // ~
         addiu   at, r0, 0x0006              // ~
         lw      a0, 0x0020(sp)              // ~
         bne     t0, at, j_0x800E99FC        // original logic, skips if charge level != 7
         lli     a1, GFXRoutine.id.SHEIK_CHARGE // a1 = SHEIK_CHARGE id
-        
+
         // return to Samus branch with alternate GFX Routine ID
-        j       0x800E99E8                  
-        nop 
-        
+        j       0x800E99E8
+        nop
+
         _dedede:
         lw      t0, 0x0AE4(a3)              // ~
         addiu   at, r0, 0x0002              // ~
         lw      a0, 0x0020(sp)              // ~
         bne     t0, at, j_0x800E99FC        // original logic, skips if charge level != 7
         lli     a1, GFXRoutine.id.DEDEDE_CHARGE // a1 = DEDEDE_CHARGE id
-        
+
         // return to Samus branch with alternate GFX Routine ID
-        j       0x800E99E8                  
-        nop 
-        
+        j       0x800E99E8
+        nop
+
         _sheik:
         lw      t0, 0x0AE0(a3)              // ~
         addiu   at, r0, 0x0006              // ~
         lw      a0, 0x0020(sp)              // ~
         bne     t0, at, j_0x800E99FC        // original logic, skips if charge level != 7
         lli     a1, GFXRoutine.id.SHEIK_CHARGE // a1 = SHEIK_CHARGE id
-        
+
         // return to Samus branch with alternate GFX Routine ID
-        j       0x800E99E8                  
-        nop 
-        
+        j       0x800E99E8
+        nop
+
         _mewtwo:
         lw      t0, 0x0AE0(a3)              // ~
         addiu   at, r0, 0x0007              // ~
         lw      a0, 0x0020(sp)              // ~
         bne     t0, at, j_0x800E99FC        // original logic, skips if charge level != 7
         lli     a1, GFXRoutine.id.KIRBY_MTWO_CHARGE // a1 = KIRBY_MTWO_CHARGE id
-        
+
         // return to Samus branch with alternate GFX Routine ID
-        j       0x800E99E8                  
+        j       0x800E99E8
         nop
-        
+
         j_0x800E99FC:
         j       0x800E99FC
         nop
@@ -225,7 +225,7 @@ scope SamusShared {
         beq     v0, at, j_0x80161EE4        // if MARTH, take Samus branch (Marth uses 0xAE0 as well)
         lli     at, Character.id.SHEIK      // at = SHEIK
         beq     v0, at, j_0x80161EE4        // if SHEIK, take Samus branch (Sheik uses 0xAE0 as well)
-        lli     at, Character.id.PEPPY      // at = PEPPY                  
+        lli     at, Character.id.PEPPY      // at = PEPPY
         beq     v0, at, j_0x80161EE4        // if PEPPY, take Samus branch (Peppy uses 0xAE0 as well)
         nop
 
@@ -236,15 +236,15 @@ scope SamusShared {
         j       0x80161EE4
         nop
     }
-    
+
     // Loads an the ball graphic used by Samus at then end of her grab
     scope throw_ball_graphic: {
         OS.patch_start(0xC4654, 0x80149C14)
         jal       throw_ball_graphic
-        andi      t8, t7, 0xFFFB              // original line 
+        andi      t8, t7, 0xFFFB              // original line
         _return:
         OS.patch_end()
-        
+
         addiu   at, r0, Character.id.DSAMUS
         beq     v0, at, _samusballgraphic
         nop
@@ -257,12 +257,12 @@ scope SamusShared {
         addiu   at, r0, 0x0003              // original line
         j       _return                     // return
         nop
-        
+
         _samusballgraphic:
         jr      ra                          // return
         nop
-    }   
-    
+    }
+
     // Loads an the ball graphic used by Samus at then end of her grab
     scope throw_ball_graphic_2: {
         OS.patch_start(0xC4D1C, 0x8014A2DC)
@@ -270,7 +270,7 @@ scope SamusShared {
         sw      r0, 0x0180(s0)              // original line 2
         _return:
         OS.patch_end()
-        
+
         beq     v0, at, _samusballgraphic
         addiu   at, r0, Character.id.DSAMUS
         beq     v0, at, _samusballgraphic
@@ -281,15 +281,37 @@ scope SamusShared {
         nop
         j       _return                     // return
         nop
-        
+
         _samusballgraphic:
         j      0x8014A2F0                          // return
         nop
-    }   
-     
-     
+    }
+
+    scope get_entry_anim_gfx_struct: {
+        OS.patch_start(0x7EC7C, 0x8010347C)
+        j       get_entry_anim_gfx_struct
+        sw      ra, 0x0014(sp)              // original line 1
+        _return:
+        jal     0x800FDAFC                  // original line 3
+        nop                                 // a0 is set below
+        OS.patch_end()
+
+        // s0 = player struct
+        lw      t6, 0x0008(s0)              // t6 = char_id
+        lli     t8, Character.id.CRASH      // t8 = CRASH
+        beq     t6, t8, _crash              // If Crash, load different anim struct
+        lui     a0, 0x8013                  // otherwise, use original one - original line 2
+        j       _return
+        addiu   a0, a0, 0xE67C              // original line 4 - a0 = Samus anim gfx struct
+
+        _crash:
+        li      a0, crash_entry_anim_gfx_struct
+        j       _return
+        nop
+    }
+
     // Dark Samus
-    
+
     OS.align(16)
     bomb_anim_struct:
     dw  0x00000000
@@ -319,7 +341,7 @@ scope SamusShared {
     dw  0x00000002
     dw  Character.JSAMUS_file_7_ptr
     OS.copy_segment(0x103A7C, 0x28)
-        
+
     // E Samus
 
     OS.align(16)
@@ -335,5 +357,18 @@ scope SamusShared {
     dw  0x00000002
     dw  Character.ESAMUS_file_7_ptr
     OS.copy_segment(0x103A7C, 0x28)
+
+    // Crash
+    crash_entry_anim_gfx_struct:
+    dw 0x040A0000
+    dw Character.CRASH_file_8_ptr
+    dw 0x1C00001C
+    dw 0x00000000
+    dw 0x800FD568
+    dw 0x80014768
+    dw 0x00002310
+    dw 0x00000000
+    dw 0x000027E8
+    dw 0x00000000
 
 }

@@ -66,13 +66,41 @@ scope apply_damage: {
         // a2 is player struct
         // t5, t6 should be safe
 
-        _check_timer:
+        _get_match_time:
         li      t5, Global.match_info    // t5 = pointer to match info
         lw      t5, 0x0000(t5)           // load address of match info
         lw      t5, 0x0018(t5)           // t5 = elapsed time
         beqz    t5, _return
-        andi    t5, t5, 0x007F           // damage every two seconds
-        bnez    t5, _return
+        nop
+
+        // Poison damage needs to cooperate with Game Speed toggle
+        _check_game_speed_toggle:
+        li      t6, Toggles.entry_game_speed
+        lw      t6, 0x0004(t6)           // t6 = entry_game_speed (0 if DEFAULT 1/1; ranges from 1/8 to 3x)
+        beqz    t6, _check_timer         // if Speed is default, proceed normally
+        nop
+
+        // handle faster speed duplicating frame (no false positive damage)
+        li      at, Speed.additional_advance  // at = additional_advance flag
+        lw      at, 0x0000(at)                // at = 1 if this is an additional frame advance...
+        bnez    at, _return                   // ...in which case, we return (so as to not repeat damage)
+        nop
+
+        // account for 1/3 or 2/3 sometimes missing 0x7F...
+        // ...due to 0x0080 not being divisible by 3
+        addiu   at, r0, 9                // 1/3 speed
+        beq     t6, at, _check_timer_alt_3
+        addiu   at, r0, 11               // 2/3 speed
+        bne     t6, at, _check_timer     // continue normally if neither
+        nop
+        _check_timer_alt_3:
+        andi    t5, t5, 0x007F           // t5 = elapsed time, lower 7 bits
+        sltiu   t5, t5, 3                // t5 = TRUE if 0, 1, or 2
+        xori    t5, t5, 1                // flip resulting bool to branch accordingly below
+
+        _check_timer:
+        andi    t5, t5, 0x007F           // apply damage every two seconds
+        bnez    t5, _return              // ~
         nop
 
         lw      t5, 0x05B0(a2)           // t5 = super star counter
@@ -91,12 +119,33 @@ scope apply_damage: {
         beqz    t6, _return             // skip if disabled
         nop
 
+        // check if Stamina
+        li      t5, Stamina.VS_MODE
+        lbu     t5, 0x0000(t5)          // load mode
+        addiu   at, r0, Stamina.STAMINA_MODE    // stamina mode
+        bne     t5, at, _check_type     // branch if not stamina
+        nop
+        lb      t5, 0x000D(a2)          // t5 = player port
+        sll     at, t5, 0x3             // calculate offset
+        subu    at, at, t5
+        sll     at, at, 0x2
+        addu    at, at, t5
+        sll     at, at, 0x2
+        li      t5, Global.match_info   // ~ 0x800A50E8
+        lw      t5, 0x0000(t5)          // t5 = match_info
+        addu    at, at, t5              // stock address for that port
+        lb      at, 0x002B(at)          // load stock amount
+        bltz    at, _return             // skip if the player is already defeated
+        nop
+
+        _check_type:
         // check if type is 'Heal'
         lli     t5, 4                   // t5 = 4 (Heal)
         beql    t6, t5, _anti_venom
         addiu   v1, r0, 2               // v1 = amount to heal (normally retrieved from '0x0818')
         // check if player is Cloaked, in which case we skip applying damage
         li      t5, Item.CloakingDevice.cloaked_players
+        lb      at, 0x000D(a2)          // at = player port
         addu    t5, t5, at              // t5 = players entry in table
         lbu     t5, 0x0000(t5)
         bnez    t5, _return             // skip if player is cloaked

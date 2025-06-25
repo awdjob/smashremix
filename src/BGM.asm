@@ -37,12 +37,20 @@ scope BGM {
 
         // t9 is never touched in the following routines, so not saving to stack
 
+        li      at, random_disabled
+        sw      r0, 0x0000(at)              // initialize random_disabled flag to FALSE
+
         jal     alternate_music_
+        nop
+
+        OS.read_word(random_disabled, at)   // at = random_disabled flag
+        bnez    at, _end                    // if random is disabled, skip random stuff
         nop
 
         jal     random_music_
         nop
 
+        _end:
         lw      ra, 0x0014(sp)              // restore ra
         jr      ra                          // return
         lw      v1, 0x0040(t9)              // original line 2
@@ -51,22 +59,29 @@ scope BGM {
     default_track:
     dw  0
 
+    // @ Description
+    // Flag indicating if random tracks are allowed.
+    // This makes it so we can trigger alt tracks when random is on.
+    random_disabled:
+    dw 0
 
     // @ Description
     // This function replaces the stage's default bgm_id with alternate ids defined for the stage, sometimes.
-    // The alternate BGM_ID could be replaced by a random one if that toggle is on.
-    // There can be up to 3 songs defined for a stage:
+    // The alternate BGM_ID could be replaced by a random one if that toggle is on, unless user triggered via C buttons.
+    // There can be up to 4 songs defined for a stage:
     // - Main: plays most of the time
     // - Occasional: plays sometimes
     // - Rare: plays rarely
+    // - Rare2: plays rarely
     scope alternate_music_: {
         // @ Description
         // These constants determine alternate music chances
-        constant CHANCE_MAIN(67)
-        constant CHANCE_OCCASIONAL(20)
-        constant CHANCE_RARE(13)
+        constant CHANCE_MAIN(65)
+        constant CHANCE_OCCASIONAL(16)
+        constant CHANCE_RARE(10)
+        constant CHANCE_RARE_2(9)
 
-        addiu   sp, sp,-0x0018              // allocate stack space
+        addiu   sp, sp,-0x0020              // allocate stack space
         sw      a0, 0x0004(sp)              // ~
         sw      t0, 0x0008(sp)              // ~
         sw      v0, 0x000C(sp)              // ~
@@ -95,7 +110,11 @@ scope BGM {
         li      at, default_track           // at = address we use to store stages default track
         sw      a1, 0x0000(at)              // save default track id
 
-        // check for held buttons to force alternate music: CU - Default, CL - Occasional, CR - Rare
+        // Assume C button press lead to alt BGM_ID, so random cannot apply
+        lli     t0, OS.TRUE                 // t0 = TRUE
+        sw      t0, 0x001C(sp)              // save new random_disabled value
+
+        // check for held buttons to force alternate music: CU - Default, CL - Occasional, CR - Rare, CD - Rare2
         addu    t0, r0, a1                  // t0 = bgm_id
         lli     a0, Joypad.CU               // a0 - button masks
         lli     a1, OS.TRUE                 // a1 - ignore other buttons
@@ -126,6 +145,19 @@ scope BGM {
         bnez    v0, _get_bgm_id             // if CR pressed,
         ori     a0, r0, 0x0002              // then use the Rare song
 
+        addu    t0, r0, a1                  // t0 = bgm_id
+        lli     a0, Joypad.CD               // a0 - button masks
+        lli     a1, OS.TRUE                 // a1 - ignore other buttons
+        lli     a2, Joypad.HELD             // a2 - type
+        jal     Joypad.check_buttons_all_   // v0 = bool
+        nop
+        addu    a1, t0, r0                  // a1 = bgm_id
+        bnez    v0, _get_bgm_id             // if CD pressed,
+        ori     a0, r0, 0x0004              // then use the Rare2 song
+
+        // if here, no alt C buttons pressed, so random can apply
+        sw      r0, 0x001C(sp)              // save new random_disabled value
+
         // check for salty song preservation
         li      t0, Toggles.entry_preserve_salty_song
         lw      t0, 0x0004(t0)              // t0 = 0 if OFF, 1 if ON
@@ -145,6 +177,10 @@ scope BGM {
         bnez    t0, _save                   // if we should play the Main song, skip to end
         nop                                 // else, check to see which other song to play
 
+
+        sltiu   t0, v0, CHANCE_MAIN + CHANCE_OCCASIONAL + CHANCE_RARE
+        beql    t0, r0, _get_bgm_id         // if (v0 > main + occasional chances)
+        ori     a0, r0, 0x0004              // we'll use the Rare2 song
         sltiu   t0, v0, CHANCE_MAIN + CHANCE_OCCASIONAL
         beql    t0, r0, _get_bgm_id         // if (v0 > main + occasional chances)
         ori     a0, r0, 0x0002              // then we'll use the Rare song
@@ -155,13 +191,16 @@ scope BGM {
         lw      t0, 0x0000(t0)              // load address of match info
         lbu     v0, 0x0001(t0)              // v0 = stage_id
         li      t0, Stages.alternate_music_table   // t0 = address of alternate music table
-        sll     v0, v0, 0x0002              // v0 = offset to stage's alt music
+        sll     v0, v0, 0x0003              // v0 = offset to stage's alt music
         addu    t0, t0, v0                  // t0 = address of alt music options for stage (0x0 = Occasional, 0x2 = Rare)
         addu    t0, t0, a0                  // t0 = address of bgm_id to use
         lh      v0, 0x0000(t0)              // v0 = bgm_id to use, maybe
         addiu   t0, r0, 0xFFFF              // t0 = -1 - means there is no alt BGM_ID for this stage
         bnel    v0, t0, _save               // if (there is alt BGM_ID) for this stage, use it
         addu    a1, r0, v0                  // a1 = bgm_id to use
+
+        // if here, no alt BGM_ID, so random can apply (even if C buttons were pressed)
+        sw      r0, 0x001C(sp)              // save new random_disabled value
 
         _save:
         // remember bgm_id
@@ -171,13 +210,17 @@ scope BGM {
         lw      a0, 0x1300(a0)              // a0 = stage file
         sw      a1, 0x007C(a0)              // store bgm_id
 
+        li      a0, random_disabled         // a0 = random_disabled flag
+        lw      t0, 0x001C(sp)              // t0 = new random_disabled value
+        sw      t0, 0x0000(a0)              // save random_disabled
+
         _end:
         lw      a0, 0x0004(sp)              // ~
         lw      t0, 0x0008(sp)              // ~
         lw      v0, 0x000C(sp)              // ~
         lw      ra, 0x0010(sp)              // ~
         lw      a1, 0x0014(sp)              // restore registers
-        addiu   sp, sp, 0x0018              // deallocate stack space
+        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
         nop
     }
@@ -320,6 +363,7 @@ scope BGM {
         add_to_list(Toggles.entry_random_music_yoshis_island, stage.YOSHIS_ISLAND)
         add_to_list(Toggles.entry_random_music_dream_land, stage.DREAM_LAND)
         add_to_list(Toggles.entry_random_music_saffron_city, stage.SAFFRON_CITY)
+        add_to_list(Toggles.entry_random_music_meta_crystal, stage.META_CRYSTAL)
         add_to_list(Toggles.entry_random_music_mushroom_kingdom, stage.MUSHROOM_KINGDOM)
         add_to_list(Toggles.entry_random_music_duel_zone, stage.DUEL_ZONE)
         add_to_list(Toggles.entry_random_music_final_destination, stage.FINAL_DESTINATION)
@@ -332,9 +376,10 @@ scope BGM {
         define n(0x2F)
         evaluate n({n})
         while {n} < MIDI.midi_count {
-            evaluate can_toggle({MIDI.MIDI_{n}_TOGGLE})
+            evaluate id({Toggles.sorted_midi_{n}})
+            evaluate can_toggle({MIDI.MIDI_{id}_TOGGLE})
             if ({can_toggle} == OS.TRUE) {
-                add_to_list(Toggles.entry_random_music_{n}, {n})
+                add_to_list(Toggles.entry_random_music_{n}, {id})
             }
             evaluate n({n}+1)
         }
@@ -346,7 +391,7 @@ scope BGM {
         nop
         li      t0, Gallery.status          // t0 = gallery status
         lbu     t0, Gallery.status.active(t0) // t0 = 1 if gallery is active
-        beq     t0, at, _end                // if Gallery mode is enabled, skip to end
+        bnez    t0, _end                    // if Gallery mode is enabled, skip to end
         nop
         beqz    v1, _end                    // if there were no valid entries in the random table, then use default bgm_id
         nop
@@ -479,7 +524,7 @@ scope BGM {
         sw      v0, 0x0014(sp)              // ~
 
         li      t0, Toggles.entry_menu_music
-        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5 if GOLDENEYE, 6 if MARIOTENNIS, 7 if FILESELECT_SM64, 8 if BLASTCORPS, 9 if DKR, 10 if MK64, 11 if SBK, 12 if MARIOPARTY, 13 if TALENTSTUDIO
+        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5 if GOLDENEYE, 6 if MARIOTENNIS, 7 if FILESELECT_SM64, 8 if BLASTCORPS, 9 if DKR, 10 if MK64, 11 if SBK, 12 if MARIOPARTY, 13 if TALENTSTUDIO... you get the idea
 
         _check_music_value:
         beqz    t0, _alt_menu_music         // branch if 0 (DEFAULT)
@@ -523,13 +568,27 @@ scope BGM {
         lli     t1, 0x000D                  // t1 = 13 (MARIOARTIST)
         beql    t1, t0, _check_current_track// if MARIOARTIST, then use MARIOARTIST BGM
         addiu   a1, r0, menu.MAIN_MARIOARTIST
+        lli     t1, 0x000E                  // t1 = 14 (PERFECTDARK)
+        beql    t1, t0, _check_current_track// if PERFECTDARK, then use PERFECTDARK BGM
+        addiu   a1, r0, menu.MAIN_PERFECTDARK
+        lli     t1, 0x000F                  // t1 = 15 (CTR)
+        beql    t1, t0, _check_current_track// if CTR, then use CTR BGM
+        addiu   a1, r0, menu.MAIN_CTR
+        lli     t1, 0x0010                  // t1 = 16 (K64)
+        beql    t1, t0, _check_current_track// if K64, then use K64 BGM
+        addiu   a1, r0, menu.MAIN_K64
+        lli     t1, 0x0011                  // t1 = 17 (BOMBERMAN)
+        beql    t1, t0, _check_current_track// if BOMBERMAN, then use BOMBERMAN BGM
+        addiu   a1, r0, menu.MAIN_BOMBERMAN
+        lli     t1, 0x0012                  // t1 = 18 (SONIC)
+        beql    t1, t0, _check_current_track// if SONIC, then use SONIC BGM
+        addiu   a1, r0, menu.MAIN_SONIC_R
         lli     t1, Toggles.menu_music.MAX_VALUE // t1 = max value of menu music (OFF)
         beq     t1, t0, _menu_music_off          // if OFF, then stop music
         nop
         // if we've reached this point then it is set to 'RANDOM' or 'RANDOM ALL'
         // ...and need to check if a track is already playing and if not, pick one randomly
-        lui     a0, 0x800A
-        lw      a0, 0xD974(a0)              // a0 = address of current bgm_id
+        li      a0, BGM.safe_id             // a0 = address of safe bgm_id
         lw      a0, 0x0000(a0)              // a0 = current bgm_id (-1 if not playing)
         lli     t1, menu.MAIN               // if we're using '64' music, follow original logic
         beq     a0, t1, _original           // ~
@@ -586,8 +645,7 @@ scope BGM {
 
         _alt_menu_music:
         // otherwise, alt menu music will play by chance - unless we already are playing MELEE, MENU 2 or BRAWL
-        lui     t0, 0x800A
-        lw      t0, 0xD974(t0)              // t0 = address of current bgm_id
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
         lw      t0, 0x0000(t0)              // t0 = current bgm_id
         lli     t1, menu.MAIN_MELEE         // t1 = menu.MAIN_MELEE
         beq     t0, t1, _check_music_toggle // if playing MELEE, then don't restart it
@@ -623,10 +681,25 @@ scope BGM {
         beq     t0, t1, _check_music_toggle // if playing SBK, then don't restart it
         nop
         lli     t1, menu.MAIN_MARIOPARTY    // t1 = menu.MAIN_MARIOPARTY
-        beq     t0, t1, _check_music_toggle // if playing SBK, then don't restart it
+        beq     t0, t1, _check_music_toggle // if playing MARIOPARTY, then don't restart it
         nop
         lli     t1, menu.MAIN_MARIOARTIST   // t1 = menu.MAIN_MARIOARTIST
-        beq     t0, t1, _check_music_toggle // if playing SBK, then don't restart it
+        beq     t0, t1, _check_music_toggle // if playing MARIOARTIST, then don't restart it
+        nop
+        lli     t1, menu.MAIN_PERFECTDARK   // t1 = menu.MAIN_PERFECTDARK
+        beq     t0, t1, _check_music_toggle // if playing PERFECTDARK, then don't restart it
+        nop
+        lli     t1, menu.MAIN_CTR   // t1 = menu.MAIN_CTR
+        beq     t0, t1, _check_music_toggle // if playing CTR, then don't restart it
+        nop
+        lli     t1, menu.MAIN_K64   // t1 = menu.MAIN_K64
+        beq     t0, t1, _check_music_toggle // if playing K64, then don't restart it
+        nop
+        lli     t1, menu.MAIN_BOMBERMAN   // t1 = menu.MAIN_BOMBERMAN
+        beq     t0, t1, _check_music_toggle // if playing BOMBERMAN, then don't restart it
+        nop
+        lli     t1, menu.MAIN_SONIC_R     // t1 = menu.MAIN_SONIC_R
+        beq     t0, t1, _check_music_toggle // if playing SONIC R, then don't restart it
         nop
 
         // alt menu music will play by chance if we are coming from Title screen
@@ -655,8 +728,7 @@ scope BGM {
 
         _check_current_track:
         // if the current track is the one we want to play, then don't restart it
-        lui     t0, 0x800A
-        lw      t0, 0xD974(t0)              // t0 = address of current bgm_id
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
         lw      t0, 0x0000(t0)              // t0 = current bgm_id
         bne     t0, a1, _original           // if current track is not the one we want, then need to call play_
         nop                                 // otherwise we need to check the play music toggle
@@ -696,8 +768,7 @@ scope BGM {
         sw      t1, 0x000C(sp)              // ~
 
         // if the current track is one of the alt menu tracks, then don't stop it
-        lui     t0, 0x800A
-        lw      t0, 0xD974(t0)              // t0 = address of current bgm_id
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
         lw      t0, 0x0000(t0)              // t0 = current bgm_id
 
         lli     t1, menu.MAIN_MELEE         // t1 = menu.MAIN_MELEE
@@ -738,6 +809,21 @@ scope BGM {
         nop
         lli     t1, menu.MAIN_MARIOARTIST   // t1 = menu.MAIN_MARIOARTIST
         beq     t0, t1, _done               // if playing MAIN_MARIOARTIST, then don't stop it
+        nop
+        lli     t1, menu.MAIN_PERFECTDARK   // t1 = menu.MAIN_PERFECTDARK
+        beq     t0, t1, _done               // if playing MAIN_PERFECTDARK, then don't stop it
+        nop
+        lli     t1, menu.MAIN_CTR           // t1 = menu.MAIN_CTR
+        beq     t0, t1, _done               // if playing MAIN_CTR, then don't stop it
+        nop
+        lli     t1, menu.MAIN_K64           // t1 = menu.MAIN_K64
+        beq     t0, t1, _done               // if playing MAIN_K64, then don't stop it
+        nop
+        lli     t1, menu.MAIN_BOMBERMAN     // t1 = menu.MAIN_BOMBERMAN
+        beq     t0, t1, _done               // if playing MAIN_BOMBERMAN, then don't stop it
+        nop
+        lli     t1, menu.MAIN_SONIC_R     // t1 = menu.MAIN_SONIC_R
+        beq     t0, t1, _done               // if playing MAIN_SONIC_R, then don't stop it
         nop
 
         // don't stop if menu music is set to 'RANDOM' or 'RANDOM CLASSICS' or 'RANDOM ALL'
@@ -787,7 +873,7 @@ scope BGM {
 
         // if the current track is one of the alt menu tracks, then don't stop it
         li      t0, Toggles.entry_menu_music
-        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5 if GOLDENEYE, 6 if MARIOTENNIS, 7 if FILESELECT_SM64, 8 if BLASTCORPS, 9 if DKR, 10 if MK64, 11 if SBK, 12 if MARIOPARTY, 13 if TALENTSTUDIO
+        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5-16 is extra menu music from other games
         lli     a1, Toggles.menu_music.MAX_VALUE - 3 // a1 = max value of menu music - 3 (RANDOM)
         beq     t0, a1, pc() + 16           // branch if menu music is set to 'RANDOM' (which might be playing '64')
         sltiu   t0, t0, 2                   // t0 = 1 if DEFAULT or 64
@@ -795,8 +881,7 @@ scope BGM {
         nop
 
         // check bgm_id (0x0A = 64 CSS/SSS, 0x2C = 64 menu)
-        lui     t0, 0x800A
-        lw      t0, 0xD974(t0)              // t0 = address of current bgm_id
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
         lw      t0, 0x0000(t0)              // t0 = current bgm_id
 
         bltz    t0, _fix_stuck_bgm          // branch if bgm_id is -1
@@ -981,9 +1066,9 @@ scope BGM {
         lw      s1, 0x0008(sp)              // ~
         lw      s2, 0x000C(sp)              // ~
         lw      s3, 0x0010(sp)              // ~
-        lw      s4, 0x0010(sp)              // ~
-        lw      s5, 0x0010(sp)              // ~
-        lw      s6, 0x0010(sp)              // restore registers
+        lw      s4, 0x0014(sp)              // ~
+        lw      s5, 0x0018(sp)              // ~
+        lw      s6, 0x001C(sp)              // restore registers
         addiu   sp, sp, 0x0030              // deallocate stack space
 
         _end:
@@ -1095,7 +1180,7 @@ scope BGM {
         if ({can_toggle} == OS.TRUE) {
             pushvar origin, base
             origin string_table_origin + ({n} * 0x8)
-            dw MIDI.game_{MIDI.GAME_{MIDI.MIDI_{n}_GAME}}_title, Toggles.entry_random_music_{n} + 0x28
+            dw MIDI.game_{MIDI.GAME_{MIDI.MIDI_{n}_GAME}}_title, Toggles.entry_random_music_sorted_{n} + 0x28
             pullvar base, origin
         } else {
             evaluate has_title({MIDI.MIDI_{n}_TITLE})
@@ -1169,6 +1254,11 @@ scope BGM {
         addiu   at, r0, {MIDI.id.SMB2OVERWORLD} // MIDI.id.SMB2OVERWORLD
         beql    t4, at, _continue           // continue if appropriate music is playing
         addiu   v0, r0, 0x0124              // v0 = "SMB2 Boss" BGM
+        // Underground Theme
+        addiu   t6, r0, 0x0709                // t6 = 1801 (30 seconds)
+        addiu   at, r0, {MIDI.id.UNDERGROUND} // MIDI.id.UNDERGROUND
+        beql    t4, at, _continue             // continue if appropriate music is playing
+        addiu   v0, r0, {MIDI.id.UNDERGROUND_HURRY} // v0 = "Underground (Hurry Up!)" BGM
         // Clocktown Day 3
         ////addiu   t6, r0, 0x0E11              // t6 = 3601 (60 seconds)
         ////addiu   at, r0, {MIDI.id.CLOCKTOWN} // MIDI.id.CLOCKTOWN
@@ -1195,6 +1285,9 @@ scope BGM {
         addiu   at, r0, 0x0124              // at = "SMB2 Boss" BGM
         beql    at, t6, _no_hurry           // skip if already playing 'Hurry' BGM
         lw      v1, 0x0014(a0)              // v1 = time remaining
+        addiu   at, r0, {MIDI.id.UNDERGROUND_HURRY} // at = "Underground (Hurry Up!)" BGM
+        beql    at, t6, _no_hurry           // skip if already playing 'Hurry' BGM
+        lw      v1, 0x0014(a0)              // v1 = time remaining
         ////addiu   at, r0, 0x0104              // at = "Clocktown Day 3" BGM
         ////beql    at, t6, _no_hurry           // skip if already playing 'Hurry' BGM
         ////lw      v1, 0x0014(a0)              // v1 = time remaining
@@ -1210,6 +1303,101 @@ scope BGM {
         j       0x80113200                  // original line,  modified to jump
         nop
     }
+
+    // change the credits song that plays for remix 1P and allstar modes
+    scope remix_1P_ending_song: {
+        OS.patch_start(0x1827DC, 0x801350DC)
+        j       remix_1P_ending_song
+        nop
+        _return:
+        OS.patch_end()
+
+        li      t0, 0x800A4AD0
+        lbu     t1, 0x0001(t0)
+        addiu   at, r0, 0x39    // screen id = settings screen id
+        beq     at, t1, _normal // branch if entered credits though debug menu
+        nop
+
+        addiu   t0, r0, 0x0004
+        OS.read_word(SinglePlayerModes.singleplayer_mode_flag, at) // at = singleplayer mode flag
+        beq     at, t0, _remix_bgm          // branch if Remix 1p
+        addiu   t0, r0, 0x0005
+        beq     at, t0, _remix_bgm          // branch if Allstar
+        nop
+
+        // No change if Vanilla 1P
+        OS.read_word(Global.match_info, at) // at = current match info struct
+        lbu     at, 0x0000(at)
+        lli     t0, Global.GAMEMODE.CLASSIC
+        beq     t0, at, _normal             // dont use toggle if vanilla 1P
+        nop
+
+        _remix_bgm:
+        lui     t0, 0x800A      // ~
+        lb      t0, 0x4AE4(t0)  // get character id
+
+        sll     t0, t0, 0x0001  // t0 *= 2
+        li      t1, Character.remix_1p_end_bgm.table
+        addu    t1, t1, t0
+        lh      a1, 0x0000(t1)  // get bgm
+        beqz    a1, _normal     // play normal music if zero (dream land music index)
+        nop
+        jal     0x80020AB4      // play bgm
+        nop
+        j       _return
+        nop
+
+        _normal:
+        jal     0x80020AB4          // og line 1
+        addiu   a1, r0, 0x0027      // og line 2
+        j       _return
+        nop
+    }
+
+    // @ Description
+    // Prevents Results screen music from playing on CSS if Menu Music is set to a Random option.
+    // We can just make it check if we're exiting the screen so the condition fails.
+    scope prevent_results_bgm_on_css_: {
+        OS.patch_start(0x1569C8, 0x80137828)
+        lw      v0, 0x0034(t8)              // original line 2 - v0 = audio state
+        OS.read_word(Global.screen_interrupt, a0) // a0 = screen_interrupt = 1 if exiting, 0 if not
+        b       0x80137800                  // original line 1 - loop
+        addu    v0, v0, a0                  // v0 = new conditional check value
+        OS.patch_end()
+    }
+
+    // @ Description
+    // Sets BGM.safe_id when a new BGM is played.
+    // safe_id is used because the vanilla id at 8009D974 can get stuck due to a race condition
+    scope set_safe_id_on_play_: {
+        OS.patch_start(0x000216F8, 0x80020AF8)
+        j       set_safe_id_on_play_
+        sw      a1, 0x0000(t3)              // store bgm_id (original line 2)
+        OS.patch_end()
+
+        li      t3, safe_id                 // ~
+        jr      ra                          // return (original line 1)
+        sw      a1, 0x0000(t3)              // update safe_id
+    }
+
+    // @ Description
+    // Sets BGM.safe_id when BGM is stopped.
+    // safe_id is used because the vanilla id at 8009D974 can get stuck due to a race condition
+    scope set_safe_id_on_stop_: {
+        OS.patch_start(0x00021730, 0x80020B30)
+        j       set_safe_id_on_stop_
+        sw      t9, 0x0000(t2)              // set bgm_id to -1 (original line 2)
+        OS.patch_end()
+
+        li      t2, safe_id                 // ~
+        jr      ra                          // return (original line 1)
+        sw      t9, 0x0000(t2)              // set safe_id to -1
+    }
+
+    // Description
+    // Holds the ID of the last played BGM
+    safe_id:
+    dw  0
 
     scope stage {
         constant DREAM_LAND(0)
@@ -1282,6 +1470,11 @@ scope BGM {
         constant MAIN_SBK(296)
         constant MAIN_MARIOARTIST(307)
         constant MAIN_MARIOPARTY(309)
+        constant MAIN_PERFECTDARK(312)
+        constant MAIN_CTR(319)
+        constant MAIN_K64(338)
+        constant MAIN_BOMBERMAN({MIDI.id.STAGESELBM64})
+        constant MAIN_SONIC_R({MIDI.id.SONIC_R})
         }
 
     scope special {

@@ -90,7 +90,7 @@ scope Poison {
         bne     at, t1, _poison_continue    // branch if franklin badge gfx routine is not here
         nop
         sw      r0, 0x0000(t0)              // remove gfx override flag
-        
+
         b       _exit_1
         nop
 
@@ -122,32 +122,105 @@ scope Poison {
         addu    t7, t7, t4               // hp -= damage amount
 
         // vs mode check
-        li          at, Global.current_screen   // ~
-        lbu         at, 0x0000(at)              // t0 = current screen
-        addiu       t2, r0, 0x0016              // screen id
-        bne         t2, at, _continue
+        li      at, Global.current_screen // ~
+        lbu     at, 0x0000(at)           // t0 = current screen
+        addiu   t2, r0, 0x0016           // screen id
+        bne     t2, at, _continue
         nop
 
         // stamina mode check
-        li          t2, Stamina.VS_MODE
-        lbu         t2, 0x0000(t2)          // load mode
-        addiu       at, r0, Stamina.STAMINA_MODE    // stamina mode
-        bne         t2, at, _continue
+        li      t2, Stamina.VS_MODE
+        lbu     t2, 0x0000(t2)           // load mode
+        addiu   at, r0, Stamina.STAMINA_MODE    // stamina mode
+        bne     t2, at, _continue
+        lw      t2, 0x002C(a2)           // t2 = current hp
+        
+        lb      t4, 0x000D(a2)          // t5 = player port
+        sll     at, t4, 0x3             // calculate offset
+        subu    at, at, t4
+        sll     at, at, 0x2
+        addu    at, at, t4
+        sll     at, at, 0x2
+        li      t4, Global.match_info   // ~ 0x800A50E8
+        lw      t4, 0x0000(t4)          // t4 = match_info
+        addu    at, at, t4              // stock address for that port
+        lb      at, 0x002B(at)          // load stock amount
+        bltz    at, _exit_1             // skip if the player is already defeated
         nop
+        
         li      at, Stamina.TOTAL_HP    // load total hitpoints address
         lw      at, 0x0000(at)          // load total hitpoints amount
-        beq     at, t7, _stamina
-        slt     t2, t7, at              // if total hitpoints are less than total percent set t2
-        bnez    t2, _continue           // proceed normally if won't go below stamina point
+        slt     t3, at, t7              // if total hitpoints are less than total percent set t7
+        bnel    t3, r0, _continue
+        addu    t7, at, r0
+        beq     r0, r0, _continue
         nop
+        
+        //addiu   at, r0, Action.Grab
+        //lw      t2, 0x0024(a2)           // t2 = current action
+        //
+        //_grab:
+        //beq     at, t2, _continue
+        //addiu   at, at, 0x0001
+        //addiu   t3, r0, 0x00AB
+        //bne     at, t3, _grab
+        //nop
+        //
+        //lw      t3, 0x0008(a2)           // t7 = character ID
+        //addiu   at, r0, Character.id.DK  // DK ID
+        //bne     at, t3, _jdk
+        //nop
+        //
+        //_dk_start:
+        //addiu   at, r0, Action.DK.Cargo
+        //_dk:
+        //beq     at, t2, _continue
+        //addiu   at, at, 0x0001
+        //addiu   t3, r0, Action.DK.HeavyItemThrowF
+        //bne     at, t3, _dk
+        //nop
+        //
+        //_jdk:
+        //addiu   at, r0, Character.id.JDK  // DK ID
+        //beq     at, t3, _dk_start
+        //nop
+        //
+        //addiu   at, r0, Character.id.MARINA  // MARINA ID
+        //bne     at, t3, _ko
+        //addiu   at, r0, Marina.Action.Cargo
+        //
+        //_marina:
+        //beq     at, t2, _continue
+        //addiu   at, at, 0x0001
+        //addiu   t3, r0, 0xFC
+        //bne     at, t3, _marina
+        //nop
 
-        _stamina:
-        addu    t7, r0, at              // save HP value
+        // KO'd, so apply damage and put in DownBounceD
+        _ko:
+        lw      a0, 0x004C(sp)           // a2 = player struct
+        jal     0x800EA248               // update damage
+        or      a1, t4, r0               // t7 = damage
+
+        lw      a2, 0x004C(sp)           // restore a2
+        addiu   sp, sp, -0x0020          // allocate stack space
+        lw      a0, 0x0004(a2)           // a0 = player object
+        addiu   a1, r0, Action.Tumble    // a1 = action ID if in the air
+        lw      a2, 0x014C(a2)           // a2 = kinetic state
+        beqzl   a2, pc() + 8             // if grounded, set action to DownBounceD
+        addiu   a1, r0, Action.DownBounceD // a1 = action ID if grounded
+        or      a2, r0, r0               // a2(starting frame) = 0
+        lui     a3, 0x3F80               // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24               // change action
+        sw      r0, 0x0010(sp)           // argument 4 = 0
+        addiu   sp, sp, 0x0020           // deallocate stack space
+
+        lw      a2, 0x004C(sp)           // restore a2
+        b       _exit_1
+        lw      v0, 0x084C(a2)
 
         _continue:
         sw      t7, 0x002C(a2)           // save HP value
-
-        _stamina_2:
         sw      a2, 0x001C(sp)           // store player struct
         li      at, GFXRoutine.port_override.override_table
         sll     t2, t8, 2

@@ -165,9 +165,8 @@ scope prepickup_: {
     addiu   a2, r0, 0x0002              // state = 2 (picked up)
 
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -207,9 +206,8 @@ scope throw_initial_: {
     jal     0x80172ec8              // change item state
     addiu   a2, r0, 0x0003          // state = 3(thrown)
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -227,9 +225,8 @@ scope throw_physics_: {
     lw      a0, 0x0018 (sp)
     lw      ra, 0x0014 (sp)
     addiu   sp, sp, 0x18
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 
 }
 
@@ -242,9 +239,8 @@ scope throw_duration_: {
     jal     0x80173e58
     nop
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -259,9 +255,8 @@ scope collide_transition: {
     jal     0x80172ec8         // change item state
     addiu   a2, r0, 0x0006     // state = 6 (collide with clipping)
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 
 }
 
@@ -274,9 +269,8 @@ scope collide_transition_player_: {
     addiu   a1, r0, 0x0001
     lw      ra, 0x0014 (sp)
     addiu   sp, sp, 0x18
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 }
 
 // @ Description
@@ -292,9 +286,8 @@ scope collide_with_wall_: {
     addiu   a1, r0, 0x0001
     lw      ra, 0x0014(sp)
     addiu   sp, sp, 0x18
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 }
 
 // @ Description
@@ -315,9 +308,8 @@ scope explode_transition_: {
     addiu   a0, r0, 0x0407      // fgm_id = deku nut
 
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -380,9 +372,8 @@ scope explode_nut_: {
 
     lw      ra, 0x001C(sp)
     lw      s0, 0x0018(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -409,9 +400,8 @@ scope explode_initial_: {
     jal     0x80172ec8          // change item state
     addiu   a2, r0, 0x0007      // state = 7 (flash explode)
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // based on 0x80177BAC
@@ -430,9 +420,8 @@ scope explode_initial_2: {
     sb      t7, 0x0340 (v0)
 
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description

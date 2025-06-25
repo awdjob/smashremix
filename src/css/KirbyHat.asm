@@ -3,7 +3,7 @@
 define LABEL("Kirby Hat")
 constant VALUE_TYPE(CharacterSelectDebugMenu.value_type.STRING)
 constant MIN_VALUE(0)
-constant MAX_VALUE(0x00000024)
+constant MAX_VALUE(0x0000002A)
 constant DEFAULT_VALUE(0)
 // bitmask: [vs] [1p] [training] [bonus1] [bonus2] [allstar]
 constant APPLIES_TO(0b111111)
@@ -33,10 +33,7 @@ dw Training.string_ganondorf
 dw Training.string_younglink
 dw Training.string_drmario
 dw Training.string_wario
-dw Training.string_dsamus
-dw Training.string_lucas
 dw Training.string_bowser
-dw Training.string_piano
 dw Training.string_wolf
 dw Training.string_conker
 dw Training.string_mewtwo
@@ -46,11 +43,20 @@ dw Training.string_sheik
 dw Training.string_marina
 dw Training.string_dedede
 dw Training.string_goemon
-dw Training.string_slippy
-dw Training.string_peppy
 dw Training.string_banjo
-dw Training.string_ebi
+dw Training.string_crash
+dw Training.string_peach
+dw Training.string_dsamus
+dw Training.string_lucas
+dw Training.string_peppy
+dw Training.string_slippy
+dw Training.string_roy
+dw Training.string_drluigi
+dw Training.string_lanky
 dw Training.string_dragonking
+dw Training.string_ebi
+dw Training.string_piano
+dw Training.string_ssonic
 dw string_magic
 dw string_random
 
@@ -148,7 +154,6 @@ scope clear_settings_for_1p_: {
 
     lw      t0, 0x0004(sp)
     lw      t1, 0x0008(sp)
-    addiu   sp, sp, 0x0010                  // deallocate stack space
     jr      ra
-    nop
+    addiu   sp, sp, 0x0010                  // deallocate stack space
 }

@@ -33,18 +33,18 @@ scope clear_settings_for_1p_: {
     sw      t0, 0x0004(sp)                  // ~
     sw      t1, 0x0008(sp)                  // ~
 
-	li      t0, Skeleton.enable_for_port    // t0 = enable skeleton of 1p address
-	bnezl   a0, pc() + 8                    // don't disable if p1 is human
-	sw      r0, 0x0000(t0)                  // disable skeleton 1p
-	lli     t1, 0x0001                      // t1 = 1 (p2)
-	bnel    a0, t1, pc() + 8                // don't disable if p2 is human
-	sw      r0, 0x0004(t0)                  // disable skeleton 2p
-	lli     t1, 0x0002                      // t1 = 2 (p3)
-	bnel    a0, t1, pc() + 8                // don't disable if p3 is human
-	sw      r0, 0x0008(t0)                  // disable skeleton 3p
-	lli     t1, 0x0003                      // t1 = 3 (p4)
-	bnel    a0, t1, pc() + 8                // don't disable if p4 is human
-	sw      r0, 0x000C(t0)                  // disable skeleton 4p
+    li      t0, Skeleton.enable_for_port    // t0 = enable skeleton of 1p address
+    bnezl   a0, pc() + 8                    // don't disable if p1 is human
+    sw      r0, 0x0000(t0)                  // disable skeleton 1p
+    lli     t1, 0x0001                      // t1 = 1 (p2)
+    bnel    a0, t1, pc() + 8                // don't disable if p2 is human
+    sw      r0, 0x0004(t0)                  // disable skeleton 2p
+    lli     t1, 0x0002                      // t1 = 2 (p3)
+    bnel    a0, t1, pc() + 8                // don't disable if p3 is human
+    sw      r0, 0x0008(t0)                  // disable skeleton 3p
+    lli     t1, 0x0003                      // t1 = 3 (p4)
+    bnel    a0, t1, pc() + 8                // don't disable if p4 is human
+    sw      r0, 0x000C(t0)                  // disable skeleton 4p
 
     lw      t0, 0x0004(sp)
     lw      t1, 0x0008(sp)

@@ -20,7 +20,7 @@ scope InputDelay {
         jal     apply_input_delay_
         nop
         OS.patch_end()
-        
+
         // a1 = port
         // a3 = 0x80045228 = Joypad.struct
         // v0 = current port controller struct

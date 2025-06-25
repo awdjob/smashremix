@@ -1,4 +1,4 @@
-// Tripping.asm (code by goom)
+// Tripping.asm (code by goombapatrol)
 if !{defined __TRIPPING__} {
 define __TRIPPING__()
 print "included Tripping.asm\n"

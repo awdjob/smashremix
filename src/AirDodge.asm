@@ -48,16 +48,16 @@
         Moveset.AFTER(20)
         dw 0x74000001
         Moveset.END()
-        
+
         // @ Description
         // tracks if players can't air dodge
         // see Stamina.asm where this value is reset on hit
         air_dash_player_port_array:
         dw 0
-        
+
         special_air_dodge_flag:
         dw 0
-        
+
         // @ Description
         // Resets air dash boolean for this player port when grounded script occurs
         // v0 = player struct
@@ -70,7 +70,7 @@
             li      t1, air_dash_player_port_array // t1 = array
             addu    t0, t1, t0                  // t0 = entry
             sb      r0, 0x0000(t0)              // set to 0
-            
+
             jr      t7          // og line 1
             nop
             j       _return
@@ -90,7 +90,7 @@
             li      t1, air_dash_player_port_array // t1 = array
             addu    t0, t1, t0                  // t0 = entry
             sb      r0, 0x0000(t0)              // set to 0
-            
+
             jr      t4                          // og line 1
             nop
             j       _return
@@ -124,8 +124,13 @@
             // check if toggle enabled
             OS.read_word(Toggles.entry_air_dodge + 0x4, at)   // at = toggle
             beqz    at, _normal
+            nop
+            // safety check for SBM CPUs
+            li      at, Toggles.entry_single_button_mode
+            lw      at, 0x0004(at)          // at = single_button_mode (0 if OFF, 1 if 'A', 2 if 'B', 3 if 'R', 4 if 'A+C', 5 if 'B+C', 6 if 'R+C')
+            bnez    at, _normal             // if Single Button Mode is enabled, skip airdodge check
             addiu   at, r0, Character.id.BOSS
-            
+
             // master hand check
             beq     at, v0, _normal     // skip air dodge if character = MASTER HAND
             // check if not already in special fall
@@ -133,7 +138,12 @@
             addiu   at, r0, Action.FallSpecial
             beq     v0, at, _normal     // no air dodge if in special fall
             nop
-        
+
+            lb      at, 0x01BF(a2)  // at = buttons pressed
+            andi    at, at, Joypad.R
+            bnez    at, _normal
+            nop
+
             _do_air_dodge:
             jal     initial_
             nop
@@ -141,15 +151,15 @@
             _exit:
             j       0x80140328          // exit jump check routine
             lw      ra, 0x0014(sp)
-            
+
             _normal:
             jal     0x800F3794          // og line 1
             lw      a2, 0x001C(sp)      // restore a2
             j       _return
             nop
-        
+
         }
-        
+
         scope initial_: {
             addiu   sp, sp,-0x0040          // allocate stack space
             sw      ra, 0x001C(sp)          // ~
@@ -217,11 +227,11 @@
             // apply air movement for air dash
             jal     apply_air_movement_
             addiu   a0, s0, 0x0000          // arg0 = player struct
-            
+
             // set default air dodge action routines
             lw      a0, 0x0020(sp)          // ~
             lw      s0, 0x0084(a0)          // s0 = player struct
-            
+
             OS.read_word(Toggles.entry_air_dodge + 0x4, at)   // at = toggle
             addiu   v0, r0, TYPE.ULTIMATE
             bne     at, v0, _normal_melee   // branch if not Ultimate
@@ -271,7 +281,7 @@
             jr      ra                      // return
             addiu   sp, sp, 0x0040          // deallocate stack space
         }
-        
+
         // @ Description
         // Initial subroutine for AirDash.
         scope air_dash_initial_: {
@@ -291,10 +301,10 @@
             Action.change(ORIGINAL_ACTION, -1)
             jal     0x800E0830              // unknown common subroutine
             lw      a0, 0x0020(sp)          // a0 = player object
-            
+
             jal     apply_air_movement_
             addiu   a0, s0, 0x0000          // arg0 = player struct
-            
+
             lw      a0, 0x0020(sp)          // ~
             lw      s0, 0x0084(a0)          // s0 = player struct
 
@@ -325,9 +335,9 @@
             jr      ra                      // return
             addiu   sp, sp, 0x0040          // deallocate stack space
         }
-        
+
         constant DEADZONE(10)
-        
+
         // @ Description
         // Applies air dash movement
         // a0 = player struct
@@ -510,7 +520,7 @@
         scope movement_: {
             // 0x180 in player struct = temp variable 2
             addiu   sp, sp,-0x0030          // allocate stack space
-            sw    	ra, 0x0014(sp)          // ra
+            sw      ra, 0x0014(sp)          // ra
             lw      t0, 0x0084(a0)          // t0 = player struct
             lw      t1, 0x0180(t0)          // t1 = temp variable 2
             beqz    t1, _end                // skip if temp variable 2 = 0
@@ -531,7 +541,7 @@
             _end:
             lw      ra, 0x0014(sp)          //  ra
             jr      ra                      // return
-            addiu 	sp, sp, 0x0030          // deallocate stack space
+            addiu   sp, sp, 0x0030          // deallocate stack space
         }
 
         // @ Description

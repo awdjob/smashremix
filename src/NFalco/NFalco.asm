@@ -6,6 +6,11 @@ scope NFalco {
     // Insert Moveset files
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
+	Character.edit_action_parameters(NFALCO, Action.Idle,             File.FALCO_IDLE,           -1,                              -1)
+    Character.edit_action_parameters(NFALCO, Action.ReviveWait,       File.FALCO_IDLE,           -1,                              -1)
+    Character.edit_action_parameters(NFALCO, Action.EggLay,           File.FALCO_IDLE,           -1,                              -1)
+    Character.edit_action_parameters(NFALCO, 0x006,                   File.FALCO_IDLE,           -1,                              -1)
+    Character.edit_action_parameters(NFALCO, Action.Entry,            File.FALCO_IDLE,           -1,                              -1)
     Character.edit_action_parameters(NFALCO, Action.Run,              -1,                       Falco.RUN,                        -1)
     Character.edit_action_parameters(NFALCO, Action.Dash,             -1,                       Falco.DASH,                       -1)
     Character.edit_action_parameters(NFALCO, Action.JumpAerialF,      -1,                       Falco.JUMP2,                      -1)
@@ -54,10 +59,11 @@ scope NFalco {
     Character.edit_action(NFALCO, 0xE2,              -1,             0x8015C750,                 Phantasm.air_subroutine_,       Phantasm.air_physics_,          Phantasm.air_collision_)
 
     // Modify Menu Action Parameters             // Action          // Animation                // Moveset Data             // Flags
+    Character.edit_menu_action_parameters(NFALCO,  0x0,              File.FALCO_IDLE,            -1,                         -1)
     Character.edit_menu_action_parameters(NFALCO, 0x1,               -1,                        0x80000000,             -1)
-    Character.edit_menu_action_parameters(NFALCO, 0x2,               File.FALCO_SELECT,         0x80000000,             -1)
+    Character.edit_menu_action_parameters(NFALCO, 0x2,               File.FALCO_SELECT,         Falco.VICTORY_POSE_2,          -1)
     Character.edit_menu_action_parameters(NFALCO, 0x3,               -1,                        0x80000000,             -1)
-    Character.edit_menu_action_parameters(NFALCO, 0x4,               File.FALCO_SELECT,         0x80000000,             -1)
+    Character.edit_menu_action_parameters(NFALCO, 0x4,               File.FALCO_SELECT,         Falco.VICTORY_POSE_2,          -1)
     Character.edit_menu_action_parameters(NFALCO, 0x5,               File.FALCO_CLAP,           0x80000000,                       -1)
     Character.edit_menu_action_parameters(NFALCO, 0xD,               File.FALCO_POSE_1P,        0x80000000,                    -1)
     Character.edit_menu_action_parameters(NFALCO, 0xE,               File.FALCO_1P_DUO_POSE,    0x80000000,                    -1)

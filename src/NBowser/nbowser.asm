@@ -163,6 +163,7 @@ scope NBowser {
 	Character.edit_action_parameters(NBOWSER,    Action.AttackAirF,      File.BOWSER_FAIR,           Bowser.FAIR,                       -1)
     Character.edit_action_parameters(NBOWSER,    Action.LandingAirF,     File.BOWSER_FAIR_LAND,      -1,                         -1)
     Character.edit_action_parameters(NBOWSER,    Action.LandingAirN,     File.BOWSER_LANDING,        -1,                         -1)
+    Character.edit_action_parameters(NBOWSER,    Action.LandingAirN,     File.BOWSER_LANDING,        -1,                         -1)
     Character.edit_action_parameters(NBOWSER,    Action.Grab,            File.BOWSER_GRAB,           Bowser.GRAB,                       0x10000000)
     Character.edit_action_parameters(NBOWSER,    Action.FSmash,          File.BOWSER_FSMASH,         Bowser.FSMASH,                     0x40000000)
     Character.edit_action_parameters(NBOWSER,    Action.FSmashHigh,      0,                          0x80000000,                 0)

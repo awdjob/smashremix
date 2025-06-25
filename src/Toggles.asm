@@ -669,8 +669,7 @@ scope Toggles {
         lw      t0, 0x0004(t0)              // t0 = 0 if music is toggled off
         beqz    t0, _reset_menu_music       // reset music if music is toggled off
         nop
-        lui     t1, 0x800A
-        lw      t1, 0xD974(t1)              // t1 = address of current bgm_id
+        li      t1, BGM.safe_id             // t1 = address of safe bgm_id
         lw      t1, 0x0000(t1)              // t1 = current bgm_id (-1 if not playing)
         bltz    t1, _reset_menu_music       // reset music if no music was playing
         nop
@@ -709,6 +708,16 @@ scope Toggles {
         lli     a0, BGM.menu.MAIN_MARIOPARTY
         beq     t1, a0, _reset_menu_music
         lli     a0, BGM.menu.MAIN_MARIOARTIST
+        beq     t1, a0, _reset_menu_music
+        lli     a0, BGM.menu.MAIN_PERFECTDARK
+        beq     t1, a0, _reset_menu_music
+        lli     a0, BGM.menu.MAIN_CTR
+        beq     t1, a0, _reset_menu_music
+        lli     a0, BGM.menu.MAIN_K64
+        beq     t1, a0, _reset_menu_music
+        lli     a0, BGM.menu.MAIN_BOMBERMAN
+        beq     t1, a0, _reset_menu_music
+        lli     a0, BGM.menu.MAIN_SONIC_R
         bne     t1, a0, _end
         nop
 
@@ -1103,6 +1112,7 @@ scope Toggles {
     settings:; db "SETTINGS", 0x00
     slash:; db "/", 0x00
     off:; db "OFF", 0x00
+    on:; db "ON", 0x00
     normal:; db "NORMAL", 0x00
     default:; db "DEFAULT", 0x00
     cancel:; db ": Cancel", 0x00
@@ -1119,6 +1129,22 @@ scope Toggles {
     dw profile_custom
 
     // @ Description
+    // Shieldstun strings
+    shieldstun_default:; db "DEFAULT", 0x00
+    shieldstun_japanese:; db "JAPANESE", 0x00
+    shieldstun_melee:; db "MELEE", 0x00
+    shieldstun_brawl:; db "BRAWL", 0x00
+    shieldstun_ultimate:; db "ULTIMATE", 0x00
+    OS.align(4)
+
+    string_table_shieldstun:
+    dw shieldstun_default
+    dw shieldstun_japanese
+    dw shieldstun_melee
+    dw shieldstun_brawl
+    dw shieldstun_ultimate
+
+    // @ Description
     // Z-Cancel strings
     disabled:; db "DISABLED", 0x00
     melee_7:; db "MELEE (7 frames)", 0x00
@@ -1132,6 +1158,15 @@ scope Toggles {
     dw melee_7
     dw auto
     dw glide
+
+    // charged smash attack string
+    unlimited:; db "UNLIMITED CHARGE", 0x00
+    OS.align(4)
+
+    string_table_charged_smash:
+    dw off
+    dw on
+    dw unlimited
 
     // @ Description
     // Failed Z-Cancel strings
@@ -1220,13 +1255,26 @@ scope Toggles {
     // @ Description
     // Salty Runback strings
     salty_default:; db "A+B+Z+R+START", 0x00
-    salty_alt:; db "A+B+Z+R+Dpad-Right", 0x00
+    salty_alt:; db "A+B+Z+R+Dpad-Left", 0x00
     OS.align(4)
 
     string_table_salty:
     dw off
     dw salty_default
     dw salty_alt
+
+    // @ Description
+    // Random variants strings
+    random_select_bonus:; db "INCLUDE BONUS", 0x00
+    random_select_variants:; db "ALL VARIANTS", 0x00
+    random_select_vanilla:; db "VANILLA ONLY", 0x00
+    OS.align(4)
+
+    string_table_random_variants:
+    dw default
+    dw random_select_bonus
+    dw random_select_variants
+    dw random_select_vanilla
 
     // @ Description
     // Disable HUD strings
@@ -1240,6 +1288,17 @@ scope Toggles {
     dw disable_hud_all
 
     // @ Description
+    // Skip Crowd Cheer strings
+    skip_start_cheer_training:; db "TRAINING", 0x00
+    skip_start_cheer_etc:; db "TRAINING + BONUS", 0x00
+    OS.align(4)
+
+    string_table_skip_start_cheer:
+    dw off
+    dw skip_start_cheer_training
+    dw skip_start_cheer_etc
+
+    // @ Description
     // Tripping strings
     tripping_low:; db "LOW", 0x00
     tripping_high:; db "HIGH", 0x00
@@ -1251,11 +1310,81 @@ scope Toggles {
     dw tripping_low
     dw tripping_high
     dw tripping_brawl
+
+    // @ Description
+    // rage strings
+    rage_ult:; db "ULTIMATE", 0x00
+    rage_four:; db "SMASH 4", 0x00
+    rage_berserk:; db "BERSERK", 0x00
+    rage_fatigue:; db "FATIGUE", 0x00
+    OS.align(4)
+
+    string_table_rage:
+    dw off
+    dw rage_ult
+    dw rage_four
+    dw rage_berserk
+    dw rage_fatigue
+
+    // @ Description
+    // special zoom strings
+    special_zoom_off:; db "OFF", 0x00
+    special_zoom_last:; db "MATCH END", 0x00
+    special_zoom_always:; db "ANY KO", 0x00
+    OS.align(4)
+
+    string_table_special_zoom:
+    dw off
+    dw special_zoom_last
+    dw special_zoom_always
+
+    // @ Description
+    // Game Speed strings
+    speed_default:;  db "1/1", 000
+    speed_5_6_fast:; db "1.2x", 000
+    speed_3_4_fast:; db "1.3x", 000
+    speed_2_3_fast:; db "1.5x", 000
+    speed_4_7_fast:; db "1.75x", 000
+    speed_2_0_fast:; db "2.0x", 000
+    speed_3_0_fast:; db "3.0x", 000
+    speed_1_8_slow:; db "1/8", 000
+    speed_1_4_slow:; db "1/4", 000
+    speed_1_3_slow:; db "1/3", 000
+    speed_1_2_slow:; db "1/2", 000
+    speed_2_3_slow:; db "2/3", 000
+    speed_3_4_slow:; db "3/4", 000
+    OS.align(4)
+
+    string_table_speed:
+    dw speed_default
+    dw speed_5_6_fast
+    dw speed_3_4_fast
+    dw speed_2_3_fast
+    dw speed_4_7_fast
+    dw speed_2_0_fast
+    dw speed_3_0_fast
+    dw speed_1_8_slow
+    dw speed_1_4_slow
+    dw speed_1_3_slow
+    dw speed_1_2_slow
+    dw speed_2_3_slow
+    dw speed_3_4_slow
+
     // @ Description
     // Default/Always/Never frequency strings (used multiple times)
     frequency_always:; db "ALWAYS", 0x00
     frequency_never:; db "NEVER", 0x00
     OS.align(4)
+
+    // @ Description
+    // Skip Results strings
+    skip_results_on_reset:; db "ON RESET", 0x00
+    OS.align(4)
+
+    string_table_skip_results:
+    dw off
+    dw on
+    dw skip_results_on_reset
 
     string_table_frequency:
     dw default
@@ -1277,6 +1406,11 @@ scope Toggles {
     menu_music_sbk:; db "SNOWBOARD KIDS", 0x00
     menu_music_marioparty:; db "MARIO PARTY", 0x00
     menu_music_marioartist:; db "MARIO ARTIST: TALENT STUDIO", 0x00
+    menu_music_perfectdark:; db "PERFECT DARK", 0x00
+    menu_music_ctr:; db "CRASH TEAM RACING", 0x00
+    menu_music_k64:; db "KIRBY 64", 0x00
+    menu_music_bomberman:; db "BOMBERMAN 64", 0x00
+    menu_music_sonic_r:; db "SONIC R", 0x00
     menu_music_random_menu:; db "RANDOM", 0x00
     menu_music_random_classics:; db "RANDOM CLASSICS", 0x00
     menu_music_random_all:; db "RANDOM ALL", 0x00
@@ -1298,6 +1432,11 @@ scope Toggles {
     dw menu_music_sbk
     dw menu_music_marioparty
     dw menu_music_marioartist
+    dw menu_music_perfectdark
+    dw menu_music_ctr
+    dw menu_music_k64
+    dw menu_music_bomberman
+    dw menu_music_sonic_r
     dw menu_music_random_menu
     dw menu_music_random_classics
     dw menu_music_random_all
@@ -1305,7 +1444,7 @@ scope Toggles {
 
     // Update this when we add a menu track
     scope menu_music {
-        constant MAX_VALUE(17)
+        constant MAX_VALUE(22)
     }
 
     // @ Description
@@ -1461,6 +1600,7 @@ scope Toggles {
     // @ Description
     // Hitlag strings
     melee:; db "MELEE", 0x00
+    ultimate:; db "ULTIMATE", 0x00
     none:; db "NONE", 0x00
     OS.align(4)
 
@@ -1468,7 +1608,13 @@ scope Toggles {
     dw normal
     dw japanese
     dw melee
+    dw ultimate
     dw none
+
+    string_table_di:
+    dw normal
+    dw japanese
+    dw ultimate
 
     // @ Description
     // Hitstun strings
@@ -1489,6 +1635,92 @@ scope Toggles {
     dw warp_LR
     dw warp_TD
     dw warp_all
+
+    // @ Description
+    // Single Button Mode strings
+    sbm_a:; db ""A"", 0x00
+    sbm_b:; db ""B"", 0x00
+    sbm_r:; db ""R"", 0x00
+    sbm_ac:; db ""A"+"C"", 0x00
+    sbm_bc:; db ""B"+"C"", 0x00
+    sbm_rc:; db ""R"+"C"", 0x00
+    OS.align(4)
+
+    string_table_single_button_mode:
+    dw off
+    dw sbm_a
+    dw sbm_b
+    dw sbm_r
+    dw sbm_ac
+    dw sbm_bc
+    dw sbm_rc
+
+    // @ Description
+    // Move Staling strings
+    reverse:; db "REVERSE", 0x00
+    lenient:; db "LENIENT", 0x00
+    strict:; db "STRICT", 0x00
+    waitforit:; db "WAIT FOR IT", 0x00
+    cheapshot:; db "CHEAP SHOT", 0x00
+    OS.align(4)
+
+    string_table_move_staling:
+    dw default
+    dw disabled
+    dw lenient
+    dw strict
+    dw waitforit
+    dw reverse
+    dw cheapshot
+
+    // @ Description
+    // Stopwatch strings
+    sw_slow:; db "SLOW ALWAYS", 0x00
+    sw_fast:; db "FAST ALWAYS", 0x00
+    sw_backfire:; db "BACKFIRE ALWAYS", 0x00
+    sw_backfire_no:; db "BACKFIRE NEVER", 0x00
+    OS.align(4)
+
+    string_table_stopwatch_item:
+    dw default
+    dw sw_slow
+    dw sw_fast
+    dw sw_backfire
+    dw sw_backfire_no
+
+    // @ Description
+    // Press 'A' Handler for 'default_cpu_level' menu item
+    // Allows us to refresh already-set CPU levels without reboot
+    scope set_cpu_level: {
+        addiu   sp, sp,-0x0014              // allocate stack space
+        sw      a0, 0x0004(sp)              // ~
+        sw      a1, 0x0008(sp)              // ~
+        sw      t0, 0x000C(sp)              // ~
+        sw      ra, 0x0010(sp)              // save registers
+
+        OS.read_word(Toggles.entry_default_cpu_level + 0x4, a0) // a0 = cpu lvl override
+        beqz    a0, _end                    // skip if toggle == 0 (DEFAULT)
+        nop
+
+        li      a1, 0x800A4D28              // a1 = port 1 default cpu level
+        sb      a0, 0x0000(a1)              // overwrite default cpu level 1
+        sb      a0, 0x0074(a1)              // overwrite default cpu level 2
+        sb      a0, 0x00E8(a1)              // overwrite default cpu level 3
+        sb      a0, 0x015C(a1)              // overwrite default cpu level 4
+
+        li      a1, AI.is_default_cpu_lvl_set
+        lli     a0, OS.TRUE                 // a0 = TRUE
+        sw      a0, 0x0000(a1)              // set setup flag
+
+        _end:
+        lw      a0, 0x0004(sp)              // ~
+        lw      a1, 0x0008(sp)              // ~
+        lw      t0, 0x000C(sp)              // ~
+        lw      ra, 0x0010(sp)              // restore registers
+        addiu   sp, sp, 0x0014              // deallocate stack space
+        jr      ra
+        nop
+    }
 
     // @ Description
     // 'Punish on failed z cancel' Soundboard Easter Egg
@@ -1534,7 +1766,7 @@ scope Toggles {
         nop
         // if we're here, then it's set to 'OFF'
         li      t0, Toggles.entry_menu_music
-        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5 if GOLDENEYE, 6 if MARIOTENNIS, 7 if FILESELECT_SM64, 8 if BLASTCORPS, 9 if DKR, 10 if MK64, 11 if SBK, 12 if MARIOPARTY, 13 if MARIOARTIST
+        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5-16 is extra menu music from other games
         lli     a0, 0x0008                  // t1 = 8 (BLASTCORPS)
         bne     a0, t0, _end                // don't play SFX unless menu track is BLASTCORPS
         lli     a0, 0x537                   // a0 - fgm_id (Time to get Moving!)
@@ -1564,7 +1796,7 @@ scope Toggles {
         sw      ra, 0x0010(sp)              // save registers
 
         li      t0, Toggles.entry_menu_music
-        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5 if GOLDENEYE, 6 if MARIOTENNIS, 7 if FILESELECT_SM64, 8 if BLASTCORPS, 9 if DKR, 10 if MK64, 11 if SBK, 12 if MARIOPARTY, 13 if MARIOARTIST
+        lw      t0, 0x0004(t0)              // t0 = 0 if DEFAULT, 1 if 64, 2 if MELEE, 3 if MENU 2, 4 if BRAWL, 5-16 is extra menu music from other games
 
         _check_bgm:
         lli     t1, 0x0007                  // t1 = 7 (FILESELECT_SM64)
@@ -1573,6 +1805,7 @@ scope Toggles {
         // if we're here, a song other than FILESELECT_SM64 was pressed
         li      t1, Toggles.itsatrap        // t1 = itsatrap counter address
         sw      r0, 0x0000(t1)              // clear itsatrap counter
+        beqz    t0, _random_menu_song_smash // if DEFAULT, then pick (somewhat) random Smash music
         lli     t1, 0x0001                  // t1 = 1 (64)
         beql    t1, t0, _play               // if 64, then use 64 BGM
         addiu   a1, r0, BGM.menu.MAIN
@@ -1609,6 +1842,21 @@ scope Toggles {
         lli     t1, 0x000D                  // t1 = 13 (MARIOARIST)
         beql    t1, t0, _play               // if MARIOARIST, then use MARIOARIST BGM
         addiu   a1, r0, BGM.menu.MAIN_MARIOARTIST
+        lli     t1, 0x000E                  // t1 = 14 (PERFECTDARK)
+        beql    t1, t0, _play               // if PERFECTDARK, then use PERFECTDARK BGM
+        addiu   a1, r0, BGM.menu.MAIN_PERFECTDARK
+        lli     t1, 0x000F                  // t1 = 15 (CTR)
+        beql    t1, t0, _play               // if CTR, then use CTR BGM
+        addiu   a1, r0, BGM.menu.MAIN_CTR
+        lli     t1, 0x0010                  // t1 = 16 (K64)
+        beql    t1, t0, _play               // if K64, then use K64 BGM
+        addiu   a1, r0, BGM.menu.MAIN_K64
+        lli     t1, 0x0011                  // t1 = 17 (BOMBERMAN)
+        beql    t1, t0, _play               // if BOMBERMAN, then use BOMBERMAN BGM
+        addiu   a1, r0, BGM.menu.MAIN_BOMBERMAN
+        lli     t1, 0x0012                  // t1 = 18 (SONIC R)
+        beql    t1, t0, _play               // if SONIC R, then use SONIC R BGM
+        addiu   a1, r0, BGM.menu.MAIN_SONIC_R
         lli     t1, menu_music.MAX_VALUE - 3 // t1 = max value of menu music - 3 (RANDOM)
         beq     t0, t1, _random_menu_song    // if RANDOM, then use random music
         lli     t1, menu_music.MAX_VALUE - 2 // t1 = max value of menu music - 2 (RANDOM CLASSICS)
@@ -1631,6 +1879,18 @@ scope Toggles {
         nop
         b _finish
         nop
+
+        _random_menu_song_smash:
+        lli     a0, BGM.alt_menu_music_.CHANCE_64 + 3// a0 - range (Smash Menu Music probability + values)
+        jal     Global.get_random_int_safe_          // v0 = (0, N-1)
+        nop
+        sltiu   t0, v0, BGM.alt_menu_music_.CHANCE_64// t0 = 1 if we should play the 64 track
+        bnez    t0, _check_bgm                       // loop back and check again
+        nop
+        // low chance to pick one of the other Smash songs (id values 2, 3, or 4)
+        addiu   t0, v0, -BGM.alt_menu_music_.CHANCE_64
+        b       _check_bgm                  // loop back and check again
+        addiu   t0, t0, 2                   // t0 + offset
 
         _random_menu_song:
         lli     a0, Toggles.menu_music.MAX_VALUE - 4 // a0 - range (0, N-1) Menu Music values (excluding DEFAULT / RANDOM / RANDOM CLASSICS / RANDOM ALL / OFF)
@@ -1898,9 +2158,7 @@ scope Toggles {
     dw young_link
     dw dr_mario
     dw falco
-    dw dark_samus
     dw wario
-    dw lucas
     dw bowser
     dw wolf
     dw conker
@@ -1912,8 +2170,17 @@ scope Toggles {
     dw dedede
     dw goemon
     dw banjo
+    dw crash
+    dw peach
+    dw dark_samus
+    dw lucas
     dw slippy_peppy
+    dw roy
+    dw drl
+    dw lanky_kong
+    dw dking
     dw ebi
+    dw piano
     dw remix
 
     // @ Description
@@ -1934,9 +2201,7 @@ scope Toggles {
     young_link:; db "Young Link", 0x00
     dr_mario:; db "Dr. Mario", 0x00
     falco:; db "Falco", 0x00
-    dark_samus:; db "Dark Samus", 0x00
     wario:; db "Wario", 0x00
-    lucas:; db "Lucas", 0x00
     bowser:; db "Bowser", 0x00
     wolf:; db "Wolf", 0x00
     conker:; db "Conker", 0x00
@@ -1948,8 +2213,17 @@ scope Toggles {
     dedede:; db "Dedede", 0x00
     goemon:; db "Goemon", 0x00
     banjo:; db "Banjo", 0x00
+    crash:; db "Crash", 0x00
+    peach:; db "Peach", 0x00
+    dark_samus:; db "Dark Samus", 0x00
+    lucas:; db "Lucas", 0x00
     slippy_peppy:; db "Slippy & Peppy", 0x00
+    roy:; db "Roy", 0x00
+    drl:; db "Dr. Luigi", 0x00
+    lanky_kong:; db "Lanky Kong", 0x00
+    dking:; db "Dragon King", 0x00
     ebi:; db "Ebisumaru", 0x00
+    piano:; db "Mad Piano", 0x00
     remix:; db "Remix", 0x00
     OS.align(4)
 
@@ -2004,7 +2278,7 @@ scope Toggles {
     // @ Description
     // Miscellaneous Toggles
     head_remix_settings:
-    entry_skip_results_screen:;         entry_bool("Skip Results Screen", OS.FALSE, OS.FALSE, OS.TRUE, OS.FALSE, entry_hold_to_pause)
+    entry_skip_results_screen:;         entry("Skip Results Screen", Menu.type.INT, 0, 0, 1, 0, 0, 2, OS.NULL, string_table_skip_results, OS.NULL, entry_hold_to_pause)
     entry_hold_to_pause:;               entry_bool("Hold To Pause", OS.FALSE, OS.TRUE, OS.TRUE, OS.FALSE, entry_css_panel_menu)
     entry_css_panel_menu:;              entry_bool("CSS Panel Menu", OS.TRUE, OS.FALSE, OS.TRUE, OS.TRUE, entry_practice_overlay)
     entry_practice_overlay:;            entry_bool("Color Overlays", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_cinematic_entry)
@@ -2023,12 +2297,12 @@ scope Toggles {
     entry_salty_runback:;               entry("Salty Runback", Menu.type.INT, 1, 0, 1, 1, 0, 2, OS.NULL, string_table_salty, OS.NULL, entry_widescreen)
     entry_widescreen:;                  entry_bool("Widescreen", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_stereo_fix)
     entry_stereo_fix:;                  entry_bool("Stereo Fix for Hit SFX", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, entry_variant_random)
-    entry_variant_random:;              entry_bool("Random Select With Variants", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_disable_hud)
+    entry_variant_random:;              entry("Random Select", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_random_variants, OS.NULL, entry_disable_hud)
     entry_disable_hud:;                 entry("Disable HUD", Menu.type.INT, 0, 0, 0, 0, 0, 2, OS.NULL, string_table_disable_hud, OS.NULL, entry_disable_aa)
     entry_disable_aa:;                  entry_bool("Disable Anti-Aliasing", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_full_results)
-    entry_full_results:;                entry_bool("Always Show Full Results", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, entry_skip_training_start_cheer)
-    entry_skip_training_start_cheer:;   entry_bool("Skip Training Start Cheer", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_default_cpu_level)
-    entry_default_cpu_level:;           entry("Default CPU LVL (V.S.)", Menu.type.INT, 0, 10, 0, 0, 0, 10, OS.NULL, string_table_cpu_levels, OS.NULL, entry_puff_sing_anim)
+    entry_full_results:;                entry_bool("Always Show Full Results", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, entry_skip_start_cheer)
+    entry_skip_start_cheer:;            entry("Skip Start Cheer", Menu.type.INT, 0, 0, 0, 0, 0, 2, OS.NULL, string_table_skip_start_cheer, OS.NULL, entry_default_cpu_level)
+    entry_default_cpu_level:;           entry("Default CPU LVL (V.S.)", Menu.type.INT, 0, 10, 0, 0, 0, 10, set_cpu_level, string_table_cpu_levels, OS.NULL, entry_puff_sing_anim)
     entry_puff_sing_anim:;              entry_bool("Jigglypuff Sing GFX Anims", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_l_random_char)
     entry_l_random_char:;               entry_bool("'L' Selects Random Character", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_dpad_css_control)
     entry_dpad_css_control:;            entry_bool("Dpad CSS Cursor Control", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_pk_thunder_reflect_crash_fix)
@@ -2044,27 +2318,36 @@ scope Toggles {
     // Gameplay Toggles
     head_gameplay_settings:
     entry_hitstun:;                     entry("Hitstun", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, 0, 1, OS.NULL, string_table_hitstun, OS.NULL, entry_hitlag)
-    entry_hitlag:;                      entry("Hitlag", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, 0, 3, OS.NULL, string_table_hitlag, OS.NULL, entry_japanese_di)
-    entry_japanese_di:;                 entry_bool("Japanese DI", OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, entry_japanese_sounds)
+    entry_hitlag:;                      entry("Hitlag", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, 0, 4, OS.NULL, string_table_hitlag, OS.NULL, entry_di)
+    entry_di:;                          entry("DI", Menu.type.INT, 0, 0, 0, 1, 0, 2, OS.NULL, string_table_di, OS.NULL, entry_japanese_sounds)
     entry_japanese_sounds:;             entry("Japanese Sounds", Menu.type.INT, 0, 0, 0, 1, 0, 2, OS.NULL, string_table_frequency, OS.NULL, entry_momentum_slide)
-    entry_momentum_slide:;              entry_bool("Momentum Slide", OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, entry_japanese_shieldstun)
-    entry_japanese_shieldstun:;         entry_bool("Japanese Shield Stun", OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, entry_z_cancel_opts)
+    entry_momentum_slide:;              entry_bool("Momentum Slide", OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, entry_shieldstun)
+    entry_shieldstun:;                  entry("Shield Stun", Menu.type.INT, 0, 0, 0, 1, 0, 4, OS.NULL, string_table_shieldstun, OS.NULL, entry_z_cancel_opts)
     entry_z_cancel_opts:;               entry("Z-Cancel", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, 0, 4, OS.NULL, string_table_z_cancel_opts, OS.NULL, entry_punish_on_failed_z_cancel)
     entry_punish_on_failed_z_cancel:;   entry("Punish Failed Z-Cancel", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, 0, 9, punish_fgm_, string_table_failed_z_cancel, OS.NULL, entry_improved_ai)
     entry_improved_ai:;                 entry_bool("Improved AI", OS.TRUE, OS.FALSE, OS.TRUE, OS.TRUE, entry_tripping)
-    entry_tripping:;                    entry("Tripping", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_tripping, OS.NULL, entry_footstool)
+    entry_tripping:;                    entry("Tripping", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_tripping, OS.NULL, entry_rage)
+    entry_rage:;                        entry("Rage", Menu.type.INT, 0, 0, 0, 0, 0, 4, OS.NULL, string_table_rage, OS.NULL, entry_footstool)
     entry_footstool:;                   entry_bool("Footstool Jumping", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_air_dodge)
     entry_air_dodge:;                   entry("Air Dodging", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_air_dodge, OS.NULL, entry_jab_lock)
     entry_jab_lock:;                    entry_bool("Jab Locking", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_ledge_jump)
-    entry_ledge_jump:;                  entry_bool("Ledge Jump", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_perfect_shield)
-    entry_perfect_shield:;              entry_bool("Perfect Shielding", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_spot_dodge)
+    entry_ledge_jump:;                  entry_bool("Edge C-Jumping", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_perfect_shield)
+    entry_perfect_shield:;              entry_bool("Perfect Shielding", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_parry)
+    entry_parry:;                       entry_bool("Parrying (BETA)", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_spot_dodge)
     entry_spot_dodge:;                  entry_bool("Spot Dodging", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_fast_fall_aerials)
     entry_fast_fall_aerials:;           entry_bool("Fast Fall Aerials", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_ledge_trump)
     entry_ledge_trump:;                 entry_bool("Ledge Trumping", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_wall_teching)
     entry_wall_teching:;                entry_bool("Wall Teching", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_charged_smashes)
-    entry_charged_smashes:;             entry_bool("Charged Smash Attacks", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_item_containers)
-    entry_item_containers:;             entry("Item Containers", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_item_containers, OS.NULL, entry_blastzone_warp)
-    entry_blastzone_warp:;              entry("BlastZone Warp *BETA", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_blast_zone, OS.NULL, OS.NULL)
+    entry_charged_smashes:;             entry("Charge Smashes", Menu.type.INT, 0, 0, 0, 0, 0, 2, OS.NULL, string_table_charged_smash, OS.NULL, entry_item_containers)
+    entry_item_containers:;             entry("Item Containers", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_item_containers, OS.NULL, entry_game_speed)
+    entry_game_speed:;                  entry("Game Speed", Menu.type.INT, 0, 0, 0, 0, 0, 12, OS.NULL, string_table_speed, OS.NULL, entry_special_zoom)
+    entry_special_zoom:;                entry("Special Zoom (BETA)", Menu.type.INT, 0, 0, 0, 0, 0, 2, OS.NULL, string_table_special_zoom, OS.NULL, entry_blastzone_warp)
+    entry_blastzone_warp:;              entry("BlastZone Warp (BETA)", Menu.type.INT, 0, 0, 0, 0, 0, 3, OS.NULL, string_table_blast_zone, OS.NULL, entry_single_button_mode)
+    entry_single_button_mode:;          entry("Single Button Mode", Menu.type.INT, 0, 0, 0, 0, 0, 6, OS.NULL, string_table_single_button_mode, OS.NULL, entry_item_dropping)
+    entry_item_dropping:;               entry_bool("All Items R Drop (Aerial)", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_move_staling)
+    entry_move_staling:;                entry("Move Staling", Menu.type.INT, 0, 0, 0, 0, 0, 6, OS.NULL, string_table_move_staling, OS.NULL, entry_stopwatch_behaviour)
+    entry_stopwatch_behaviour:;         entry("Stopwatch Item", Menu.type.INT, 0, 0, 0, 0, 0, 4, OS.NULL, string_table_stopwatch_item, OS.NULL, OS.NULL)
+
 
     evaluate num_gameplay_toggles(num_toggles - {num_remix_toggles})
     evaluate gameplay_toggles_block_size(block_size)
@@ -2100,13 +2383,40 @@ scope Toggles {
     entry_random_music_yoshis_island:;      entry_bool_with_a("Yoshi's Island", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, preview_bgm_, BGM.stage.YOSHIS_ISLAND, entry_random_music_first_custom)
 
     entry_random_music_first_custom:
+    // Alphabetize the custom music entries
+    // First, initialize the sorted_midi array
+    evaluate n(0x2F)
+    while {n} < MIDI.midi_count {
+        global define sorted_midi_{n}({n})
+        evaluate n({n}+1)
+    }
+    // Next, sort the indices based on track titles
+    evaluate i(0x2F)
+    while {i} < (MIDI.midi_count - 1) {
+        evaluate j({i} + 1)
+        while {j} < (MIDI.midi_count) {
+            evaluate id_i({sorted_midi_{i}})
+            evaluate id_j({sorted_midi_{j}})
+            variable order_i({MIDI.MIDI_{id_i}_ORDER})
+            variable order_j({MIDI.MIDI_{id_j}_ORDER})
+            if (order_i > order_j) {
+                // Swap indices
+                global evaluate sorted_midi_{i}({id_j})
+                global evaluate sorted_midi_{j}({id_i})
+            }
+            evaluate j({j} + 1)
+        }
+        evaluate i({i} + 1)
+    }
+
     // Add custom MIDIs
     define last_toggled_custom_MIDI(0)
     evaluate n(0x2F)
     while {n} < MIDI.midi_count {
-        evaluate can_toggle({MIDI.MIDI_{n}_TOGGLE})
+        evaluate id({sorted_midi_{n}})
+        evaluate can_toggle({MIDI.MIDI_{id}_TOGGLE})
         if ({can_toggle} == OS.TRUE) {
-            evaluate last_toggled_custom_MIDI({n})
+            evaluate last_toggled_custom_MIDI({id})
         }
         evaluate n({n}+1)
     }
@@ -2114,16 +2424,18 @@ scope Toggles {
     evaluate n(0x2F)
     while {n} < MIDI.midi_count {
         entry_random_music_{n}:                                        // always create the label even if we don't create the entry
-        evaluate can_toggle({MIDI.MIDI_{n}_TOGGLE})
+        evaluate id({sorted_midi_{n}})
+        evaluate can_toggle({MIDI.MIDI_{id}_TOGGLE})
+        entry_random_music_sorted_{id}:
         if ({can_toggle} == OS.TRUE) {
-            if ({n} == {last_toggled_custom_MIDI}) {
+            if ({id} == {last_toggled_custom_MIDI}) {
                 evaluate next(OS.NULL)
             } else {
                 evaluate m({n}+1)
                 evaluate next(entry_random_music_{m})
             }
-            evaluate music_toggle_{MIDI.MIDI_{n}_FILE_NAME}(num_toggles - {first_music_toggle})
-            entry_bool_with_a({MIDI.MIDI_{n}_NAME}, OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, preview_bgm_, {n}, {next})
+            evaluate music_toggle_{MIDI.MIDI_{id}_FILE_NAME}(num_toggles - {first_music_toggle})
+            entry_bool_with_a({MIDI.MIDI_{id}_NAME}, OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, preview_bgm_, {id}, {next})
         }
         evaluate n({n}+1)
     }
@@ -2169,9 +2481,10 @@ scope Toggles {
     define last_toggled_custom_stage(0)
     evaluate n(0x29)
     while {n} <= Stages.id.MAX_STAGE_ID {
-        evaluate can_toggle({Stages.STAGE_{n}_TOGGLE})
+        evaluate id({Stages.sorted_stage_{n}})
+        evaluate can_toggle({Stages.STAGE_{id}_TOGGLE})
         if ({can_toggle} == OS.TRUE) {
-            evaluate last_toggled_custom_stage({n})
+            evaluate last_toggled_custom_stage({id})
         }
         evaluate n({n}+1)
     }
@@ -2180,16 +2493,17 @@ scope Toggles {
     evaluate n(0x29)
     while {n} <= Stages.id.MAX_STAGE_ID {
         entry_random_stage_{n}:                                        // always create the label even if we don't create the entry
-        evaluate can_toggle({Stages.STAGE_{n}_TOGGLE})
+        evaluate id({Stages.sorted_stage_{n}})
+        evaluate can_toggle({Stages.STAGE_{id}_TOGGLE})
         if ({can_toggle} == OS.TRUE) {
-            if ({n} == {last_toggled_custom_stage}) {
+            if ({id} == {last_toggled_custom_stage}) {
                 evaluate next(OS.NULL)
             } else {
                 evaluate m({n}+1)
                 evaluate next(entry_random_stage_{m})
             }
-            evaluate stage_toggle_{Stages.STAGE_{n}_NAME}(num_toggles - {first_stage_toggle})
-            entry_bool({Stages.STAGE_{n}_TITLE}, OS.TRUE, {Stages.STAGE_{n}_TE}, {Stages.STAGE_{n}_NE}, OS.TRUE, {next})
+            evaluate stage_toggle_{Stages.STAGE_{id}_NAME}(num_toggles - {first_stage_toggle})
+            entry_bool({Stages.STAGE_{id}_TITLE}, OS.TRUE, {Stages.STAGE_{id}_TE}, {Stages.STAGE_{id}_NE}, OS.TRUE, {next})
         }
         evaluate n({n}+1)
     }
@@ -2219,6 +2533,9 @@ scope Toggles {
     entry_pokemon_koffing:;                entry_bool("Koffing", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, entry_pokemon_clefairy)
     entry_pokemon_clefairy:;               entry_bool("Clefairy", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, entry_pokemon_mew)
     entry_pokemon_mew:;                    entry_bool("Mew", OS.TRUE, OS.TRUE, OS.TRUE, OS.TRUE, OS.NULL)
+    // entry_pokemon_psyduck:;                entry_bool("Psyduck", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_pokemon_shellder)
+    // entry_pokemon_shellder:;               entry_bool("Shellder", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, entry_pokemon_staryu)
+    // entry_pokemon_staryu:;                 entry_bool("Staryu", OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, OS.NULL)
 
     evaluate num_pokemon_toggles(num_toggles - {num_remix_toggles} - {num_gameplay_toggles} - {num_music_toggles} - {num_stage_toggles})
     evaluate pokemon_toggles_block_size(block_size)
@@ -2247,7 +2564,7 @@ scope Toggles {
     entry_view_intro:;     Menu.entry_title_with_extra("View Intro", view_screen_, 0x001C, entry_view_htp)
     entry_view_htp:;       Menu.entry_title_with_extra("View How to Play", view_screen_, 0x003C, entry_view_credits)
     entry_view_credits:;   Menu.entry_title_with_extra("View Credits", view_credits_, 0x0038, entry_view_gallery)
-    entry_view_gallery:;   entry("View Gallery", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, 0, 32, view_gallery, string_table_gallery, OS.NULL, OS.NULL)
+    entry_view_gallery:;   entry("View Gallery", Menu.type.INT, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, 0, 39, view_gallery, string_table_gallery, OS.NULL, OS.NULL)
 
     // @ Description
     // Frames to block B from triggering exiting submenu
@@ -2814,7 +3131,7 @@ scope Toggles {
     // @ Description
     // Reads the value of a given toggle
     macro read(toggle_name, output_register) {
-            OS.read_word(Toggles.{toggle_name} + 0x4, {output_register})
+        OS.read_word(Toggles.{toggle_name} + 0x4, {output_register})
     }
 
     // @ Description
@@ -2828,6 +3145,11 @@ scope Toggles {
     // Holds 'L' Shortcut timer per port
     shortcut_L_timer:
     db 0, 0, 0, 0
+
+    // @ Description
+    // Indicates if we are currently using 'L' shortcut
+    shortcut_L_flag:
+    dw 0
 
     // @ Description
     // Handles 'L' Shortcut to quickly access Settings page from CSS or SSS
@@ -2856,6 +3178,27 @@ scope Toggles {
         bnez    t1, _no_screen_change
         nop
 
+        // if SSS, can skip the CSS stuff
+        li      v0, Global.current_screen   // v0 = address of current_screen
+        lbu     a0, 0x0000(v0)              // a0 = current screen
+        lli     t1, Global.screen.STAGE_SELECT
+        beq     a0, t1, _screen_change      // if SSS, skip CSS stuff
+        nop
+
+        // handle CSS stock/time picker
+        li      t0, CharacterSelect.showing_time
+        lw      t0, 0x0000(t0)                      // t0 = showing_time flag
+        beqz    t0, _save_css                       // skip if not in Time mode
+        nop
+        // if we're here, we want to 'press' the button to leave Time mode before leaving CSS
+        li      t0, Toggles.shortcut_L_flag
+        lli     t1, OS.TRUE
+        sw      t1, 0x0000(t0)                      // set flag to indicate we are currently using 'L' shortcut
+        jal     CharacterSelect.check_picker_press_ // ...so as to set game mode back to correct game mode and store values
+        nop                                         // note: we skip check for button press (and the resulting FGM)
+        li      t0, Toggles.shortcut_L_flag
+        sw      r0, 0x0000(t0)                      // clear flag
+
         // save CSS selections for when we come back
         _save_css:
         // check which type of CSS and use the appropriate routine
@@ -2864,8 +3207,19 @@ scope Toggles {
         addiu   t1, r0, Global.screen._1P_CSS
         beq     a0, t1, _save_css_routine_1p
         addiu   t1, r0, Global.screen.VS_CSS
+        bne     a0, t1, _save_css_not_vs    // skip if not vs CSS
+        nop
+        // if we're here, we may need to save 'Remix Modes' values
+        OS.read_word(VsRemixMenu.vs_mode_flag, a0)      // a0 = vs_mode_flag
+
+        li      t0, VsRemixMenu.mode_specific_setup_returning_._screen_id_done
+        jalr    t0                          // call mode-specific routine
+        nop
         li      t0, 0x8013A664              // t0 = VS routine
-        beq     a0, t1, _save_css_routine
+        b       _save_css_routine
+        nop
+
+        _save_css_not_vs:
         addiu   t1, r0, Global.screen.TRAINING_CSS
         li      t0, 0x801375D8              // t0 = Training routine
         beq     a0, t1, _save_css_routine

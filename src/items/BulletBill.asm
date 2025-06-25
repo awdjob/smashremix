@@ -1,3 +1,4 @@
+// Unused bullet bill item by Halofactory
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(stage_setting_)

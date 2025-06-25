@@ -353,7 +353,7 @@ scope JigglypuffKirbyShared {
         addiu   at, r0, 0x0013              // original line 2
 
         _kirbyblast_1:
-        j       0x800D79CB                  // routine for kirby blast wall
+        j       0x800D79C8                  // routine for kirby blast wall
         addiu   at, r0, 0x0013              // original line 2
 
         _linkblast_1:
@@ -424,30 +424,6 @@ scope JigglypuffKirbyShared {
     //    j       0x8014E738                  // routine for kirby taunt
     //    addiu   a1, r0, 0x00BD              // original line 2
     }
-
-	// character ID check add for when Kirby Clones use taunt. This ensures that he abandons his power.
-    scope kirby_unknown_fix: {
-        OS.patch_start(0x5DBE8, 0x800E23E8)
-        j       kirby_unknown_fix
-        nop
-        _return:
-        OS.patch_end()
-
-        beq     t0, at, _kirby_fix_1            // modified original line 1, this is actually checking if he currently has a power
-        nop
-        addiu   at, r0, Character.id.JKIRBY      // JKIRBY ID
-		beq     t0, at, _kirby_fix_1
-        nop
-
-
-        j       0x800E23FC          		// modified original line 1, was a bnel for everyone but kirby
-        lw		v0, 0x09E8(s1)                  // original line 2
-
-        _kirby_fix_1:
-        j       _return                  // routine for kirby taunt
-        nop
-    }
-
 
     // character ID check add for when Pikachu and Jigglypuff Clones use spawn on stage.
     scope pokemon_spawn_fix: {

@@ -1,3 +1,4 @@
+// Pwing.asm (code by goombapatrol)
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(Item.spawn_custom_item_based_on_tomato_)
@@ -146,7 +147,7 @@ scope handle_active_pwing_: {
     addiu   t8, r0, Character.id.EBI
     bne     t8, at, _set_number_of_jumps
     nop
-    
+
     // if here, check if Ebisumaru is doing USP
     addiu   t8, r0, Ebi.Action.USP
     lw      at, 0x0024(a1)          // load current action
@@ -350,7 +351,8 @@ scope handle_active_pwing_: {
     OS.restore_registers()
     lw      at, 0x0048(a0)          // at = pointer to players index in Pwing array
     sw      r0, 0x0000(at)          // remove player from Pwing array
-    sw      v0, 0x0000(at)          // clear player from Pwing array (-1)
+    // ??? is this a typo? v0 = 1 here (TEST commenting out)
+    // sw      v0, 0x0000(at)          // clear player from Pwing array (-1)
     sb      r0, 0x0000(t0)          // clear pwing flag
 
     // remove player gfx, based on star
@@ -372,6 +374,48 @@ scope handle_active_pwing_: {
     _destroy_branch_2:
     jal     Render.DESTROY_OBJECT_
     lw      a0, 0x0020(sp)              // argument = routine handler
+
+    _generate_white_circle_gfx: {
+        // generate white circle effect
+        lw      a0, 0x0020(sp)          // argument = routine handler
+        lw      a1, 0x0040(a0)          // a1 = item owner struct
+
+        lw      t8, 0x09C8(a1)          // t8 = player attributes
+        lwc1    f8, 0x00A0(t8)          // f8 = ecb center y height
+
+        lw      t0, 0x0078(a1)          // location vector base
+        lwc1    f4, 0x4(t0)             // f4 = location y
+
+        add.s   f8, f8, f4              // f8 = Y+ECB_Y
+
+        addiu   sp, sp, -0x30     // allocate memory
+
+        lw      t1, 0x0(t0)  // ~
+        sw      t1, 0x18(sp) // x
+        swc1    f8, 0x1c(sp) // y
+        lw      t1, 0x8(t0)  // ~
+        sw      t1, 0x20(sp) // z - create (X, Y+ECB_Y, Z) vec3 at 0x18
+
+        lw      a0, 0x0004(a1)  // a0 = player object
+        addiu   a0, sp, 0x18    // arg0 location
+
+        // scale effect size with topjoint model scale
+        lli         t0, 20          // effect size
+        mtc1        t0, f8          // f8 = effect size
+        lw          t1, 0x8E8(a1)   // t1 = defender's topjoint transform bone
+        lwc1        f4, 0x0040(t1)  // f4 = defender's topjoint X scale
+        cvt.s.w     f8, f8          // convert effect size to float
+        mul.s       f4, f4, f8      // muliply by size
+        trunc.w.s   f4, f4          // convert to int
+        mfc1        a1, f4          // arg1 size
+
+        jal     0x80100BF0      // efManagerSetOffMakeEffect(Vec3f *pos, s32 size)
+        nop
+
+        addiu   sp, sp, 0x30 // deallocate memory
+
+        lw      a0, 0x0020(sp)              // argument = routine handler
+    }
 
     _end:
     lw      s1, 0x0004(sp)              //

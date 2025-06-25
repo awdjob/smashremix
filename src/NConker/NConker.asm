@@ -114,6 +114,7 @@ scope NConker {
     Character.edit_action_parameters(NCONKER, Action.ThrowB,             File.CONKER_THROWB,             Conker.BTHROW,                     0x10000000)
     Character.edit_action_parameters(NCONKER, Action.CapturePulled,      File.CONKER_CAPTURE_PULLED,     -1,                         -1)
     Character.edit_action_parameters(NCONKER, Action.EggLayPulled,       File.CONKER_CAPTURE_PULLED,     -1,                         -1)
+    Character.edit_action_parameters(NCONKER, Action.ThrownFoxB,         0x2C8,                          -1,                         -1)
     Character.edit_action_parameters(NCONKER, Action.Jab1,               File.CONKER_JAB1,               Conker.JAB1,                       -1)
     Character.edit_action_parameters(NCONKER, Action.Jab2,               File.CONKER_JAB2,               Conker.JAB2,                       -1)
     Character.edit_action_parameters(NCONKER, 0xDC,                      File.CONKER_JAB_LOOP_START,     Conker.JAB_LOOP_START,             -1)

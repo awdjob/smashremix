@@ -1369,7 +1369,35 @@ scope Action {
         constant EbiNSPAirEnd(0x1AA)
         constant DragonKingNSPGround(0x1AB)
         constant DragonKingNSPAir(0x1AC)
-
+        constant DSamusNSPChargeAir(0x1AD)
+        constant CrashNSPGround(0x1AE)
+        constant CrashNSPAir(0x1AF)
+        constant CrashNSPGroundRecoil(0x1B0)
+        constant CrashNSPAirRecoil(0x1B1)
+        constant PeachNSPGround(0x1B2)
+        constant PeachNSPAir(0x1B3)
+        constant PeachNSPRecoil(0x1B4)
+        constant DoubleEdgeDance1(0x1B5)
+        constant DoubleEdgeDance2High(0x1B6)
+        constant DoubleEdgeDance2Mid(0x1B7)
+        constant DoubleEdgeDance2Low(0x1B8)
+        constant DoubleEdgeDance3High(0x1B9)
+        constant DoubleEdgeDance3Mid(0x1BA)
+        constant DoubleEdgeDance3Low(0x1BB)
+        constant DoubleEdgeDance1Air(0x1BC)
+        constant DoubleEdgeDance2HighAir(0x1BD)
+        constant DoubleEdgeDance2MidAir(0x1BE)
+        constant DoubleEdgeDance2LowAir(0x1BF)
+        constant DoubleEdgeDance3HighAir(0x1C0)
+        constant DoubleEdgeDance3MidAir(0x1C1)
+        constant DoubleEdgeDance3LowAir(0x1C2)
+        constant LCapsule(0x1C3)
+        constant LCapsuleAir(0x1C4)
+        constant GrapeShooter(0x1C5)
+        constant GrapeShooterAir(0x1C6)
+        constant SonicRushBegin(0x1C7)
+        constant SonicRush(0x1C8)
+        constant SonicRush2(0x1C9)
 
         // strings!
         string_0x0DC:; String.insert("JabLoopStart")
@@ -1457,8 +1485,8 @@ scope Action {
         string_0x12E:; String.insert("EggLayEndAir")
         string_0x12F:; String.insert("WarlockPunch")
         string_0x130:; String.insert("WarlockPunchAir")
-        string_0x131:; String.insert("Capsule")
-        string_0x132:; String.insert("CapsuleAir")
+        string_0x131:; String.insert("Megavitamin")
+        string_0x132:; String.insert("MegavitaminAir")
         string_0x133:; String.insert("DSCharging")
         string_0x134:; String.insert("YLBoomerang")
         string_0x135:; String.insert("YLBoomerangAir")
@@ -1565,8 +1593,8 @@ scope Action {
         string_0x19A:; String.insert("RevolverShootAir")
         string_0x19B:; String.insert("EggBeginGround")
         string_0x19C:; String.insert("FireEggGround")
-        string_0x19D:; String.insert("EggBounceGround")
-        string_0x19E:; String.insert("EggBeginAir")
+        string_0x19D:; String.insert("EggBeginAir")
+        string_0x19E:; String.insert("EggBounceGround")
         string_0x19F:; String.insert("FireEggAir")
         string_0x1A0:; String.insert("EggBounceAir")
         string_0x1A1:; String.insert("MeatSaw-HammerGroundBegin")
@@ -1581,6 +1609,35 @@ scope Action {
         string_0x1AA:; String.insert("MeatSaw-HammerAirAttack")
         string_0x1AB:; String.insert("DragonBallGround")
         string_0x1AC:; String.insert("DragonBallAir")
+        string_0x1AD:; String.insert("ChargingAir")
+        string_0x1AE:; String.insert("SpinGround")
+        string_0x1AF:; String.insert("SpinAir")
+        string_0x1B0:; String.insert("SpinGroundRecoil")
+        string_0x1B1:; String.insert("SpinAirRecoil")
+        string_0x1B2:; String.insert("PeachBomberGround")
+        string_0x1B3:; String.insert("PeachBomberAir")
+        string_0x1B4:; String.insert("PeachBomberRecoil")
+        string_0x1B5:; String.insert("DoubleEdgeDance1")
+        string_0x1B6:; String.insert("DoubleEdgeDance2High")
+        string_0x1B7:; String.insert("DoubleEdgeDance2Mid")
+        string_0x1B8:; String.insert("DoubleEdgeDance2Low")
+        string_0x1B9:; String.insert("DoubleEdgeDance3High")
+        string_0x1BA:; String.insert("DoubleEdgeDance3Mid")
+        string_0x1BB:; String.insert("DoubleEdgeDance3Low")
+        string_0x1BC:; String.insert("DoubleEdgeDance1Air")
+        string_0x1BD:; String.insert("DoubleEdgeDance2HighAir")
+        string_0x1BE:; String.insert("DoubleEdgeDance2MidAir")
+        string_0x1BF:; String.insert("DoubleEdgeDance2LowAir")
+        string_0x1C0:; String.insert("DoubleEdgeDance3HighAir")
+        string_0x1C1:; String.insert("DoubleEdgeDance3MidAir")
+        string_0x1C2:; String.insert("DoubleEdgeDance3LowAir")
+        string_0x1C3:; String.insert("DrLMegavitamin")
+        string_0x1C4:; String.insert("DrLMegavitaminAir")
+        string_0x1C5:; String.insert("GrapeShooter")
+        string_0x1C6:; String.insert("GrapeShooterAir")
+        string_0x1C7:; String.insert("SonicRushBegin")
+        string_0x1C8:; String.insert("SonicRush")
+        string_0x1C9:; String.insert("SonicRush")
 
         action_string_table:
         dw string_0x0DC
@@ -1728,24 +1785,24 @@ scope Action {
         dw string_0x16A
         dw string_0x16B
         dw string_0x16C
-		dw string_0x16D
-		dw string_0x16E
-		dw string_0x16F
-		dw string_0x170
-		dw string_0x171
-		dw string_0x172
-		dw string_0x173
-		dw string_0x174
-		dw string_0x175
-		dw string_0x176
-		dw string_0x177
-		dw string_0x178
-		dw string_0x179
-		dw string_0x17A
-		dw string_0x17B
-		dw string_0x17C
-		dw string_0x17D
-		dw string_0x17E
+        dw string_0x16D
+        dw string_0x16E
+        dw string_0x16F
+        dw string_0x170
+        dw string_0x171
+        dw string_0x172
+        dw string_0x173
+        dw string_0x174
+        dw string_0x175
+        dw string_0x176
+        dw string_0x177
+        dw string_0x178
+        dw string_0x179
+        dw string_0x17A
+        dw string_0x17B
+        dw string_0x17C
+        dw string_0x17D
+        dw string_0x17E
         dw string_0x17F
         dw string_0x180
         dw string_0x181
@@ -1792,6 +1849,35 @@ scope Action {
         dw string_0x1AA
         dw string_0x1AB
         dw string_0x1AC
+        dw string_0x1AD
+        dw string_0x1AE
+        dw string_0x1AF
+        dw string_0x1B0
+        dw string_0x1B1
+        dw string_0x1B2
+        dw string_0x1B3
+        dw string_0x1B4
+        dw string_0x1B5
+        dw string_0x1B6
+        dw string_0x1B7
+        dw string_0x1B8
+        dw string_0x1B9
+        dw string_0x1BA
+        dw string_0x1BB
+        dw string_0x1BC
+        dw string_0x1BD
+        dw string_0x1BE
+        dw string_0x1BF
+        dw string_0x1C0
+        dw string_0x1C1
+        dw string_0x1C2
+        dw string_0x1C3
+        dw string_0x1C4
+        dw string_0x1C5
+        dw string_0x1C6
+        dw string_0x1C7
+        dw string_0x1C8
+        dw string_0x1C9
     }
 
     // @ Description

@@ -208,6 +208,13 @@ scope ComboMeter {
         sw      r0, 0x0020(a3)                // set player struct address to 0 for p4
 
         // Reset combo stats
+        OS.read_word(VsRemixMenu.vs_mode_flag, t0) // t0 = vs_mode_flag
+        lli     t1, VsRemixMenu.mode.SMASHKETBALL
+        bne     t0, t1, _reset_combo_stats    // if not Smashketball, reset combo stats normally
+        OS.read_byte(0x800A4AE0, t0)          // t0 = is_suddendeath (yes, delay slot)
+        bnez    t0, _set_color_maps           // if sudden death, don't reset combo stats
+        nop
+        _reset_combo_stats:
         sw      r0, 0x0004(a0)                // set max_combo_hits to 0 for p1
         sw      r0, 0x0004(a1)                // set max_combo_hits to 0 for p2
         sw      r0, 0x0004(a2)                // set max_combo_hits to 0 for p3
@@ -233,6 +240,7 @@ scope ComboMeter {
         sw      r0, 0x0030(a2)                // set highest_combo_vs_p4 to 0 for p3
         sw      r0, 0x0030(a3)                // set highest_combo_vs_p4 to 0 for p4
 
+        _set_color_maps:
         // Set color maps
         li      t0, Global.current_screen
         lbu     t0, 0x0000(t0)                // t0 = current screen
@@ -331,6 +339,7 @@ scope ComboMeter {
         // always toggle off the display list - we will turn it back on below if necessary
         lli     t0, 0x0001                        // t0 = 1
         sw      t0, 0x007C(t4)                    // turn off display list render
+        sw      r0, 0x0038(t4)                    // disable camera tag (hide)
 
         // Check if currently in a combo (hit count > 1)
         sltu    t1, t0, a0                        // if (hit count > 1) then update frame buffer
@@ -458,6 +467,8 @@ scope ComboMeter {
         _draw:
         // make sure the display list is set to render
         sw      r0, 0x007C(t4)
+        addiu   t1, r0, -0x0001                   // t1 = 0xFFFFFFFF
+        sw      t1, 0x0038(t4)                    // set camera tag (show)
 
         // set up texture data pointers
         lw      t0, 0x0010(t5)                    // t0 - color index (0 = silver, 1 = p1, 2 = p2, 3 = p3, 4 = p4)
@@ -782,6 +793,7 @@ scope ComboMeter {
         // turn off display initially
         lli     t0, 0x0001                  // t0 = 1
         sw      t0, 0x007C(s3)              // turn off display list render
+        sw      r0, 0x0038(s3)              // disable camera tag (show)
 
         _next:
         sltiu   t0, s0, 0x0004              // t0 = 1 if s0 less than 4

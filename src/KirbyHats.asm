@@ -6,16 +6,21 @@
 scope KirbyHats {
     // @ Description
     // Number of new "hats" added
-    variable new_hats(27)
-    constant total_hats(35)         // new_hats - 3 extra (DDD/Bowser/Kazooie) + 11 Original
+    variable new_hats(33)
+    constant total_hats(41)         // new_hats - 3 extra (DDD/Bowser/Kazooie) + 11 Original
 
     // @ Description
     // Used in add_hat to adjust offset
     variable current_custom_hat_id(0)
 
+    scope file_index {
+        constant KIRBY_CUSTOM_HATS(0)
+        constant KIRBY_CUSTOM_HATS_2(1)
+    }
+
     // @ Description
     // Adds a special part for use as a Kirby "hat"
-    macro add_hat(base_hat_id, dl_hi, images_hi, tracks_hi, dl_lo, images_lo, tracks_lo) {
+    macro add_hat(base_hat_id, dl_hi, images_hi, tracks_hi, dl_lo, images_lo, tracks_lo, file_index) {
         if (current_custom_hat_id + 1 > new_hats) {
             print "ERROR CREATING KIRBY HAT: You forgot to increase new_hats! \n"
         } else {
@@ -28,11 +33,16 @@ scope KirbyHats {
             dw     {dl_lo}
             dw     {images_lo}
             dw     {tracks_lo}
-            dw     0x0               // spacer
+            dw     {file_index}             // 0 = KIRBY_CUSTOM_HATS, 1 = KIRBY_CUSTOM_HATS_2
             pullvar origin, base
 
             global variable current_custom_hat_id(current_custom_hat_id + 1)
         }
+    }
+
+    // defaults to KIRBY_CUSTOM_HATS file
+    macro add_hat(base_hat_id, dl_hi, images_hi, tracks_hi, dl_lo, images_lo, tracks_lo) {
+        add_hat({base_hat_id}, {dl_hi}, {images_hi}, {tracks_hi}, {dl_lo}, {images_lo}, {tracks_lo}, file_index.KIRBY_CUSTOM_HATS)
     }
 
     // @ Description
@@ -131,6 +141,9 @@ scope KirbyHats {
         addiu   t6, r0, 0x001C              // put Marth Hat ID into t6
         li      t7, 0x1D890                 // offset of special part struct for Marth's Sword [UPDATE IF SWORD MODEL CHANGED]
         beq     t2, t6, _get_offset
+        addiu   t6, r0, 0x002C              // put Roy Hat ID into t6
+        li      t7, 0x1D980                 // offset of special part struct for Roy's Sword [UPDATE IF SWORD MODEL CHANGED]
+        beq     t2, t6, _get_offset
         addiu   t6, r0, 0x001A              // put Wolf Hat ID into t6
         li      t7, 0x1D830                 // offset of special part struct for Wolf's Gun [UPDATE IF GUN MODEL CHANGED]
         beq     t2, t6, _get_offset
@@ -145,6 +158,9 @@ scope KirbyHats {
         beq     t2, t6, _get_offset
         addiu   t6, r0, 0x0028              // put Ebisumaru Hat ID into t6
         li      t7, 0x1D950                 // offset of special part struct for Ebisumaru's Meat[UPDATE IF MEAT MODEL CHANGED]
+        beq     t2, t6, _get_offset
+        addiu   t6, r0, 0x002E              // put Lanky Hat ID into t6
+        li      t7, 0x1D9B0                 // offset of special part struct for Lanky's Gun[UPDATE IF GUN MODEL CHANGED]
         beq     t2, t6, _get_offset
         addiu   t6, r0, 0x0019              // put Conker Hat ID into t6
         li      t7, 0x1D860                 // offset of special part struct for Conker's Catapult [UPDATE IF CATAPULT MODEL CHANGED]
@@ -336,6 +352,7 @@ scope KirbyHats {
         sw      t7, 0x000C(s0)                 // set special tracks 2
 
         _set_overrides:
+        lw      t7, 0x001C(t4)                 // t7 = file index
         addiu   t4, t4, 0x0004                 // t4 = hi poly array of custom special part overrides
         bnezl   t5, pc() + 8                   // if lo poly, add offset
         addiu   t4, t4, 0x000C                 // t4 = lo poly array of custom special part overrides
@@ -347,6 +364,8 @@ scope KirbyHats {
         lw      t3, 0x0034(t3)                 // t3 = character file address pointer
         lw      t3, 0x0000(t3)                 // t3 = character file address
         li      t5, 0x0001D810                 // t5 = offset to custom hat file pointer
+        bnezl   t7, pc() + 8                   // if KIRBY_CUSTOM_HATS_2 file, adjust pointer
+        addiu   t5, t5, 0x0004                 // t5 = offset to custom hat file 2 pointer
         addu    t3, t3, t5                     // t3 = address for custom hat file pointer
         lw      t3, 0x0000(t3)                 // t3 = base address of custom hat file
 
@@ -429,6 +448,18 @@ scope KirbyHats {
     add_hat(Character.kirby_hat_id.FOX, 0x32D30, -1, -1, 0x33EF0, -1, -1)
     // Dragon King hat_id: 0x29
     add_hat(Character.kirby_hat_id.FALCON, 0x34F00, -1, -1, 0x35C08, -1, -1)
+    // Crash hat_id: 0x2A
+    add_hat(Character.kirby_hat_id.MARIO, 0x36D48, -1, -1, 0x37FF0, -1, -1)
+    // Peach hat_id: 0x2B
+    add_hat(Character.kirby_hat_id.FOX, 0x396A0, -1, -1, 0x3AA20, -1, -1)
+    // Roy hat_id: 0x2C
+    add_hat(Character.kirby_hat_id.FOX, 0x3BF60, -1, -1, 0x3D140, -1, -1)
+    // Dr. Luigi hat_id: 0x2D
+    add_hat(Character.kirby_hat_id.MARIO, 0x2080, -1, -1, 0x2B68, -1, -1)
+    // Lanky Kong hat_id: 0x2E
+    add_hat(Character.kirby_hat_id.DK, 0x3E490, -1, -1, 0x3F280, -1, -1)
+    // Super Sonic hat_id: 0x2F
+    add_hat(Character.kirby_hat_id.FOX, 0xCC8, -1, -1, 0x2978, -1, -1, file_index.KIRBY_CUSTOM_HATS_2)
 
     spawn_with_table_:
     db 0x08                                   // NA = no hat
@@ -448,26 +479,32 @@ scope KirbyHats {
     db 0x1F                                   // 0x0E = young link
     db 0x20                                   // 0x0F = dr. mario
     db 0x21                                   // 0x10 = Wario
-    db 0x22                                   // 0x11 = Dark Samus
-    db 0x26                                   // 0x12 = Lucas
-    db 0x34                                   // 0x13 = Bowser
-    db 0x36                                   // 0x14 = Mad Piano
-    db 0x37                                   // 0x15 = Wolf
-    db 0x38                                   // 0x16 = Conker
-    db 0x39                                   // 0x17 = Mewtwo
-    db 0x3A                                   // 0x18 = Marth
-    db 0x3B                                   // 0x19 = Sonic
-    db 0x3E                                   // 0x1A = Sheik
-    db Character.id.MARINA                    // 0x1B = Marina
-    db Character.id.DEDEDE                    // 0x1C = Dedede
-    db Character.id.GOEMON                    // 0x1D = Goemon
-    db Character.id.SLIPPY                    // 0x1E = Slippy
-    db Character.id.PEPPY                     // 0x1F = Peppy
-    db Character.id.BANJO                     // 0x20 = Kazooie
-    db Character.id.EBI                       // 0x21 = Ebisumaru
-    db Character.id.DRAGONKING                // 0x22 = Dragon King
-    db Character.id.NONE                      // 0x23 = Magic
-    db Character.id.KIRBY                     // 0x24 = Random
+    db 0x34                                   // 0x11 = Bowser
+    db 0x37                                   // 0x12 = Wolf
+    db 0x38                                   // 0x13 = Conker
+    db 0x39                                   // 0x14 = Mewtwo
+    db 0x3A                                   // 0x15 = Marth
+    db 0x3B                                   // 0x16 = Sonic
+    db 0x3E                                   // 0x17 = Sheik
+    db Character.id.MARINA                    // 0x18 = Marina
+    db Character.id.DEDEDE                    // 0x19 = Dedede
+    db Character.id.GOEMON                    // 0x1A = Goemon
+    db Character.id.BANJO                     // 0x1B = Kazooie
+    db Character.id.CRASH                     // 0x1C = Crash
+    db Character.id.PEACH                     // 0x1D = Peach
+    db 0x22                                   // 0x1E = Dark Samus
+    db 0x26                                   // 0x1F = Lucas
+    db Character.id.PEPPY                     // 0x20 = Peppy
+    db Character.id.SLIPPY                    // 0x21 = Slippy
+    db Character.id.ROY                       // 0x22 = Roy
+    db Character.id.DRL                       // 0x23 = Dr Luigi
+    db Character.id.LANKY                     // 0x24 = Lanky
+    db Character.id.DRAGONKING                // 0x25 = Dragon King
+    db Character.id.EBI                       // 0x26 = Ebisumaru
+    db 0x36                                   // 0x27 = Mad Piano
+    db Character.id.SSONIC                    // 0x28 = Super Sonic
+    db Character.id.NONE                      // 0x29 = Magic
+    db Character.id.KIRBY                     // 0x2A = Random
     OS.align(4)
 
     spawn_with_hat:
@@ -490,6 +527,10 @@ scope KirbyHats {
         jal     set_absorbed_hat_
         lw      t1, 0x0ADC(v0)              // original line 1 - t1 = hat id of sucked in opponent
         OS.patch_end()
+        OS.patch_start(0xDC97C, 0x80161F3C)
+        jal     set_absorbed_hat_._update_magic_hat_on
+        lh      t0, 0x0B18(s0)              // original line 1 - t0 = hat id of sucked in opponent
+        OS.patch_end()
 
         // check magic_hat_on to see if absorbed opponent has the magic hat
         lw      t4, 0x0008(v0)              // t4 = character id of absorbed opponent
@@ -505,17 +546,27 @@ scope KirbyHats {
         sll     t3, t3, 0x0002              // t3 = offset in table
         addu    t3, t4, t3                  // t3 = address of magic_hat_on
         lw      t3, 0x0000(t3)              // t3 = 0 if magic hat off, 1 if on
-        beqz    t3, _end                    // if magic hat not on, skip
-        lbu     t3, 0x000D(s0)              // t3 = port of absorber
-        sll     t3, t3, 0x0002              // t3 = offset in table
-        addu    t4, t4, t3                  // t4 = address of magic_hat_on
-        lli     t3, OS.TRUE                 // t3 = TRUE
-        sw      t3, 0x000(t4)               // set magic_hat_on
+        bnezl   t3, _end                    // if magic hat on, set power id
         lli     t1, Character.id.NONE       // t1 = NONE = magic hat's power id
 
         _end:
         jr      ra
         sh      t1, 0x0B18(s0)              // set hat id to temp variable
+
+        _update_magic_hat_on:
+        lli     t1, Character.id.NONE       // t1 = NONE = magic hat's power id
+        bne     t0, t1, _end_magic_hat_on   // if not magic hat, skip
+        lbu     t3, 0x000D(s0)              // t3 = port of absorber
+
+        li      t4, magic_hat_on            // t4 = magic_hat_on
+        sll     t3, t3, 0x0002              // t3 = offset in table
+        addu    t4, t4, t3                  // t4 = address of magic_hat_on
+        lli     t3, OS.TRUE                 // t3 = TRUE
+        sw      t3, 0x000(t4)               // set magic_hat_on
+
+        _end_magic_hat_on:
+        jr      ra
+        lw      t1, 0x0ADC(s0)              // original line 2 - t1 = hat id of player
     }
 
     // @ Description
@@ -527,26 +578,8 @@ scope KirbyHats {
         _return:
         OS.patch_end()
 
-        // This check is no longer necessary, now that Kirby Hat is permitted in 1P modes
-        //li      v0, Global.current_screen   // t0 = address of current screen
-        //lbu     v0, 0x0000(v0)              // t0 = current screen
-        //lli     t5, 0x0011                  // t1 = 1p CSS
-        //beq     t5, v0, _normal             //
-        //lli     t5, 0x0013                  // t1 = Bonus 1 CSS
-        //beq     t5, v0, _normal             //
-        //lli     t5, 0x0014                  // t1 = Bonus 2 CSS
-        //beq     t5, v0, _normal             //
-        //lli     t5, 0x0014                  // t1 = Bonus 2 CSS
-        //beq     t5, v0, _normal             //
-        //lli     t5, 0x0035                  // t1 = Bonus Mode screen
-        //beq     t5, v0, _normal             //
-        //lli     t5, 0x003D                  // t1 = CPU Battle Screen
-        //beq     t5, v0, _normal             //
-        //nop
-
         // v1 = player struct
         li      t5, spawn_with_hat
-
         sll     t8, t8, 0x0002              // t8 = offset to port
         addu    t5, t5, t8                  // t5 = address of spawn with hat id
         lw      t8, 0x0000(t5)              // t8 = hat_id
@@ -564,13 +597,25 @@ scope KirbyHats {
         // don't actually randomize hat on CSS (show Vanilla Kirby)
         li      v0, Global.current_screen   // v0 = address of current screen
         lbu     v0, 0x0000(v0)              // v0 = current screen
-        slti    t5, v0, 0x0015              // t5 = 1 if CSS
+        lli     t5, Global.screen.TITLE_AND_1P // t5 = 1 if Title, 1p game over screen, 1p battle, remix 1p battle
+        beq     t5, v0, _handle_random_hat_1p  // branch if 1p
+        sltiu   t5, v0, 0x0015              // t5 = 1 if CSS
         bnezl   t5, _normal                 // branch if (screen_id = css)
         addiu   t8, r0, 0x0008              // kirby character ID
         lli     t5, Global.screen.RESULTS   // t5 = results screen
         beql    t5, v0, _normal             // branch if on results screen
         addiu   t8, r0, 0x0008              // kirby character ID
+        b       _pick_random_hat            // if we're here, pick a random hat
+        nop
 
+        _handle_random_hat_1p:
+        li      v0, Global.match_info       // v0 = pointer to match info
+        lw      v0, 0x0000(v0)              // load address of match info
+        lb      t5, 0x002B(v0)              // t5 = stocks remaining (-1 if game over)
+        bltzl   t5, _normal                 // branch if game over
+        addiu   t8, r0, 0x0008              // kirby character ID
+
+        _pick_random_hat:
         addiu   sp, sp,-0x0014              // allocate stack space
         sw      a0, 0x0004(sp)              // store registers
         sw      ra, 0x0008(sp)              // ~
@@ -636,18 +681,24 @@ scope KirbyHats {
     // @ Description
     // Loads kirby files when needed for debug options in vs mode
     scope kirby_hat_files_vs_: {
+        // Normal VS
         OS.patch_start(0x10A29C, 0x8018D3AC)
-        j       kirby_hat_files_vs_
-        addiu   t7, r0, 0x0003              // amount of port loops
-        _return:
+        jal     kirby_hat_files_vs_
+        addiu   s4, sp, 0x005C              // original line 2
+        OS.patch_end()
+        // Sudden Death
+        OS.patch_start(0x10ADE8, 0x8018DEF8)
+        jal     kirby_hat_files_vs_
+        addiu   s4, sp, 0x0054              // original line 2
         OS.patch_end()
 
-        li      s4, spawn_with_hat          // pointer to kirby hat settings
+        addiu   t7, r0, 0x0003              // amount of port loops
+        li      t1, spawn_with_hat          // pointer to kirby hat settings
 
         _loop:
-        lw      t5, 0x0000(s4)              // hat setting for that port
+        lw      t5, 0x0000(t1)              // hat setting for that port
         bnez    t5, _kirbyhat_selected      // if not default, load files
-        addiu   s4, s4, 0x0004              // move to next port
+        addiu   t1, t1, 0x0004              // move to next port
 
         bnez    t7, _loop                   // if not all ports, loop
         addiu   t7, t7, 0xFFFF              // subtract 1 from loop counter
@@ -656,13 +707,16 @@ scope KirbyHats {
         nop
 
         _kirbyhat_selected:
+        addiu   sp, sp, -0x0010             // allocate stack space
+        sw      ra, 0x0004(sp)              // save ra
         Render.load_file(0xE6, Render.file_pointer_1)              // load kirby hats classic
         Render.load_file(0xC1B, Render.file_pointer_2)             // load kirby hats remix
+        lw      ra, 0x0004(sp)              // restore ra
+        addiu   sp, sp, 0x0010              // deallocate stack space
 
         _end:
+        jr      ra
         or      s1, r0, r0                  // original line 1
-        j       _return
-        addiu   s4, sp, 0x005C              // original line 2
     }
 
     // @ Description

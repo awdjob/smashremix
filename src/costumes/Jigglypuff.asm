@@ -1,7 +1,7 @@
 scope jigglypuff_costumes {
     // @ Description
     // Number of additional costumes
-    constant NUM_EXTRA_COSTUMES(3)
+    constant NUM_EXTRA_COSTUMES(4)
 
     // @ Description
     // Number of parts
@@ -10,17 +10,6 @@ scope jigglypuff_costumes {
     // @ Description
     // Number of original costumes
     constant NUM_COSTUMES(5 + 1) // 1 skipped
-
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
 
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
@@ -121,7 +110,7 @@ scope jigglypuff_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(1, Jigglypuff/cos_7_stock_icon.bin)
     }
-    
+
     // Costume 0x8
     scope costume_0x8 {
         constant PRIM_COLOR_1(0xF4F4F4FF)
@@ -153,5 +142,37 @@ scope jigglypuff_costumes {
         Costumes.set_diffuse_ambient_colors_for_part(2, 18, 0, diffuse_ambient_pair)
 
         Costumes.set_stock_icon_palette_for_costume(2, Jigglypuff/cos_8_stock_icon.bin)
+    }
+	// Costume 0x9
+    scope costume_0x9 {
+        constant PRIM_COLOR_1(0xffcee7FF)
+        diffuse_ambient_pair:; dw 0xFFFFFF00, 0x80808000
+        palette_1:; insert "Jigglypuff/cos_9_1.bin"
+        palette_2:; insert "Jigglypuff/cos_9_2.bin"
+        palette_3:; insert "Jigglypuff/cos_9_3.bin"
+
+        Costumes.set_palette_for_part(3, 2, 0, palette_1)
+        Costumes.set_palette_for_part(3, 2, 1, palette_1)
+        Costumes.set_palette_for_part(3, 2, 2, palette_2)
+        Costumes.set_palette_for_part(3, 2, 3, palette_2)
+        Costumes.set_prim_color_for_part(3, 2, 3, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 2, 4, palette_2)
+        Costumes.set_prim_color_for_part(3, 2, 4, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 2, 5, palette_2)
+        Costumes.set_prim_color_for_part(3, 2, 5, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 2, 6, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 2, 7, palette_2)
+        Costumes.set_prim_color_for_part(3, 2, 8, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 2, 9, palette_3)
+        Costumes.set_palette_for_part(3, 2, A, palette_3)
+        Costumes.set_prim_color_for_part(3, 6, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 7, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, A, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, B, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 13, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 18, 0, PRIM_COLOR_1)
+        Costumes.set_diffuse_ambient_colors_for_part(3, 18, 0, diffuse_ambient_pair)
+
+        Costumes.set_stock_icon_palette_for_costume(3, Jigglypuff/cos_9_stock_icon.bin)
     }
 }

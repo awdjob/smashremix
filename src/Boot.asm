@@ -74,9 +74,28 @@ scope Boot {
         _fgm:
         mtlo    ra                      // save ra
         lli     at, Character.id.NONE   // at = Character.id.NONE
-        bne     t3, at, pc() + 12       // if character id is not none, skip
+        bne     t3, at, _play_fgm       // if character id is not none, skip
         nop                             // otherwise we'll use a nice sound:
+
+        lui     t0, 0x8004              // get inputs for all players
+        lh      t1, 0x5228(t0)          // check if p1 pressing L
+        andi    t1, t1, 0x0020          // ~
+        lh      t2, 0x5232(t0)          // check if p2 pressing L
+        andi    t2, t2, 0x0020          // ~
+        add     t1, t1, t2              // P1 + P2 bitflags
+        lh      t3, 0x523C(t0)          // check if p3 pressing L
+        andi    t3, t3, 0x0020          // ~
+        add     t1, t1, t3              // P1 + P2 + P3 bitflags
+        lh      t4, 0x5246(t0)          // check if p4 pressing L
+        andi    t4, t4, 0x0020          // ~
+        add     t1, t1, t4              // P1 + P2 + P3 + P4 bitflags
+        addiu   at, r0, 0x80            // bitflags added together = 0x80
+        beql    at, t1, _play_fgm       // branch if all 4 players holding L
+        lli     v0, 0x02F9              // v0 = fgm_id  if all 4 players are holding L button
+        beqzl   t1, _play_fgm           // play nice fgm if no one is holding L
         lli     v0, 0x0A0               // v0 = fgm_id of a nice sound
+        lli     v0, 0x02C2              // v0 = fgm_id if someone holding L button
+        _play_fgm:
         jal     0x800269C0              // original line 1
         andi    a0, v0, 0xFFFF          // original line 2
         mflo    ra                      // restore ra
@@ -139,7 +158,7 @@ scope Boot {
         nop
     }
 
-    string_version:; String.insert("Smash Remix v1.5.2")
+    string_version:; String.insert("Smash Remix v2.0.0")
 
     // @ Description
     // Use larger logo black backsplash
@@ -174,7 +193,7 @@ scope Boot {
         OS.patch_start(0x00001038, 0x80000438)
         jal     Global.dma_copy_        // original line 1
         addiu   a2, r0, 0x0100          // original line 2
-        lui     a0, 0x0240              // load rom address (0x02400000)
+        lui     a0, 0x02C0              // load rom address (0x02C00000)
         lui     a1, 0x8040              // load ram address (0x80400000)
         jal     Global.dma_copy_        // add custom functions
         lui     a2, ((custom_heap - 0x80400000) >> 16) + 0x0001 // a2 = rough size of custom ram

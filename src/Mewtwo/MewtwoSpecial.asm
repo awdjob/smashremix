@@ -10,7 +10,7 @@ scope MewtwoNSP {
     scope ground_begin_initial_: {
         addiu   sp, sp,-0x0020              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -19,8 +19,8 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Begin
-        
-        lli     a1, 0x00DE                  // a1(action id) = NSP_Ground_Begin 
+
+        lli     a1, 0x00DE                  // a1(action id) = NSP_Ground_Begin
         jal     begin_initial_              // begin_initial_
         nop
         lw      ra, 0x0014(sp)              // load ra
@@ -34,7 +34,7 @@ scope MewtwoNSP {
     scope air_begin_initial_: {
         addiu   sp, sp,-0x0020              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -43,7 +43,7 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Begin
-        
+
         lli     a1, 0x00E1                  // a1(action id) = NSP_Air_Begin
         jal     begin_initial_              // begin_initial_
         nop
@@ -70,25 +70,25 @@ scope MewtwoNSP {
         sw      r0, 0x0010(sp)              // argument 4 = 0
         jal     0x800E0830                  // unknown common subroutine
         lw      a0, 0x0028(sp)              // a0 = player object
-        
-        
+
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         jal     0x801576B4                  // kirby's on hit subroutine setup
         or      a0, s0, r0                  // a0 = player struct
         b       _continue                   // branch
         nop
-        
+
         _mewtwo:
         jal     0x8015DB4C                  // on hit subroutine setup
         or      a0, s0, r0                  // a0 = player struct
-        
+
         _continue:
         lw      at, 0x0008(s0)              // at = current character ID
         lli     t7, Character.id.KIRBY      // t7 = id.KIRBY
@@ -97,16 +97,16 @@ scope MewtwoNSP {
         lli     t7, Character.id.JKIRBY     // t7 = id.JKIRBY
         beql    t7, at, pc() + 12           // if J Kirby, load Kirby charge level
         lw      t7, 0x0AE0(s0)              // t7 = charge level
-        
+
         lw      t7, 0x0ADC(s0)              // t7 = charge level
         lli     at, 0x0007                  // at = 0x0007
         lli     t8, 0x0001                  // t8 = 0x0001
         bnel    t7, at, _end                // end if charge level != 7(max)
         sw      r0, 0x0B18(s0)              // set transition bool to 0 (charge)
-        
+
         // if we're here, the neutral special is fully charged, so set transition bool to shoot
         sw      t8, 0x0B18(s0)              // set transition bool to 1 (shoot)
-        
+
         _end:
         lw      s0, 0x0020(sp)              // ~
         lw      ra, 0x0024(sp)              // load s0, ra
@@ -114,7 +114,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for NSP_Ground_Begin and NSP_Air_Begin.
     // Based on subroutine 0x8015D3EC, which is the main subroutine for Samus's NSPG_Begin and NSPA_Begin actions.
@@ -133,17 +133,17 @@ scope MewtwoNSP {
         lw      t6, 0x014C(v0)              // t6 = kinetic state (0 = grounded, 1 = aerial)
         beq     t6, r0, _grounded           // branch if kinetic state = grounded
         lw      t7, 0x0B18(v0)              // t7 = transition bool (0 = charge, 1 = shoot)
-        
+
         _aerial:
         bnez    t7, _air_shoot              // branch if transition bool = shoot
         nop
-        
+
         _air_charge:
         jal     air_charge_initial_         // air_charge_initial_
         nop
         b       _end                        // end
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _air_shoot:
         jal     attach_shadow_ball_         // attach_shadow_ball_
         nop
@@ -151,31 +151,31 @@ scope MewtwoNSP {
         lw      a0, 0x0030(sp)              // a0 = player object
         b       _end                        // end
         lw      ra, 0x0014(sp)              // load ra
-        
-        
+
+
         _grounded:
         bnez    t7, _ground_shoot           // branch if transition bool = shoot
         nop
-        
+
         _ground_charge:
         jal     ground_charge_initial_      // ground_charge_initial_
         nop
         b       _end                        // end
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _ground_shoot:
         jal     attach_shadow_ball_         // attach_shadow_ball_
         nop
         jal     ground_shoot_initial_       // ground_shoot_initial_
         lw      a0, 0x0030(sp)              // a0 = player object
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _end:
         addiu   sp, sp, 0x0040              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for NSP_Ground_Begin.
     scope ground_begin_collision_: {
@@ -183,13 +183,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_begin_transition_   // a1(transition subroutine) = air_charge_transition_
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for Kirby's NSP_Ground_Begin.
     scope kirby_ground_begin_collision_: {
@@ -197,13 +197,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_begin_transition_   // a1(transition subroutine) = air_charge_transition_
         jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for NSP_Air_Begin.
     scope air_begin_collision_: {
@@ -211,13 +211,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_begin_transition_ // a1(transition subroutine) = ground_begin_transition_
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Air_Begin.
     scope air_begin_transition_: {
@@ -229,9 +229,9 @@ scope MewtwoNSP {
         jal     0x800DEEC8                  // set aerial state
         or      a0, s0, r0                  // a0 = player struct
         jal     0x800D8EB8                  // momentum capture?
-        or      a0, s0, r0                  // a0 = player struct   
+        or      a0, s0, r0                  // a0 = player struct
         lw      a0, 0x0028(sp)              // a0 = player object
-        
+
         lw      a2, 0x0008(s0)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
         beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
@@ -239,29 +239,29 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Begin
-        
+
         lli     a1, 0x00E1                  // a1(action id) = NSP_Air_Begin
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         lli     t8, 0x0002                  // ~
         jal     0x800E6F24                  // change action
         sw      t8, 0x0010(sp)              // argument 4 = 0x0002
-        
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lw      s0, 0x0020(sp)              // ~
@@ -270,7 +270,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Ground_Begin.
     scope ground_begin_transition_: {
@@ -282,7 +282,7 @@ scope MewtwoNSP {
         jal     0x800DEE98                  // set grounded state
         or      a0, s0, r0                  // a0 = player struct
         lw      a0, 0x0028(sp)              // a0 = player object
-        
+
         lw      a2, 0x0008(s0)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
         beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
@@ -290,7 +290,7 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Begin
-        
+
         lli     a1, 0x00DE                  // a1(action id) = NSP_Ground_Begin
         lw      t8, 0x08E8(s0)              // t8 = top joint struct (original logic, useless?)
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
@@ -298,22 +298,22 @@ scope MewtwoNSP {
         lli     t8, 0x0002                  // ~
         jal     0x800E6F24                  // change action
         sw      t8, 0x0010(sp)              // argument 4 = 0x0002
-        
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lw      s0, 0x0020(sp)              // ~
@@ -322,14 +322,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Initial subroutine for NSP_Ground_Charge.
     scope ground_charge_initial_: {
         addiu   sp, sp,-0x0028              // allocate stack space
         sw      ra, 0x0014(sp)              // ~
         sw      a0, 0x0018(sp)              // store ra, a0
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -338,7 +338,7 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Charge
-        
+
         lli     a1, 0x00DF                  // a1(action id) = NSP_Ground_Charge
         or      a2, r0, r0                  // a2(starting frame) = 0
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
@@ -352,14 +352,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Initial subroutine for NSP_Air_Charge.
     scope air_charge_initial_: {
         addiu   sp, sp,-0x0028              // allocate stack space
         sw      ra, 0x0014(sp)              // ~
         sw      a0, 0x0018(sp)              // store ra, a0
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -368,7 +368,7 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Charge
-        
+
         lli     a1, 0x00E2                  // a1(action id) = NSP_Air_Charge
         or      a2, r0, r0                  // a2(starting frame) = 0
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
@@ -382,7 +382,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which attaches a shadow ball to mewtwo's hand.
     // a0 - player object
@@ -391,23 +391,23 @@ scope MewtwoNSP {
         sw      s0, 0x0020(sp)              // ~
         sw      ra, 0x0024(sp)              // ~
         sw      a0, 0x0038(sp)              // store s0, ra, a0
-        lw      s0, 0x0084(a0)              // s0 = player struct 
-        
+        lw      s0, 0x0084(a0)              // s0 = player struct
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _continue                   // branch
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _continue:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lli     t8, 0x0014                  // t8 = maybe a timer?
@@ -417,7 +417,7 @@ scope MewtwoNSP {
         addiu   a1, sp, 0x0028              // a1 = address to return x/y/z coordinates to
         lw      a0, 0x0038(sp)              // a0 = player object
         addiu   a1, sp, 0x0028              // x/y/z coordinates
-        
+
         lw      a3, 0x0008(s0)              // a3 = current character ID
         lli     a2, Character.id.KIRBY      // a2 = id.KIRBY
         beql    a2, a3, pc() + 24           // if Kirby, load Kirby charge level
@@ -425,7 +425,7 @@ scope MewtwoNSP {
         lli     a2, Character.id.JKIRBY     // a2 = id.JKIRBY
         beql    a2, a3, pc() + 12           // if J Kirby, load Kirby charge level
         lw      a2, 0x0AE0(s0)              // a2 = charge level
-        
+
         lw      a2, 0x0ADC(s0)              // a2 = charge level
         jal     0x80168DDC                  // projectile stage setting
         or      a3, r0, r0                  // a3 = 0
@@ -436,7 +436,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for NSP_Ground_Charge and NSP_Air_Charge.
     // Based on subroutine 0x8015D5AC, which is the main subroutine for Samus' grounded neutral special charge.
@@ -444,7 +444,7 @@ scope MewtwoNSP {
         // First 2 lines of subroutine 0x8015D5AC
         addiu   sp, sp,-0x0050              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
-        // Now add some new logic to update the projectile position. 
+        // Now add some new logic to update the projectile position.
         sw      a0, 0x0020(sp)              // store a0
         jal     0x8015D394                  // update projectile position
         lw      a0, 0x0084(a0)              // a0 = player struct
@@ -467,7 +467,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for NSP_Ground_Charge and NSP_Air_Charge.
     // Based on subroutine 0x80157114, which is the main subroutine for Kirby's Samus grounded neutral special charge.
@@ -475,7 +475,7 @@ scope MewtwoNSP {
         // First 2 lines of subroutine 0x80157114
         addiu   sp, sp,-0x0050              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
-        // Now add some new logic to update the projectile position. 
+        // Now add some new logic to update the projectile position.
         sw      a0, 0x0020(sp)              // store a0
         jal     0x8015D394                  // update projectile position
         lw      a0, 0x0084(a0)              // a0 = player struct
@@ -498,9 +498,9 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     80157114
-    
+
     // @ Description
     // Interrupt subroutine for NSP_Ground_Charge.
     // Based on subroutine 0x8015D640, which is the interrupt subroutine for Samus' grounded neutral special charge.
@@ -515,14 +515,14 @@ scope MewtwoNSP {
         j       0x8015D68C                  // return to original subroutine
         nop
     }
-    
+
     // @ Description
     // Interrupt subroutine for NSP_Air_Charge.
     // Loosely based on subroutine 0x8015D640, which is the interrupt subroutine for Samus' grounded neutral special charge.
     scope air_charge_interrupt_: {
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
-        
+
         // begin by checking for A or B presses
         lw      a1, 0x0084(a0)              // a1 = player struct
         lhu     v0, 0x01BE(a1)              // v0 = buttons_pressed
@@ -531,34 +531,34 @@ scope MewtwoNSP {
         or      at, t6, t7                  // at = !0 if (A_PRESSED) or (B_PRESSED), else at = 0
         beqz    at, _check_cancel           // branch if both A and B are not being pressed
         nop
-        
+
         // if we're here, A or B has been pressed, so transition to NSP_Air_Shoot
         jal     air_shoot_initial_          // air_shoot_initial_
         nop
         b       _end                        // end
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _check_cancel:
         // now check if Shield button has been pressed
         lhu     at, 0x01B8(a1)              // at = shield press bitmask
         and     at, at, v0                  // at != 0 if shield pressed; else at = 0
         beql    at, r0, _end                // end if shield is not pressed
         lw      ra, 0x0014(sp)              // load ra
-        
+
         // if we're here, Z has been pressed, so transition to fall
         sw      a0, 0x0020(sp)              // 0x0020(sp) = player object
         jal     0x8015D300                  // destroy attached projectile
         lw      a0, 0x0084(a0)              // a0 = player struct
         jal     0x8013F9E0                  // transition to fall
-        lw      a0, 0x0020(sp)              // a0 = player object 
+        lw      a0, 0x0020(sp)              // a0 = player object
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _end:
         addiu   sp, sp, 0x0030              // dellocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for NSP_Ground_Charge.
     scope ground_charge_collision_: {
@@ -566,13 +566,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_charge_transition_  // a1(transition subroutine) = air_charge_transition_
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for Kirby's NSP_Ground_Charge.
     scope kirby_ground_charge_collision_: {
@@ -580,7 +580,7 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_charge_transition_  // a1(transition subroutine) = air_charge_transition_
         jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
@@ -594,13 +594,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_charge_transition_ // a1(transition subroutine) = ground_charge_transition_
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Ground_Charge.
     scope ground_charge_transition_: {
@@ -612,7 +612,7 @@ scope MewtwoNSP {
         jal     0x800DEE98                  // set grounded state
         or      a0, s0, r0                  // a0 = player struct
         lw      a0, 0x0028(sp)              // a0 = player object
-        
+
         lw      a2, 0x0008(s0)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
         beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
@@ -620,29 +620,29 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Charge
-        
+
         lli     a1, 0x00DF                  // a1(action id) = NSP_Ground_Charge
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         lli     t8, 0x0802                  // ~
         jal     0x800E6F24                  // change action
         sw      t8, 0x0010(sp)              // argument 4 = 0x0802
-        
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lw      s0, 0x0020(sp)              // ~
@@ -651,7 +651,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Air_Charge.
     scope air_charge_transition_: {
@@ -663,9 +663,9 @@ scope MewtwoNSP {
         jal     0x800DEEC8                  // set aerial state
         or      a0, s0, r0                  // a0 = player struct
         jal     0x800D8EB8                  // momentum capture?
-        or      a0, s0, r0                  // a0 = player struct   
+        or      a0, s0, r0                  // a0 = player struct
         lw      a0, 0x0028(sp)              // a0 = player object
-        
+
         lw      a2, 0x0008(s0)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
         beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
@@ -673,29 +673,29 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Charge
-        
+
         lli     a1, 0x00E2                  // a1(action id) = NSP_Air_Charge
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         lli     t8, 0x0802                  // ~
         jal     0x800E6F24                  // change action
         sw      t8, 0x0010(sp)              // argument 4 = 0x0802
-        
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lw      s0, 0x0020(sp)              // ~
@@ -704,14 +704,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Initial subroutine for NSP_Ground_Shoot.
     // Based on subroutine 0x8015DA60, which is the initial subroutine for Samus' grounded neutral special shot.
     scope ground_shoot_initial_: {
         // Copy the first 5 lines of subroutine 0x8015DA60
         OS.copy_segment(0xD84A0, 0x14)
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -720,13 +720,13 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Shoot
-        
+
         lli     a1, 0x00E0                  // a1(action id) = NSP_Ground_Shoot
         or      a2, r0, r0                  // a2(starting frame) = 0
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
         sw      t6, 0x0024(sp)              // 0x0024(sp) = player struct
-        
+
         lw      t9, 0x0024(sp)              // t9 = player struct
         lw      t7, 0x0008(t9)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
@@ -734,15 +734,15 @@ scope MewtwoNSP {
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(t9)              // store on hit subroutine in player struct
         lw      ra, 0x001C(sp)              // load ra
@@ -750,14 +750,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Initial subroutine for NSP_Air_Shoot.
     // Based on subroutine 0x8015DAA8, which is the initial subroutine for Samus' grounded neutral special shot.
     scope air_shoot_initial_: {
         // Copy the first 15 lines of subroutine 0x8015DAA8
         OS.copy_segment(0xD84E8, 0x3C)
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -766,27 +766,27 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Shoot
-        
+
         lli     a1, 0x00E4                  // a1(action id) = NSP_Air_Shoot
         or      a2, r0, r0                  // a2(starting frame) = 0
         jal     0x800E6F24                  // change action
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
-        
+
         lw      t7, 0x0008(s0)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
         beq     t7, at, _kirby              // branch if character = KIRBY
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(s0)              // store on hit subroutine in player struct
         lw      s0, 0x0020(sp)              // ~
@@ -795,7 +795,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for NSP_Ground_Shoot and NSP_Air_Shoot.
     // Wrapped version of subroutine 0x0x8015D7AC (SamusNSP.shoot_main_)
@@ -813,9 +813,9 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
-    // Main 
+    // Main
     // Main subroutine for NSP_Ground_Shoot and NSP_Air_Shoot.
     // Wrapped version of subroutine 0x80157314 (Kirby.SamusNSP_shoot_main_)
     // Adds a jump to update_ball_position_
@@ -832,7 +832,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for NSP_Ground_Shoot.
     scope ground_shoot_collision_: {
@@ -840,13 +840,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_shoot_transition_   // a1(transition subroutine) = air_shoot_transition_
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for Kirby's NSP_Ground_Shoot.
     scope kirby_ground_shoot_collision_: {
@@ -854,13 +854,13 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_shoot_transition_   // a1(transition subroutine) = air_shoot_transition_
         jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for NSP_Air_Shoot.
     scope air_shoot_collision_: {
@@ -868,20 +868,20 @@ scope MewtwoNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_shoot_transition_ // a1(transition subroutine) = ground_shoot_transition_
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Ground_Shoot.
     // Based on subroutine 0x8015D9B0, which is the transition subroutine for Samus' aerial neutral special shot.
     scope ground_shoot_transition_: {
         // Copy the first 8 lines of subroutine 0x8015D9B0
         OS.copy_segment(0xD83F0, 0x20)
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -890,13 +890,13 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Ground_Shoot
-        
+
         lli     a1, 0x00E0                  // a1(action id) = NSP_Ground_Shoot
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
         sw      t7, 0x0010(sp)              // argument 4 = t7
-        
+
         lw      t9, 0x0024(sp)              // t9 = player struct
         lw      t7, 0x0008(t9)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
@@ -904,15 +904,15 @@ scope MewtwoNSP {
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(t9)              // store on hit subroutine in player struct
         lw      ra, 0x001C(sp)              // load ra
@@ -920,14 +920,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to NSP_Air_Shoot.
     // Based on subroutine 0x8015DA04, which is the transition subroutine for Samus' aerial neutral special shot.
     scope air_shoot_transition_: {
         // Copy the first 8 lines of subroutine 0x8015DA04
         OS.copy_segment(0xD8444, 0x20)
-        
+
         lw      a2, 0x0084(a0)              // ~
         lw      a2, 0x0008(a2)              // a2 = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
@@ -936,13 +936,13 @@ scope MewtwoNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.MTWO_NSP_Air_Shoot
-        
+
         lli     a1, 0x00E4                  // a1(action id) = NSP_Air_Shoot
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
         sw      t7, 0x0010(sp)              // argument 4 = t7
-        
+
         lw      t9, 0x0024(sp)              // t9 = player struct
         lw      t7, 0x0008(t9)              // t7 = current character ID
         lli     at, Character.id.KIRBY      // at = id.KIRBY
@@ -950,15 +950,15 @@ scope MewtwoNSP {
         lli     at, Character.id.JKIRBY     // at = id.JKIRBY
         bne     t7, at, _mewtwo             // branch if character != JKIRBY
         nop
-        
+
         _kirby:
         li      t7, 0x80156E98              // t7 = kirby's on hit subroutine
         b       _end                        // branch to end
         nop
-        
+
         _mewtwo:
         li      t7, 0x8015D338              // t7 = on hit subroutine
-        
+
         _end:
         sw      t7, 0x09EC(t9)              // store on hit subroutine in player struct
         lw      ra, 0x001C(sp)              // load ra
@@ -966,14 +966,14 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for Shadow Ball.
     // Based on subroutine 0x80168BFC, which is the main subroutine for the Charge Shot projectile.
-    scope shadow_ball_main_: {  
+    scope shadow_ball_main_: {
         constant AMPLITUDE(0x42C8)          // float: 100
         constant FREQUENCY(0x4040)          // float: 3Hz
-    
+
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
         lw      a1, 0x0084(a0)              // a1 = projectile special struct
@@ -982,7 +982,7 @@ scope MewtwoNSP {
         lw      t6, 0x029C(a1)              // t6 = frame count
         bnez    t6, _projectile_active      // branch if projectile is active (frame counter has started)
         nop
-        
+
         // if projectile is not active (charging state)
         lw      t6, 0x02A4(a1)              // t6 = charge level
         sll     t7, t6, 0x0003              // ~
@@ -1000,7 +1000,7 @@ scope MewtwoNSP {
         lw      t1, 0x02A0(a1)              // t1 = bool begin_shot
         beqz    t1, _end                    // skip if begin_shot = FALSE
         nop
-        
+
         // if the bool for beginning the shot was enabled
         lw      t1, 0x0020(t6)              // t1 = current y position
         sw      t1, 0x02AC(a1)              // save current y position as base y
@@ -1016,7 +1016,7 @@ scope MewtwoNSP {
         addiu   at, r0, 0x0001              // at = 0x1
         b       _end                        // end subroutine
         sw      at, 0x029C(a1)              // set frame count to initial value of 1
-        
+
         _projectile_active:
         lw      at, 0x02B0(a1)              // at = shield bounce flag
         bnez    at, _update_frame_count     // skip if a shield bounce has ocurred
@@ -1039,12 +1039,12 @@ scope MewtwoNSP {
         add.s   f6, f6, f4                  // f6 = base y + AMPLITUDE * sin(ωt)
         lw      t6, 0x0074(a0)              // t6 = projectile first bone(0) struct
         swc1    f6, 0x0020(t6)              // store updated y position
-        
+
         _update_frame_count:
         lw      at, 0x029C(a1)              // at = frame count
         addiu   at, at, 0x0001              // increment frame count
         sw      at, 0x029C(a1)              // store updated frame count
-        
+
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
@@ -1052,7 +1052,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         or      v0, r0, r0                  // return 0 (don't destroy projectile)
     }
-    
+
     // @ Description
     // Subroutine for applying charge levels to Shadow Ball.
     // Based on subroutine 0x80168B00 which applies charge levels for Charge Shot.
@@ -1067,7 +1067,7 @@ scope MewtwoNSP {
         // Copy the next 14 lines of subroutine 0x80168B00
         OS.copy_segment(0xE35E4, 0x38)
     }
-    
+
     // @ Description
     // Patch for subroutine 0x80168DDC, which is the "stage setting" subroutine for Charge Shot.
     // Adds a check for Mewtwo when loading the charge FGM from the charge level array.
@@ -1077,7 +1077,7 @@ scope MewtwoNSP {
         addu    a1, a1, t1                  // a1 = base + offset (original line 1)
         _return:
         OS.patch_end()
-        
+
         // t1 = offset for charge_level_array
         // 0x0024(sp) = player struct
         lw      at, 0x0024(sp)              // at = player struct
@@ -1091,17 +1091,17 @@ scope MewtwoNSP {
         lli     t0, Character.id.MTWO       // t0 = id.MTWO
         bne     a0, t0, _end                // skip if character !=MTWO
         lhu     a1, 0x8F2A(a1)              // a1 = charge fgm (Samus)
-        
+
         // if character is Mewtwo
         li      a1, charge_level_array      // ~
         addu    a1, a1, t1                  // a1 = struct for current charge level (charge_level_array + offset)
         lw      a1, 0x0018(a1)              // a1 = charge fgm (Mewtwo)
-        
+
         _end:
         j       _return                     // return
-        nop  
+        nop
     }
-    
+
     // @ Description
     // Patch for subroutine 0x8015D7AC (SamusNSP.shoot_main_), increases the x velocity gained when firing for Mewtwo.
     scope shoot_velocity_patch_: {
@@ -1110,13 +1110,13 @@ scope MewtwoNSP {
         nop
         _return:
         OS.patch_end()
-        
+
         // s0 = player struct
         lw      t1, 0x0008(s0)              // t1 = character id
         lli     at, Character.id.MTWO       // at = id.MTWO
         bne     t1, at, _original           // skip if character !=MTWO
         addiu   t9, t8, 0x0001              // original line 2
-        
+
         _mewtwo:
         // if the character is Mewtwo, use an alternate calculation for x velocity
         lui     at, 0x4120                  // ~
@@ -1134,12 +1134,12 @@ scope MewtwoNSP {
         lw      v0, 0x0AE0(s0)              // original line
         j       0x8015D89C                  // return to original subroutine
         lui     at, 0xC0A0                  // at = float -5.0, originally float -10.0
-        
+
         _original:
         j       _return                     // return
         lui     at, 0x4120                  // original line 1
     }
-    
+
     // @ Description
     // Patch for subroutine 0x80157314 (Kirby.SamusNSP_shoot_main_), increases the x velocity gained when firing with Mewtwo's power.
     scope kirby_shoot_velocity_patch_: {
@@ -1148,13 +1148,13 @@ scope MewtwoNSP {
         nop
         _return:
         OS.patch_end()
-        
+
         // s0 = player struct
         lw      t1, 0x0ADC(s0)              // t1 = character id of copied power
         lli     at, Character.id.MTWO       // at = id.MTWO
         bne     t1, at, _original           // skip if copied character !=MTWO
         addiu   t9, t8, 0x0001              // original line 2
-        
+
         _mewtwo:
         // if the copied character is Mewtwo, use an alternate calculation for x velocity
         lui     at, 0x4120                  // ~
@@ -1172,12 +1172,12 @@ scope MewtwoNSP {
         lw      v0, 0x0AE0(s0)              // original line
         j       0x80157404                  // return to original subroutine
         lui     at, 0xC0A0                  // at = float -5.0, originally float -10.0
-        
+
         _original:
         j       _return                     // return
         lui     at, 0x4120                  // original line 1
     }
-     
+
     // @ Description
     // Patch for Samus NSP subroutine 0x8015D35C, which gets the x/y/z coordinates of the arm cannon part.
     // When the character is Mewtwo, use this version of the subroutine instead.
@@ -1187,7 +1187,7 @@ scope MewtwoNSP {
         mtc1    r0, f0                      // f0 = 0 (original line 1)
         _return:
         OS.patch_end()
-        
+
         addiu   sp, sp,-0x0018              // allocate stack space (original line 2)
         lw      at, 0x0008(a0)              // at = current character id
         lli     t6, Character.id.MTWO       // t6 = id.MTWO
@@ -1197,11 +1197,11 @@ scope MewtwoNSP {
         lli     t6, Character.id.JKIRBY     // t6 = id.JKIRBY
         beq     at, t6, _kirby              // branch if character id = JKIRBY
         nop
-        
+
         // if we're here, go back to the original subroutine
         j       _return                     // return
         nop
-        
+
         _mewtwo:
         sw      ra, 0x0014(sp)              // store ra
         swc1    f0, 0x0000(a1)              // ~
@@ -1213,7 +1213,7 @@ scope MewtwoNSP {
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
-        
+
         _kirby:
         sw      ra, 0x0014(sp)              // store ra
         swc1    f0, 0x0000(a1)              // ~
@@ -1226,7 +1226,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Runs when a Shadow Ball collides with a hurtbox or shield, is absorbed, or clangs.
     // Based on 0x80168D24, which is the equivalent for Charge Shot.
@@ -1248,7 +1248,7 @@ scope MewtwoNSP {
         jr      ra                          // return
         lli     v0, 0x0001                  // return 1 (destroy projectile)
     }
-    
+
     // @ Description
     // Collision subroutine for Shadow Ball.
     // Based on 0x801688C4, which is the equivalent for Charge Shot.
@@ -1259,7 +1259,7 @@ scope MewtwoNSP {
         lw      t6, 0x029C(v0)              // t6 = frame count
         beql    t6, r0, _end                // skip if projectile is not active (frame counter hasn't started)
         or      v0, r0, r0                  // return 0 (don't destroy projectile)
-        
+
         jal     0x80167C04                  // charge shot collision detection?
         sw      a0, 0x0018(sp)              // 0x0018(sp) = projectile object
         beqz    v0, _end                    // end if collision wasn't detected
@@ -1267,13 +1267,13 @@ scope MewtwoNSP {
         // if collision was detected
         lw      v0, 0x0084(a0)              // v0 = projectile special struct
         lw      a0, 0x0074(a0)              // a0 = projectile first bone(0) struct
-        addiu   a0, a0, 0x001C              // a0 = projectile x/y/z coordinates 
+        addiu   a0, a0, 0x001C              // a0 = projectile x/y/z coordinates
         li      t7, GFX.current_gfx_id      // t7 = current_gfx_id
         lw      t6, 0x02A4(v0)              // t6 = charge level
         lli     at, 0x0007                  // at = 7 (full charge)
         beq     at, t6, _full_charge        // branch if projectile is fully charged
         nop
-        
+
         // if projectile is not fully charged
         lli     at, 0x005C                  // at = blue explosion id
         jal     0x80100480                  // create explosion effect
@@ -1284,7 +1284,7 @@ scope MewtwoNSP {
         lli     a0, 0x0000                  // FGM id = 0
         b       _end                        // end subroutine
         lli     v0, 0x0001                  // return 1 (destroy projectile)
-        
+
         _full_charge:
         lli     at, 0x005D                  // at = "blue bomb explosion" id
         jal     0x801005C8                  // create large explosion effect
@@ -1294,14 +1294,14 @@ scope MewtwoNSP {
         jal     0x800269C0                  // play FGM
         lli     a0, 0x0001                  // FGM id = 1
         lli     v0, 0x0001                  // return 1 (destroy projectile)
-        
+
         _end:
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Runs when a Shadow Ball collides with edges of a shield and bounces off.
     // Wrapped version of 0x80168D54, which is the shield collision subroutine for Carge Shot.
@@ -1335,7 +1335,7 @@ scope MewtwoNSP {
     dw 0x80168DA4                           // This function runs when the projectile collides with Fox's reflector. (default 0x80168DA4)
     dw shadow_ball_hurtbox_collision_       // This function runs when the projectile collides with Ness's psi magnet. (default 0x80168D24)
     OS.align(16)                            // pad to 0x10
-    
+
     // @ Description
     // Adds a charge level struct for Mewtwo.
     // graphic_size - graphic size multiplier
@@ -1346,8 +1346,8 @@ scope MewtwoNSP {
     // shot_fgm - fgm to play when shooting
     // charge_fgm - fgm to play when charging
     // hit_fgm - fgm to play when the projectile hits an opponent
-    // unknown_2 - unknown, charge shot is 1 for levels 0-6, 2 for level 7
-    macro add_charge_level(graphic_size, speed, damage, hitbox_size, unknown_1, shot_fgm, charge_fgm, hit_fgm, unknown_2) {
+    // priority - clang priority (all projectiles are 1 other than full charge shot)
+    macro add_charge_level(graphic_size, speed, damage, hitbox_size, unknown_1, shot_fgm, charge_fgm, hit_fgm, priority) {
         float32 {graphic_size}              // 0x00 - graphic size multiplier
         float32 {speed}                     // 0x04 - x speed
         dw {damage}                         // 0x08 - hitbox damage
@@ -1356,9 +1356,9 @@ scope MewtwoNSP {
         dw {shot_fgm}                       // 0x14 - fgm to play when shooting
         dw {charge_fgm}                     // 0x18 - fgm to play when charging
         dw {hit_fgm}                        // 0x1C - fgm to play when the projectile hits an opponent
-        dw {unknown_2}                      // 0x20 - unknown, charge shot is 1 for levels 0-6, 2 for level 7
+        dw {priority}                       // 0x20 - clang priority (all projectiles are 1 other than full charge shot)
     }
-    
+
     OS.align(16)
     charge_level_array:
     add_charge_level(130, 70,  2,  90, 10,  0x1A,  0x3C9, 0x1C, 1)      // level 0
@@ -1375,7 +1375,7 @@ scope MewtwoUSP {
     constant DEFAULT_ANGLE(0x3FC90FDB) // float 1.570796 rads
     constant LANDING_FSM(0x3F9D89D9) // float 1.23077
     constant SPEED(0x4300) // float 128
-    
+
     // @ Description
     // Subroutine which runs when Mewtwo initiates a grounded up special.
     scope ground_begin_initial_: {
@@ -1404,7 +1404,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which runs when Mewtwo initiates an aerial up special.
     scope air_begin_initial_: {
@@ -1440,20 +1440,20 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // Main subroutine for USP_Ground_Begin and USP_Air_Begin
     scope begin_main_: {
         addiu   sp, sp,-0x0018              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
         li      a1, move_initial_           // a1(transition subroutine) = move_initial_
         jal     0x800D9480                  // common main subroutine (transition on animation end)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for USP_Ground_Begin.
     scope ground_begin_collision_: {
@@ -1461,13 +1461,13 @@ scope MewtwoUSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_begin_transition_   // a1(transition subroutine) = air_begin_transition_
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for USP_Air_Begin.
     scope air_begin_collision_: {
@@ -1475,13 +1475,13 @@ scope MewtwoUSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_begin_transition_ // a1(transition subroutine) = ground_begin_transition_
         jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to USP_Ground_Begin.
     scope ground_begin_transition_: {
@@ -1502,7 +1502,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to USP_Air_Begin.
     scope air_begin_transition_: {
@@ -1525,7 +1525,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which begins Mewtwo's up special movement actions.
     scope move_initial_: {
@@ -1538,15 +1538,15 @@ scope MewtwoUSP {
         lb      v0, 0x01C2(s0)              // v0 = stick_x
         bltzl   v0, _check_turnaround       // branch if stick_x is negative...
         subu    v0, r0, v0                  // ...and make stick_x positive
-        
+
         _check_turnaround:
         // v0 = absolute stick_x
         slti    at, v0, 0x000B              // at = 1 if absolute stick_x < 11, else at = 0
         bnez    at, _check_deadzone         // skip if absolute stick_x < 11
-        nop 
+        nop
         jal     0x800E8044                  // apply turnaround
         or      a0, s0, r0                  // a0 = player struct
-        
+
         _check_deadzone:
         lw      t8, 0x014C(s0)              // t8 = kinetic state
         sw      t8, 0x0028(sp)              // 0x0028(sp) = kinetic state
@@ -1566,10 +1566,10 @@ scope MewtwoUSP {
         sw      at, 0x002C(sp)              // 0x002C(sp) = use_default_angle
         bnez    at, _aerial                 // branch if use_default_angle = 1
         nop
-        
+
         bnez    t8, _change_action          // skip if kinetic state !grounded
         lli     a1, Mewtwo.Action.USP_Air_Move // a1(action id) = USP_Air_Move
-        
+
         _grounded:
         lb      t0, 0x01C3(s0)              // t0 = stick_y
         bnez    t0, _aerial                 // branch if stick_y = 0
@@ -1577,16 +1577,16 @@ scope MewtwoUSP {
         lb      t0, 0x01C2(s0)              // t0 = stick_x
         beqz    t0, _aerial                 // branch if stick_x = 0
         lli     a1, Mewtwo.Action.USP_Air_Move // a1(action id) = USP_Air_Move
-        
+
         // if we're here, stick_y is 0 and stick_x is not 0, so use grounded action
         b       _change_action              // change action
         lli     a1, Mewtwo.Action.USP_Ground_Move // a1(action id) = USP_Ground_Move
-        
+
         _aerial:
         jal     0x800DEEC8                  // set aerial state
         or      a0, s0, r0                  // a0 = player struct
         lli     a1, Mewtwo.Action.USP_Air_Move // a1(action id) = USP_Air_Move
-        
+
         _change_action:
         lw      a0, 0x0020(sp)              // a0 = player object
         or      a2, r0, r0                  // a2(starting frame) = 0
@@ -1595,7 +1595,7 @@ scope MewtwoUSP {
         sw      r0, 0x0010(sp)              // argument 4 = 0
         jal     0x800E0830                  // unknown common subroutine
         lw      a0, 0x0020(sp)              // a0 = player object
-        
+
         // take mid-air jumps away at this point
         lw      t0, 0x09C8(s0)              // t0 = attribute pointer
         lw      t0, 0x0064(t0)              // t0 = max jumps
@@ -1604,7 +1604,7 @@ scope MewtwoUSP {
         lw      at, 0x002C(sp)              // at = use_default_angle
         bnez    at, _movement               // branch if use_default_angle = 1
         sw      t0, 0x0B20(s0)              // store DEFAULT_ANGLE
-        
+
         _continue:
         lb      t0, 0x01C2(s0)              // t0 = stick_x
         lb      t1, 0x01C3(s0)              // t1 = stick_y
@@ -1617,13 +1617,13 @@ scope MewtwoUSP {
         jal     0x8001863C                  // f0 = atan2(f12,f14)
         cvt.s.w f14, f14                    // f14 = stick x * direction
         swc1    f0, 0x0B20(s0)              // store movement angle
-    
+
         _movement:
         or      a0, s0, r0                  // a0 = player struct
         lli     at, 000012                  // at = 12
         jal     apply_movement_             // apply movement
         sw      at, 0x0B18(a0)              // set movement timer to 12
-        
+
         _visibility:
         lbu     at, 0x018D(s0)              // at = bit field
         ori     at, at, 0x0001              // enable bitflag for invisibility
@@ -1634,21 +1634,21 @@ scope MewtwoUSP {
         addu    t0, t0, t1                  // t0 = address of env color override value
         li      t1, 0xFFFFFF00              // env color for full transparency
         sw      t1, 0x0000(t0)              // store updated env color
-        
+
         _intangibility:
         lli     t0, 0x0003                  // ~
-        sb      t0, 0x05BB(s0)              // set hurtbox state to 0x0003(intangible)    
-        
+        sb      t0, 0x05BB(s0)              // set hurtbox state to 0x0003(intangible)
+
         _platform:
         lw      at, 0x0028(sp)              // at = kinetic state
         bnez    at, _end                    // skip if kinetic state was !grounded
         nop
-        
+
         // if the original kinetic state was grounded, this will allow dropping through platforms
         lw      t8, 0x00EC(s0)              // t8 = platform ID
         sw      t8, 0x0144(s0)              // allows pass through given ID?
-        
-        
+
+
         _end:
         lw      ra, 0x001C(sp)              // ~
         lw      s0, 0x0024(sp)              // load s0
@@ -1656,7 +1656,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for USP_Ground_Move and USP_Air_Move.
     scope move_main_: {
@@ -1667,29 +1667,29 @@ scope MewtwoUSP {
         addiu   t6, t6,-0x0001              // decrement timer
         bnez    t6, _end                    // skip if timer !0
         sw      t6, 0x0B18(v0)              // update movement timer
-        
+
         // If we're here, then the movement timer has ended, so transition to ending animation
         lw      t6, 0x014C(v0)              // t6 = kinetic state
         bnez    t6, _aerial                 // branch if kinetic state !grounded
         nop
-        
+
         _grounded:
         jal     ground_end_initial_         // transition to USP_Ground_End
         nop
         b       _end                        // end
         nop
-        
+
         _aerial:
         jal     air_end_initial_            // transition to USP_Air_End
         nop
-        
+
         _end:
         lw      ra, 0x001C(sp)              // load ra
         addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Physics subroutine for USP_Ground_Move and USP_Air_Move.
     scope move_physics_: {
@@ -1702,7 +1702,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for USP_Ground_Move.
     scope ground_move_collision_: {
@@ -1710,13 +1710,13 @@ scope MewtwoUSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_move_transition_    // a1(transition subroutine) = air_move_transition_
         jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for USP_Air_Move.
     scope air_move_collision_: {
@@ -1724,13 +1724,13 @@ scope MewtwoUSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_move_transition_ // a1(transition subroutine) = ground_move_transition_
         jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to USP_Ground_Move.
     scope ground_move_transition_: {
@@ -1746,7 +1746,7 @@ scope MewtwoUSP {
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
         sw      r0, 0x0010(sp)              // argument 4 = 0
-        
+
         _visibility:
         lw      a0, 0x0034(sp)              // a0 = player struct
         lbu     at, 0x018D(a0)              // at = bit field
@@ -1758,18 +1758,18 @@ scope MewtwoUSP {
         addu    t0, t0, t1                  // t0 = address of env color override value
         li      t1, 0xFFFFFF00              // env color for full transparency
         sw      t1, 0x0000(t0)              // store updated env color
-        
+
         _intangibility:
         lli     t0, 0x0003                  // ~
         sb      t0, 0x05BB(a0)              // set hurtbox state to 0x0003(intangible)
-        
+
         _end:
         lw      ra, 0x001C(sp)              // load ra
         addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to USP_Air_Move.
     scope air_move_transition_: {
@@ -1789,7 +1789,7 @@ scope MewtwoUSP {
         lw      a0, 0x0034(sp)              // a0 = player struct
         lw      a0, 0x0034(sp)              // a0 = player struct
         sw      r0, 0x0B20(a0)              // set angle to 0
-        
+
         _visibility:
         lbu     at, 0x018D(a0)              // at = bit field
         ori     at, at, 0x0001              // enable bitflag for invisibility
@@ -1800,18 +1800,18 @@ scope MewtwoUSP {
         addu    t0, t0, t1                  // t0 = address of env color override value
         li      t1, 0xFFFFFF00              // env color for full transparency
         sw      t1, 0x0000(t0)              // store updated env color
-        
+
         _intangibility:
         lli     t0, 0x0003                  // ~
-        sb      t0, 0x05BB(a0)              // set hurtbox state to 0x0003(intangible)   
-        
+        sb      t0, 0x05BB(a0)              // set hurtbox state to 0x0003(intangible)
+
         _end:
         lw      ra, 0x001C(sp)              // load ra
         addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which begins Mewtwo's grounded up special ending action.
     scope ground_end_initial_: {
@@ -1837,7 +1837,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which begins Mewtwo's aerial up special ending action.
     scope air_end_initial_: {
@@ -1866,7 +1866,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for USP_Air_End.
     // Transitions to special fall on animation end, and makes the character invisible if temp variable 3 is set.
@@ -1874,10 +1874,10 @@ scope MewtwoUSP {
         addiu   sp, sp,-0x0040              // allocate stack space
         sw      ra, 0x0024(sp)              // ~
         sw      a0, 0x0028(sp)              // store a0, ra
-        
+
         jal     end_invisibility_           // check for invisibility
         lw      a0, 0x0084(a0)              // a0 = player struct
-        
+
         // checks the current animation frame to see if we've reached end of the animation
         lw      a0, 0x0028(sp)              // a0 = player object
         lwc1    f6, 0x0078(a0)              // ~
@@ -1886,7 +1886,7 @@ scope MewtwoUSP {
         nop
         bc1fl   _end                        // skip if animation end has not been reached
         lw      ra, 0x0024(sp)              // restore ra
-        
+
         // begin a special fall if the end of the animation has been reached
         lui     a1, 0x3F70                  // a1 (air speed multiplier) = 0.9375
         or      a2, r0, r0                  // a2 (unknown) = 0
@@ -1897,13 +1897,13 @@ scope MewtwoUSP {
         jal     0x801438F0                  // begin special fall
         sw      t6, 0x0014(sp)              // store LANDING_FSM
         lw      ra, 0x0024(sp)              // restore ra
-        
+
         _end:
         addiu   sp, sp, 0x0040              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Main subroutine for USP_Ground_End.
     // Transitions to idle on animation end, and makes the character invisible if temp variable 3 is set.
@@ -1911,7 +1911,7 @@ scope MewtwoUSP {
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x001C(sp)              // ~
         sw      a0, 0x0020(sp)              // store a0, ra
-        
+
         jal     end_invisibility_           // check for invisibility
         lw      a0, 0x0084(a0)              // a0 = player struct
         jal     0x800D94C4                  // check for idle transition
@@ -1923,7 +1923,7 @@ scope MewtwoUSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which makes the character invisible if temp variable 3 is set during up special ending actions.
     // a0 - player struct
@@ -1934,12 +1934,12 @@ scope MewtwoUSP {
         andi    at, at, 0xFFFE              // disable bitflag for invisibility
         // if temp variable 3 is set
         ori     at, at, 0x0001              // enable bitflag for invisibility
-        
+
         _end:
         jr      ra                          // return
         sb      at, 0x018D(a0)              // update bit field
     }
-    
+
     // @ Description
     // Collision subroutine for USP_Ground_End and USP_Air_End.
     // Based on subroutine 0x8015DD58, which is the collision subroutine for Samus' up special.
@@ -1955,18 +1955,18 @@ scope MewtwoUSP {
         addiu   a2, a2, LANDING_FSM & 0xFFFF// load lower 2 bytes of LANDING_FSM
         b       _end                        // end
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _grounded:
         jal     0x800DDEE8                  // grounded subroutine
         nop
         lw      ra, 0x0014(sp)
-        
+
         _end:
         addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which applies movement to Mewtwo's up special based on the angle stored at 0x0B20 in the player struct.
     // a0 - player struct
@@ -1978,7 +1978,7 @@ scope MewtwoUSP {
         lw      at, 0x0B20(a0)              // ~
         sw      at, 0x001C(sp)              // 0x001C(sp) = movement angle
         sw      a0, 0x0020(sp)              // 0x0020(sp) = player struct
-        
+
         // ultra64 cosf function
         jal     0x80035CD0                  // f0 = cos(f12)
         lwc1    f12, 0x001C(sp)             // f12 = movement angle
@@ -1990,12 +1990,12 @@ scope MewtwoUSP {
         lwc1    f12, 0x001C(sp)             // f12 = movement angle
         lwc1    f4, 0x0018(sp)              // f4 = SPEED
         mul.s   f4, f4, f0                  // f4 = y velocity (SPEED * sin(angle))
-        
+
         lw      at, 0x0020(sp)              // at = player struct
         lw      t0, 0x014C(at)              // t0 = kinetic state
         bnez    t0, _aerial                 // branch if kinetic state !grounded
         lwc1    f2, 0x0024(sp)              // f2 = x velocity
-        
+
         _grounded:
         swc1    f2, 0x0060(at)              // store updated ground x velocity
         lwc1    f0, 0x0044(at)              // ~
@@ -2003,14 +2003,14 @@ scope MewtwoUSP {
         mul.s   f2, f2, f0                  // f2 = x velocity * direction
         b       _end                        // end
         swc1    f2, 0x0048(at)              // store updated air x velocity
-        
+
         _aerial:
         lwc1    f0, 0x0044(at)              // ~
         cvt.s.w f0, f0                      // f0 = direction
         mul.s   f2, f2, f0                  // f2 = x velocity * direction
         swc1    f2, 0x0048(at)              // store updated x velocity
         swc1    f4, 0x004C(at)              // store updated y velocity
-        
+
         _end:
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0040              // deallocate stack space
@@ -2019,7 +2019,7 @@ scope MewtwoUSP {
     }
 }
 
-scope MewtwoDSP {   
+scope MewtwoDSP {
     // @ Description
     // Subroutine which runs when Mewtwo initiates a grounded down special.
     scope ground_initial_: {
@@ -2039,7 +2039,7 @@ scope MewtwoDSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which runs when Mewtwo initiates an aerial down special.
     scope air_initial_: {
@@ -2070,13 +2070,13 @@ scope MewtwoDSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_transition_         // a1(transition subroutine) = air_transition_
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Collision subroutine for aerial DSP.
     scope air_collision_: {
@@ -2084,13 +2084,13 @@ scope MewtwoDSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, ground_transition_      // a1(transition subroutine) = ground_transition_
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to grounded down special.
     scope ground_transition_: {
@@ -2111,7 +2111,7 @@ scope MewtwoDSP {
         jr      ra                          // return
         nop
     }
-    
+
     // @ Description
     // Subroutine which transitions to aerial down special.
     scope air_transition_: {

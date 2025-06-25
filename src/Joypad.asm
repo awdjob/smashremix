@@ -392,6 +392,10 @@ scope Joypad {
         lw      t4, 0x0104(v1)               // original line 2
         OS.patch_end()
 
+        li      t3, Toggles.entry_single_button_mode
+        lw      t3, 0x0004(t3)               // t3 = single_button_mode (0 if OFF, 1 if 'A', 2 if 'B', 3 if 'R', 4 if 'A+C', 5 if 'B+C', 6 if 'R+C')
+        bnez    t3, _end                     // if Single Button Mode is enabled, use default mask
+        nop
         li      t3, taunt_mask_per_port
         lbu     t8, 0x000D(s5)               // t8 = port
         sll     t8, t8, 0x0002               // t8 = offset
@@ -441,7 +445,10 @@ scope Joypad {
         lbu     t6, 0x000D(a0)               // t6 = port
 
         // If we are here, then a C button press occurred
-
+        li      v0, Toggles.entry_single_button_mode
+        lw      v0, 0x0004(v0)               // v0 = single_button_mode (0 if OFF, 1 if 'A', 2 if 'B', 3 if 'R', 4 if 'A+C', 5 if 'B+C', 6 if 'R+C')
+        bnez    v0, _jump                    // if Single Button Mode is enabled, return normally as jump
+        nop
         li      v0, taunt_mask_per_port
         sll     t6, t6, 0x0002               // t6 = offset to taunt button index
         addu    v0, v0, t6                   // v0 = address of taunt mask index

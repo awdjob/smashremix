@@ -1,7 +1,7 @@
 // Reflect.asm
 
 // This file allows us to use custom reflect routines for the reflecting player. Usually related to an action change or fgm/gfx
-
+// Also some AI stuff
 scope Reflect {
 
     // @ Description

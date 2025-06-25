@@ -7,11 +7,11 @@ scope Marth {
 	// Image commands used by moveset files
 	scope EYES: {
 		constant OPEN(0xAC000000)
-		constant DAMAGE(0xAC000001)
+		constant DAMAGE(0xAC000006)
 	}
 	scope MOUTH: {
 		constant NORMAL(0xAC100000)
-		constant DAMAGE(0xAC100001)
+		constant DAMAGE(0xAC100006)
 	}
 
     DOWN_BOUNCE:
@@ -71,6 +71,7 @@ scope Marth {
     STARROD_TILT:; dw 0xBC000003; dw 0x08000004; dw 0xBC000004; dw 0xB12C000D; dw 0x08000006; Moveset.SUBROUTINE(Moveset.shared.STARROD_TILT); dw 0x04000002; dw 0x54000001; dw 0x04000002; dw 0x18000000;  dw 0x08000026; dw 0xBC000003; dw 0
     STARROD_SMASH:; dw 0xBC000003; dw 0x08000013; dw 0xBC000004; dw 0xB12C0024; dw 0x50000000; dw 0x08000014; Moveset.SUBROUTINE(Moveset.shared.STARROD_SMASH); dw 0x04000002; dw 0x54000002; dw 0x04000005; dw 0x18000000; dw 0x0800002D; dw 0xBC000003; dw 0
     STARROD_DASH:; dw 0xBC000004; dw 0xB12C0014; dw 0x08000007; Moveset.SUBROUTINE(Moveset.shared.STARROD_DASH); dw 0x04000012; dw 0x18000000; dw 0x08000020; dw 0xBC000003; dw 0
+    HAMMER:; dw 0xC4000007; dw 0xBC000004; dw 0xAC000006; dw 0xAC100006; Moveset.SUBROUTINE(Moveset.shared.HAMMER); dw 0x04000010; dw 0x18000000; Moveset.GO_TO(HAMMER)
 
     insert TAUNT,"moveset/TAUNT.bin"
     insert GRAB_RELEASE_DATA,"moveset/GRAB_RELEASE_DATA.bin"
@@ -98,7 +99,7 @@ scope Marth {
     insert USP,"moveset/USP.bin"
     insert DSP,"moveset/DSP.bin"
     COUNTER_VOICE_ARRAY:; dh 0x35B; dh 0x361; dh 0x362; OS.align(4)
-    DSP_ATTACK:; Moveset.RANDOM_SFX(100, 0x0, 0x3, COUNTER_VOICE_ARRAY); insert "moveset/DSP_ATTACK.bin" // Play a random Voice FX and then continue with moveset
+    DSP_ATTACK:; Moveset.RANDOM_SFX(100, 0x1, 0x3, COUNTER_VOICE_ARRAY); insert "moveset/DSP_ATTACK.bin" // Play a random Voice FX and then continue with moveset
     insert NSP_1,"moveset/NSP_1.bin"
     insert NSP_2_HIGH,"moveset/NSP_2_HIGH.bin"
     insert NSP_2,"moveset/NSP_2.bin"
@@ -113,11 +114,6 @@ scope Marth {
     VICTORY_1:; Moveset.CONCURRENT_STREAM(SELECT); insert "moveset/VICTORY_1.bin"
     insert VICTORY_2,"moveset/VICTORY_2.bin"
     insert VICTORY_3,"moveset/VICTORY_3.bin"
-
-    // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
 
     // @ Description
     // Marth's extra actions
@@ -195,6 +191,9 @@ scope Marth {
         dw string_0x0F1
         dw string_0x0F2
     }
+
+    // Insert AI attack options
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action                       // Animation                        // Moveset Data             // Flags
     Character.edit_action_parameters(MARTH, Action.DeadU,                   File.MARTH_TUMBLE,                  DMG_1,                      -1)
@@ -333,12 +332,12 @@ scope Marth {
     Character.edit_action_parameters(MARTH, Action.RayGunShootAir,          File.MARTH_ITEM_SHOOT_AIR,          -1,                         -1)
     Character.edit_action_parameters(MARTH, Action.FireFlowerShoot,         File.MARTH_ITEM_SHOOT,              -1,                         -1)
     Character.edit_action_parameters(MARTH, Action.FireFlowerShootAir,      File.MARTH_ITEM_SHOOT_AIR,          -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerIdle,              File.MARTH_HAMMER_IDLE,             -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerWalk,              File.MARTH_HAMMER_MOVE,             -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerTurn,              File.MARTH_HAMMER_MOVE,             -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerJumpSquat,         File.MARTH_HAMMER_MOVE,             -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerAir,               File.MARTH_HAMMER_MOVE,             -1,                         -1)
-    Character.edit_action_parameters(MARTH, Action.HammerLanding,           File.MARTH_HAMMER_MOVE,             -1,                         -1)
+    Character.edit_action_parameters(MARTH, Action.HammerIdle,              File.MARTH_HAMMER_IDLE,             HAMMER,                     -1)
+    Character.edit_action_parameters(MARTH, Action.HammerWalk,              File.MARTH_HAMMER_MOVE,             HAMMER,                     -1)
+    Character.edit_action_parameters(MARTH, Action.HammerTurn,              File.MARTH_HAMMER_MOVE,             HAMMER,                     -1)
+    Character.edit_action_parameters(MARTH, Action.HammerJumpSquat,         File.MARTH_HAMMER_MOVE,             HAMMER,                     -1)
+    Character.edit_action_parameters(MARTH, Action.HammerAir,               File.MARTH_HAMMER_MOVE,             HAMMER,                     -1)
+    Character.edit_action_parameters(MARTH, Action.HammerLanding,           File.MARTH_HAMMER_MOVE,             HAMMER,                     -1)
     Character.edit_action_parameters(MARTH, Action.ShieldOn,                File.MARTH_SHIELD_ON,               -1,                         -1)
     Character.edit_action_parameters(MARTH, Action.ShieldOff,               File.MARTH_SHIELD_OFF,              -1,                         -1)
     Character.edit_action_parameters(MARTH, Action.RollF,                   File.MARTH_ROLL_F,                  ROLL_F,                     -1)
@@ -532,36 +531,15 @@ scope Marth {
     dw marth_entry_routine_
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.MARTH, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.MARTH, 0x2)
+    dh {MIDI.id.FIRE_EMBLEM}
     OS.patch_end()
 
-	// Set CPU SD prevent routine
+    // Set CPU SD prevent routine
     Character.table_patch_start(ai_attack_prevent, Character.id.MARTH, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.NONE
+    dw      AI.PREVENT_ATTACK.ROUTINE.MARIO
     OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  6,   16,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  1,   1,  -50, 50, 10, 100)  // todo: ?
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  1,   1,  -50, 50, 10, 100)  // todo: ?
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  6,   24,  -630, 630, -100, 250)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  6,   9,   -95, 680, -220, 260)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  5,   9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  14,  17,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,   10,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   6,   170, 420, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  4,   8,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  5,   21,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  6,   9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  6,   9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  5,   10,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  8,   16,  150, 570, 223, 423)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  8,   16,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  12,  17,  -1, -1, -1, 995)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  5,   12,  -350, 350, -85, 800)
 
     // @ Description
     // Entry routine for Marth. Sets the correct facing direction and then jumps to Link's entry routine.

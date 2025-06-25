@@ -378,11 +378,9 @@ scope CharacterSelectDebugMenu {
         bnezl   t1, pc() + 8                // only run the next line if t1 is not 0
         sw      t3, 0x0038(t1)              // show/hide flashing arrows
 
-        li      t1, CharacterSelect.render_control_object
-        lw      t1, 0x0000(t1)              // t1 = render control object
+        OS.read_word(CharacterSelect.render_control_object, t1) // t1 = render control object
 
-        li      t0, TwelveCharBattle.twelve_cb_flag
-        lw      t0, 0x0000(t0)              // t0 = 1 if 12cb
+        OS.read_word(TwelveCharBattle.twelve_cb_flag, t0) // t0 = 1 if 12cb
         bnez    t0, _12cb                   // skip to 12cb if on 12cb CSS
         nop
 
@@ -399,7 +397,7 @@ scope CharacterSelectDebugMenu {
         _dpad:
         addu    t1, t1, t2                  // t1 = render control object offset by panel
         lw      t0, 0x0030(t1)              // t0 = dpad object
-        beqz    t0, _end                    // skip if no dpad object
+        beqz    t0, _bonus_scroll           // skip if no dpad object
         nop
         sw      t3, 0x0038(t0)              // show/hide dpad texture
         lw      t1, 0x0034(t0)              // t1 = variant icons object
@@ -409,10 +407,10 @@ scope CharacterSelectDebugMenu {
         bnezl   t1, pc() + 8                // only run the next line if t1 is not 0
         sw      t3, 0x0038(t1)              // show/hide panel regional flag texture
         lw      t1, 0x0030(t0)              // t1 = yellow square object
-        beqz    t1, _end                    // only run the next lines if t1 is not 0
+        beqz    t1, _bonus_scroll           // only run the next lines if t1 is not 0
         nop
         sb      t3, 0x0043(t1)              // show/hide yellow square via alpha channel
-        b       _end
+        b       _bonus_scroll
         sw      at, 0x0044(t1)              // toggle alpha rendering
 
         _12cb:
@@ -425,7 +423,7 @@ scope CharacterSelectDebugMenu {
         sw      t3, 0x0038(t0)              // show/hide variant indicators
 
         lw      t4, 0x0034(t1)              // t4 = stock icon and count indicators object
-        sll     t5, t2, 0x0002              // t2 = offset to stock icon and count indicators object
+        sll     t5, t2, 0x0002              // t5 = offset to stock icon and count indicators object
         addu    t4, t4, t5                  // t4 = offset by panel
         lw      t0, 0x0030(t4)              // t0 = stock icon and count indicators object
         bnezl   t0, pc() + 8                // only run the next line if t0 is not 0
@@ -438,14 +436,25 @@ scope CharacterSelectDebugMenu {
         sw      t5, 0x0038(t0)              // save width
 
         _custom_portrait_indicators:
+        OS.read_word(debug_control_object, t5) // t5 = debug control object
+        lw      t4, 0x0040(a0)              // t4 = css panel struct
+        lw      t3, 0x0080(t4)              // t3 = held token in vs
+        bltzl   t3, pc() + 8                // if nothing held, just use port index
+        lw      t3, 0x0054(a0)              // t3 = port index
+        sll     t3, t3, 0x0002              // t3 = offset to debug button object
+        addu    t5, t5, t3                  // t5 = debug control object offset for held token
+        lw      t4, 0x0030(t5)              // t4 = debug button object
+        lw      t4, 0x0044(t4)              // t4 = display state (0 = hidden, 1 = active)
+        addiu   t3, t4, -0x0001             // t3 = -1 if menu is hidden, 0 if not
+
         lw      t4, 0x0038(t1)              // t4 = custom portrait indicators object
         addu    t4, t4, t2                  // t1 = render control object offset by panel
         lw      t0, 0x0030(t4)              // t0 = custom portrait indicators object
-        beqz    t0, _end                    // only run the next lines if t0 is not 0
+        beqz    t0, _bonus_scroll           // only run the next lines if t0 is not 0
         nop
         sw      t3, 0x0038(t0)              // show/hide custom portrait indicators
 
-        b       _end
+        b       _bonus_scroll
         nop
 
         _1p_bonus:
@@ -474,13 +483,12 @@ scope CharacterSelectDebugMenu {
         bnezl   t1, pc() + 8                // only run the next line if t1 is not 0
         sh      t4, 0x0014(t1)              // show/hide 1P/2P/3P/4P/CP texture
 
-        li      t1, CharacterSelect.render_control_object
-        lw      t1, 0x0000(t1)              // t1 = render control object
+        OS.read_word(CharacterSelect.render_control_object, t1) // t1 = render control object
         lw      t2, 0x0058(a0)              // t2 = dpad object index
         sll     t2, t2, 0x0002              // t2 = offset to dpad object
         addu    t1, t1, t2                  // t1 = render control object offset by panel
         lw      t0, 0x0030(t1)              // t0 = dpad object
-        beqz    t0, _end                    // skip if no dpad object
+        beqz    t0, _bonus_scroll           // skip if no dpad object
         nop
         sw      t3, 0x0038(t0)              // show/hide dpad texture
         lw      t1, 0x0034(t0)              // t1 = variant icons object
@@ -490,10 +498,40 @@ scope CharacterSelectDebugMenu {
         bnezl   t1, pc() + 8                // only run the next line if t1 is not 0
         sw      t3, 0x0038(t1)              // show/hide panel regional flag texture
         lw      t1, 0x0030(t0)              // t1 = yellow square object
-        beqz    t1, _end                    // only run the next lines if t1 is not 0
+        beqz    t1, _bonus_scroll           // only run the next lines if t1 is not 0
         nop
         sb      t3, 0x0043(t1)              // show/hide yellow square via alpha channel
         sw      at, 0x0044(t1)              // toggle alpha rendering
+
+        _bonus_scroll:
+        OS.read_word(TwelveCharBattle.twelve_cb_flag, t1) // t1 = 1 if 12cb
+        bnez    t1, _end                    // skip if 12cb
+        OS.read_word(CharacterSelect.render_control_object, t1) // t1 = render control object, yes delay slot
+        lw      t0, 0x0050(t1)              // t0 = bonus scroll indicators object
+        beqz    t0, _end                    // skip if no bonus scroll indicators object
+        lw      t2, 0x0054(a0)              // t2 = port index
+        lw      t4, 0x004C(a0)              // t4 = 1 if 1P/Bonus, 0 otherwise
+        bnezl   t4, pc() + 8                // if 1P/Bonus, t2 is always 0
+        lli     t2, 0x0000                  // t2 = 0 always in 1P/Bonus
+        sll     t2, t2, 0x0002              // t2 = offset to object
+        addu    t0, t0, t2                  // t1 = bonus scroll object offset by panel
+        lw      t0, 0x0030(t0)              // t0 = bonus scroll indicators object
+        beqz    t0, _end                    // skip if no bonus scroll indicators object
+        nop
+        bnez    t4, _update_bonus_scroll_display // if 1P/Bonus, at is ok
+        OS.read_word(debug_control_object, t3) // t3 = debug control object (yes, delay slot)
+        lw      t4, 0x0040(a0)              // t4 = css panel struct
+        lw      t2, 0x0080(t4)              // t2 = held token in vs
+        lw      t1, 0x0014(t4)              // t1 = panel doors object, or 0 which means it's Training
+        beqzl   t1, pc() + 8                // if training, held token is in a different spot
+        lw      t2, 0x007C(t4)              // t2 = held token in training
+        bltz    t2, _end                    // if nothing held, skip
+        sll     t4, t2, 0x0002              // t4 = offset to debug button object
+        addu    t3, t3, t4                  // t3 = debug control object offset for held token
+        lw      at, 0x0030(t3)              // at = debug button object
+        lw      at, 0x0044(at)              // at = display state (0 = hidden, 1 = active)
+        _update_bonus_scroll_display:
+        sw      at, 0x007C(t0)              // show/hide bonus scroll indicators
 
         _end:
         addiu   sp, sp,-0x0030              // allocate stack space
@@ -1312,9 +1350,13 @@ scope CharacterSelectDebugMenu {
         sw      ra, 0x0004(sp)              // save registers
         sw      t5, 0x000C(sp)              // ~
 
-        // a0 will be preserved
         li      a1, press_a_handler_._end   // a1 = ra if there is a press, past other custom button handler checks
+        // a0 and a1 will be preserved
         jal     CharacterSelect.check_manual_stock_arrow_press_
+        nop
+
+        // also check for picker press to allow controlling timer on css
+        jal     CharacterSelect.check_picker_press_
         nop
 
         lw      t5, 0x000C(sp)              // ~
@@ -1638,6 +1680,7 @@ scope CharacterSelectDebugMenu {
         lw      a1, 0x0054(a1)              // a1 = port index
         jalr    t6
         or      a2, r0, t2                  // a2 = new value
+        _reset_return:
 
         lw      at, 0x0014(sp)              // restore menu arrays
         lw      t0, 0x0018(sp)              // restore menu array
@@ -2353,7 +2396,7 @@ scope CharacterSelectDebugMenu {
         _check_toggles:
         li      t0, Toggles.block_gameplay
         lw      t1, 0x0010(t0)              // t1 = current Gameplay toggles values, word 1
-        li      t2, 0xFFFF7FCF              // t2 = 0xFFFF7FCF = mask to ignore improved AI and J sounds (make sure to update this if Gameplay toggles changed)
+        li      t2, 0xFFF7FF3F              // t2 = 0xFFF7FF3F = mask to ignore improved AI and J sounds (make sure to update this if Gameplay toggles changed)
         and     t1, t1, t2                  // t1 = current Gameplay toggles values, ignoring J sounds (make sure to update this if Gameplay toggles changed)
         lli     t2, 0x0000                  // t2 = default values (make sure to update this if Gameplay toggles changed)
         bnel    t1, t2, _end                // if current values don't match the defaults, then can't save high scores!
@@ -2367,6 +2410,10 @@ scope CharacterSelectDebugMenu {
         andi    t1, t1, 0xFFFC              // t1 = current Pokemon toggles values, ignoring sfx (make sure to update this if Gameplay toggles changed)
         lli     t2, 0x7FFC                  // t2 = default values (make sure to update this if Pokemon toggles changed)
         bnel    t1, t2, _end                // if current values don't match the defaults, then can't save high scores!
+        lli     v0, OS.FALSE                // v0 = FALSE = can't save high scores
+
+        OS.read_word(SinglePlayerEnemy.enemy_port, t0) // t0 = 0 if no enemy port enabled
+        bnezl   t0, _end
         lli     v0, OS.FALSE                // v0 = FALSE = can't save high scores
 
         _end:
@@ -2460,16 +2507,16 @@ scope CharacterSelectDebugMenu {
         if ({applies_to} & 0b100000) > 0 {
             // human
             if ({applies_to_hmn_cpu} & 0b10) > 0 {
-	            evaluate n(menu_item_count_vs)
-	            global evaluate MENU_ITEM_VS_{n}(menu_item_{i})
-	            global variable menu_item_count_vs(menu_item_count_vs + 1)
-	        }
-	        // cpu
+                evaluate n(menu_item_count_vs)
+                global evaluate MENU_ITEM_VS_{n}(menu_item_{i})
+                global variable menu_item_count_vs(menu_item_count_vs + 1)
+            }
+            // cpu
             if ({applies_to_hmn_cpu} & 0b01) > 0 {
-	            evaluate n(menu_item_count_vs_cpu)
-	            global evaluate MENU_ITEM_VS_CPU_{n}(menu_item_{i})
-	            global variable menu_item_count_vs_cpu(menu_item_count_vs_cpu + 1)
-	        }
+                evaluate n(menu_item_count_vs_cpu)
+                global evaluate MENU_ITEM_VS_CPU_{n}(menu_item_{i})
+                global variable menu_item_count_vs_cpu(menu_item_count_vs_cpu + 1)
+            }
         }
 
         // If applies to 1P, setup for adding to 1P menu item array
@@ -2483,16 +2530,16 @@ scope CharacterSelectDebugMenu {
         if ({applies_to} & 0b001000) > 0 {
             // human
             if ({applies_to_hmn_cpu} & 0b10) > 0 {
-	            evaluate n(menu_item_count_training)
-	            global evaluate MENU_ITEM_TRAINING_{n}(menu_item_{i})
-	            global variable menu_item_count_training(menu_item_count_training + 1)
-	        }
-	        // cpu
+                evaluate n(menu_item_count_training)
+                global evaluate MENU_ITEM_TRAINING_{n}(menu_item_{i})
+                global variable menu_item_count_training(menu_item_count_training + 1)
+            }
+            // cpu
             if ({applies_to_hmn_cpu} & 0b01) > 0 {
-	            evaluate n(menu_item_count_training_cpu)
-	            global evaluate MENU_ITEM_TRAINING_CPU_{n}(menu_item_{i})
-	            global variable menu_item_count_training_cpu(menu_item_count_training_cpu + 1)
-	        }
+                evaluate n(menu_item_count_training_cpu)
+                global evaluate MENU_ITEM_TRAINING_CPU_{n}(menu_item_{i})
+                global variable menu_item_count_training_cpu(menu_item_count_training_cpu + 1)
+            }
         }
 
         // If applies to Bonus, setup for adding to Bonus menu item array

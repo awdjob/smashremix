@@ -1,3 +1,5 @@
+include "FGM.asm"
+
 scope SinglePlayerModes: {
     // 8018F7B4 - 1p stage/rttf init
     // 8018E5F8 - 1p targets/platforms init
@@ -220,6 +222,30 @@ scope SinglePlayerModes: {
         lui     t1, 0x8013
         addiu   t1, t1, 0x7668
         lw      t1, 0x0000(t1)          // loads character ID of selected character in Bonus 2 CSS
+
+        lli     t2, Character.id.PLACEHOLDER
+        bne     t1, t2, _skip_random    // if not random, skip
+        nop
+
+        addiu   sp, sp,-0x0030          // allocate stack space
+        sw      v0, 0x0004(sp)          // save registers
+
+        jal     CharacterSelect.get_random_char_id_
+        nop
+        sw      v0, 0x0008(sp)          // save new char_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, v0, r0              // a0 = char_id
+
+        li      t1, 0x8013766C          // t1 = costume_id address
+        sw      v0, 0x0000(t1)          // save costume_id (loaded from below)
+
+        lw      v0, 0x0004(sp)          // restore registers
+        lw      t1, 0x0008(sp)          // t1 = char_id
+        addiu   sp, sp, 0x0030          // deallocate stack space
+
+        _skip_random:
         beq     r0, r0, _skip2
         sb      t1, 0x0014(v0)
 
@@ -776,7 +802,7 @@ scope SinglePlayerModes: {
 
         _giga:
         li      t0, 0x800A4AE8                 // 1p port
-        lbu     t0, 0x0000(t0)                 // load the point being used
+        lbu     t0, 0x0000(t0)                 // load the port being used
         li      t6, 0x801938EC
         sw      t0, 0x0000(t6)                  // this ensures the game looks to Giga Bowser's hp to change stage and end level
         lw      t0, 0x0004(sp)                  // ~
@@ -1174,27 +1200,27 @@ scope SinglePlayerModes: {
         nop
         _return:
         OS.patch_end()
-        
+
         li      t8, singleplayer_mode_flag      // t8 = singleplayer mode flag
         lw      t8, 0x0000(t8)                  // t8 = 2 if multiman
         addiu   at, r0, ALLSTAR_ID              // insert check
         bne     t8, at, _skip_limbo             // if not allstar, branch
         nop
-        
+
         li      at, allstar_limbo
         sw      t8, 0x0000(at)                  // set limbo to true
-        
+
         _skip_limbo:
         li      at, SinglePlayer.high_score_enabled          // at = high_score_enabled
         lw      at, 0x0000(at)                  // at = high_score_enabled flag
         beqz    at, _normal                     // if high scores are not enabled, don't save
         addiu   at, r0, MULTIMAN_ID             // insert check
-        
+
         beq     t8, at, _multiman               // if multiman, skip
         addiu   at, r0, CRUEL_ID                // insert check
         beq     t8, at, _cruel                  // if multiman, skip
         nop
-        
+
         _normal:
         lb      t8, 0x002B(a2)                  // original line 1
         j       _return
@@ -1475,7 +1501,7 @@ scope SinglePlayerModes: {
         }
 
     // @ Description
-    //    Prevents of branch from being taken that occassionally leads to crashes and serves no purpose
+    //    Prevents a branch from being taken that occassionally leads to crashes and serves no purpose
     scope _death_crash: {
     OS.patch_start(0x10D8B4, 0x8018F054)
         j        _death_crash
@@ -1757,6 +1783,12 @@ scope SinglePlayerModes: {
         ori     a1, r0, Stages.id.WINDY
         beql    t6, a1, _update_bgm
         addiu   a1, r0, {MIDI.id.WIZPIG}     // Rare Pair
+        ori     a1, r0, Stages.id.MT_DEDEDE
+        beql    t6, a1, _update_bgm
+        addiu   a1, r0, {MIDI.id.BATTLE_AMONG_FRIENDS}     // Dream Team
+        ori     a1, r0, Stages.id.DREAM_LAND_SR
+        beql    t6, a1, _update_bgm
+        addiu   a1, r0, {MIDI.id.BATTLE_AMONG_FRIENDS}     // Dream Team
 
         // if here, do normal duo team music for that stage
         b       _normal
@@ -2397,7 +2429,7 @@ scope SinglePlayerModes: {
         li      at, Toggles.entry_random_music
         lw      at, 0x0004(at)              // at = (0 if OFF, 1 if ON)
 
-        bnez    at, _skip
+        bnez    at, _skip                   // if random is on, skip
         lui     at, 0x8013                  // original line 2
 
         _end:
@@ -2405,8 +2437,9 @@ scope SinglePlayerModes: {
         nop
 
         _skip:
-        j           0x8018EAC8
-        sw          t4, 0x1340(at)          // replace skipped line
+        // we skip setting 0x801313A0 so the game won't try and play MH music
+        j           0x8018EACC
+        nop
     }
 
     // @ Description
@@ -2641,12 +2674,20 @@ scope SinglePlayerModes: {
     dh  0x0909
 
     //  Giant Remix
-    dw  0x01010406
-    dw  0x0708091A
-    dw  0x1B1C1D1E
-    dw  0x04040302
-    dw  0x01070707
-    dh  0x0707
+    dw  0x00030305  // byte 1 team attack, byte 2 item spawn, byte 3 very easy cpu level, byte 4 easy cpu level
+    dw  0x07080919  // byte 1 normal cpu level, byte 2 hard cpu level, byte 3 very hard cpu level, byte 4 opponent knockback ratio very easy
+    dw  0x1A1B1C1D  // byte 1 opponent easy knockback ratio, byte 2 opponent normal knockback ratio, byte 3 opponent hard knockback ratio, byte 4 opponent very hard knockback ratio
+    dw  0x06040303  // byte 1 ally cpu level very easy, ally cpu level easy, ally cpu level normal, ally cpu level hard,
+    dw  0x01070707  // byte 1 ally cpu level very hard, ally kb ratio very easy, ally kb ratio easy, ally kb ratio normal
+    dh  0x0707      // byte 1 ally kb ratio hard, ally kb ratio very hard
+
+    // vanilla DK Battle (for reference)
+    // 00040204
+    // 06070819
+    // 1A1B1C1D
+    // 04040403
+    // 02070707
+    // 0707
 
     //  Platforms
     dw  0x01000101
@@ -2863,6 +2904,7 @@ scope SinglePlayerModes: {
     match_pool:
     // every stage added to this list needs to have all 3 solo mode computer spawns, 5 yoshi/kirby spawns, regular ally spawn, congo jungle ally spawn
     // Dr. Mario match settings
+    drm_match_setting:
     dw  0x00000000                      // flag
     db  Character.id.DRM                // Character ID
     db  Stages.id.DR_MARIO              // Stage Option 1
@@ -2898,9 +2940,9 @@ scope SinglePlayerModes: {
     // Wolf match settings
     dw  0x00000000                      // flag
     db  Character.id.WOLF               // Character ID
-    db  Stages.id.CORNERIA2             // Stage Option 1
-    db  Stages.id.VENOM                 // Stage Option 2
-    db  Stages.id.CORNERIACITY          // Stage Option 3
+    db  Stages.id.VENOM             // Stage Option 1
+    db  Stages.id.SECTOR_Z_DL                 // Stage Option 2
+    db  Stages.id.CORNERIA2           // Stage Option 3
     dw  SinglePlayer.name_texture.WOLF + 0x10    // name texture
     dw  0x000003AA                      // Announcer Call
     dw  0x00006F80                      // Model Scale
@@ -2929,18 +2971,6 @@ scope SinglePlayerModes: {
     dw  0x00006F80                      // Model Scale
     dw  0x00014D40                      // Progress Icon
 
-    // Lucas match settings
-    lucas_match_setting:
-    dw  0x00000000                      // flag
-    db  Character.id.LUCAS              // Character ID
-    db  Stages.id.ONETT                 // Stage Option 1
-    db  Stages.id.NPC                   // Stage Option 2
-    db  Stages.id.NPC                   // Stage Option 3
-    dw  SinglePlayer.name_texture.LUCAS + 0x10    // name texture
-    dw  0x00000348                      // Announcer Call
-    dw  0x00006F80                      // Model Scale
-    dw  0x00015B00                      // Progress Icon
-
     // Conker match settings
     conker_match_setting:
     dw  0x00000000                      // flag
@@ -2966,6 +2996,7 @@ scope SinglePlayerModes: {
     dw  0x00015C40                      // Progress Icon
 
     // Marth match settings
+    marth_match_setting:
     dw  0x00000000                      // flag
     db  Character.id.MARTH              // Character ID
     db  Stages.id.CSIEGE                // Stage Option 1
@@ -3016,7 +3047,7 @@ scope SinglePlayerModes: {
     db  Character.id.DEDEDE             // Character ID
     db  Stages.id.MT_DEDEDE             // Stage Option 1
     db  Stages.id.MT_DEDEDE             // Stage Option 2
-    db  Stages.id.MT_DEDEDE             // Stage Option 3
+    db  Stages.id.DREAM_LAND_SR         // Stage Option 3
     dw  SinglePlayer.name_texture.DEDEDE + 0x10    // name texture
     dw  0x00000451                      // Announcer Call
     dw  0x00006F80                      // Model Scale
@@ -3036,27 +3067,15 @@ scope SinglePlayerModes: {
 
     //  Falco match settings
     falco_match_setting:
-    dw  0x00000000                      // flag
-    db  Character.id.FALCO              // Character ID
-    db  Stages.id.CORNERIACITY          // Stage Option 1
-    db  Stages.id.VENOM                 // Stage Option 2
-    db  Stages.id.CORNERIA2             // Stage Option 3
+    dw  0x00000000                       // flag
+    db  Character.id.FALCO               // Character ID
+    db  Stages.id.CORNERIA2              // Stage Option 1
+    db  Stages.id.VENOM                  // Stage Option 2
+    db  Stages.id.DISCOVERY_FALLS        // Stage Option 3
     dw  SinglePlayer.name_texture.FALCO + 0x10    // name texture
     dw  0x000002D6                      // Announcer Call
     dw  0x00006F80                      // Model Scale
     dw  0x00016D78 + 0x10               // Progress Icon
-
-    // Dark Samus match settings
-    ds_match_setting:
-    dw  0x00000000                      // flag
-    db  Character.id.DSAMUS             // Character ID
-    db  Stages.id.NORFAIR               // Stage Option 1
-    db  Stages.id.ZLANDING              // Stage Option 2
-    db  Stages.id.NORFAIR               // Stage Option 3
-    dw  SinglePlayer.name_texture.DSAMUS + 0x10    // name texture
-    dw  0x000002EC                      // Announcer Call
-    dw  0x00006F80                      // Model Scale
-    dw  0x00015100                      // Progress Icon
 
     // Banjo match settings
     banjo_match_setting:
@@ -3070,6 +3089,30 @@ scope SinglePlayerModes: {
     dw  0x00006F80                      // Model Scale
     dw  0x00016EB0 + 0x10               // Progress Icon
 
+    // Crash match settings
+    crash_match_setting:
+    dw  0x00000000                      // flag
+    db  Character.id.CRASH              // Character ID
+    db  Stages.id.TIME_TWISTER          // Stage Option 1
+    db  Stages.id.SNOW_GO               // Stage Option 2
+    db  Stages.id.TIME_TWISTER          // Stage Option 3
+    dw  0x0000C3E0 + 0x10               // name texture
+    dw  0x0000057B                      // Announcer Call
+    dw  0x00006F80                      // Model Scale
+    dw  0x000173A0 + 0x10               // Progress Icon
+
+    // Peach match settings
+    peach_match_setting:
+    dw  0x00000000                      // flag
+    db  Character.id.PEACH              // Character ID
+    db  Stages.id.PEACH2                // Stage Option 1
+    db  Stages.id.SUBCON                // Stage Option 2
+    db  Stages.id.COOLCOOL_REMIX                // Stage Option 3
+    dw  0x0000C7F0  + 0x10              // name texture
+    dw  0x00000598                      // Announcer Call
+    dw  0x00006F80                      // Model Scale
+    dw  0x000174D8 + 0x10               // Progress Icon
+
     // Add entry here if a new variant.type.NA character is added UPDATE
 
     // ALLSTAR ONLY
@@ -3079,18 +3122,18 @@ scope SinglePlayerModes: {
     db  Character.id.MARIO              // Character ID
     db  Stages.id.MUDA                  // Stage Option 1
     db  Stages.id.GOOMBA_ROAD           // Stage Option 2
-    db  Stages.id.GOOMBA_ROAD           // Stage Option 3
+    db  Stages.id.COOLCOOL_REMIX           // Stage Option 3
     dw  SinglePlayer.name_texture.DRM + 0x10    // name texture
     dw  0x000002E6                      // Announcer Call
     dw  0x00006F80                      // Model Scale
     dw  0x00014FC0                      // Progress Icon
 
     //  Fox match settings
-    dw  0x00000000                      // flag
-    db  Character.id.FOX                // Character ID
-    db  Stages.id.CORNERIACITY          // Stage Option 1
-    db  Stages.id.VENOM                 // Stage Option 2
-    db  Stages.id.CORNERIA2             // Stage Option 3
+    dw  0x00000000                       // flag
+    db  Character.id.FOX                 // Character ID
+    db  Stages.id.CORNERIA2              // Stage Option 1
+    db  Stages.id.VENOM                  // Stage Option 2
+    db  Stages.id.DISCOVERY_FALLS        // Stage Option 3
     dw  SinglePlayer.name_texture.DRM + 0x10    // name texture
     dw  0x000002E6                      // Announcer Call
     dw  0x00006F80                      // Model Scale
@@ -3121,9 +3164,9 @@ scope SinglePlayerModes: {
     //  Luigi match settings
     dw  0x00000000                      // flag
     db  Character.id.LUIGI              // Character ID
-    db  Stages.id.PEACH2                // Stage Option 1
+    db  Stages.id.BIG_BOOS_HAUNT        // Stage Option 1
     db  Stages.id.SUBCON                // Stage Option 2
-    db  Stages.id.SUBCON                // Stage Option 3
+    db  Stages.id.MK_REMIX              // Stage Option 3
     dw  SinglePlayer.name_texture.DRM + 0x10    // name texture
     dw  0x000002E6                      // Announcer Call
     dw  0x00006F80                      // Model Scale
@@ -3199,26 +3242,62 @@ scope SinglePlayerModes: {
     dw  0x00000000                      // flag
     db  Character.id.NESS               // Character ID
     db  Stages.id.ONETT                 // Stage Option 1
-    db  Stages.id.ONETT                 // Stage Option 2
-    db  Stages.id.NPC                   // Stage Option 3
+    db  Stages.id.NPC                 // Stage Option 2
+    db  Stages.id.OSOHE                   // Stage Option 3
     dw  SinglePlayer.name_texture.DRM + 0x10    // name texture
     dw  0x000002E6                      // Announcer Call
     dw  0x00006F80                      // Model Scale
     dw  0x00014FC0                      // Progress Icon
 
-    constant DUO_POOL_NUMBER(0x9)       // update for each additional pool
+    constant DUO_POOL_NUMBER(0xC)       // update for each additional pool
+
+    // Lucas match settings
+    lucas_match_setting:
+    dw  0x00000000                      // flag
+    db  Character.id.LUCAS              // Character ID
+    db  Stages.id.OSOHE                 // Stage Option 1
+    db  Stages.id.NPC                   // Stage Option 2
+    db  Stages.id.ONETT                 // Stage Option 3
+    dw  SinglePlayer.name_texture.LUCAS + 0x10    // name texture
+    dw  0x00000348                      // Announcer Call
+    dw  0x00006F80                      // Model Scale
+    dw  0x00015B00                      // Progress Icon
+
+    // Dark Samus match settings
+    ds_match_setting:
+    dw  0x00000000                      // flag
+    db  Character.id.DSAMUS             // Character ID
+    db  Stages.id.NORFAIR               // Stage Option 1
+    db  Stages.id.ZLANDING              // Stage Option 2
+    db  Stages.id.NORFAIR               // Stage Option 3
+    dw  SinglePlayer.name_texture.DSAMUS + 0x10    // name texture
+    dw  0x000002EC                      // Announcer Call
+    dw  0x00006F80                      // Model Scale
+    dw  0x00015100                      // Progress Icon
 
     // Peppy match settings
     peppy_match_setting:
     dw  0x00000000                      // flag
     db  Character.id.PEPPY              // Character ID
-    db  Stages.id.CORNERIACITY          // Stage Option 1
+    db  Stages.id.SECTOR_Z_DL           // Stage Option 1
     db  Stages.id.VENOM                 // Stage Option 2
     db  Stages.id.CORNERIA2             // Stage Option 3
     dw  SinglePlayer.name_texture.PEPPY + 0x10    // name texture
     dw  0x000004F7                      // Announcer Call
     dw  0x00006F80                      // Model Scale
     dw  0x000154C0                      // Progress Icon
+
+    // Lanky match settings
+    lanky_match_setting:
+    dw  0x00000000                      // flag
+    db  Character.id.LANKY              // Character ID
+    db  Stages.id.FALLS                 // Stage Option 1
+    db  Stages.id.FALLS                 // Stage Option 2
+    db  Stages.id.FALLS                 // Stage Option 3
+    dw  SinglePlayer.name_texture.LANKY + 0x10    // name texture
+    dw  0x000004F7                      // Announcer Call
+    dw  0x00006F80                      // Model Scale
+    dw  0x00017880                      // Progress Icon
 
     // offsets to remix progress icons in file 0xB
     scope progress_icon {
@@ -3232,78 +3311,103 @@ scope SinglePlayerModes: {
         constant rare_pair(0x16FE8 + 0x10)
         constant metal_mario_brothers(0x17128 + 0x10)
         constant mystical_ninjas(0x17268 + 0x10)
+        constant royal_rumble(0x17610 + 0x10)
+        constant dr_mario_bros(0x17748 + 0x10)
+        constant dk_crew(0x17880 + 0x10)
     }
 
     duo_pool:
     dw falco_match_setting       // Main stage data - Star Fox
     db 0x1                       // Partner ID (Fox)
     db 0x0                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x03C5                    // Announcement
+    dh FGM.announcer.names.STAR_FOX // Announcement
     dw progress_icon.starfox     // progress icon
     dw SinglePlayer.name_texture.STARFOX + 0x10    // name texture
 
     dw sheik_match_setting       // Main stage data - Hylian Heroes
     db 0x5                       // Partner ID(Link)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FD                    // Announcement
+    dh FGM.announcer.names.HYLIAN_HEROES // Announcement
     dw progress_icon.hylian_heroes     // progress icon
     dw SinglePlayer.name_texture.HYLIAN_HEROES + 0x10    // name texture
 
     dw bowser_match_setting      // Main stage data - Double Trouble
     db 0x2                       // Partner ID (DK)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FA                    // Announcement
+    dh FGM.announcer.names.DOUBLE_TROUBLE // Announcement
     dw progress_icon.double_trouble     // progress icon
     dw SinglePlayer.name_texture.DOUBLE_TROUBLE + 0x10    // name texture
 
     dw dedede_match_setting      // Main stage data - Dream Team
     db 0x8                       // Partner ID (Kirby)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FB                    // Announcement
-    dw progress_icon.dream_team     // progress icon
+    dh FGM.announcer.names.DREAM_TEAM // Announcement
+    dw progress_icon.dream_team  // progress icon
     dw SinglePlayer.name_texture.DREAM_TEAM + 0x10    // name texture
 
     dw mewtwo_match_setting      // Main stage data - Pocket Monsters
     db 0x9                       // Partner ID (Pikachu)
     db 0x0                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FE                    // Announcement
+    dh FGM.announcer.names.POCKET_MONSTERS // Announcement
     dw progress_icon.pocket_monsters     // progress icon
     dw SinglePlayer.name_texture.POCKET_MONSTERS + 0x10    // name texture
 
     dw lucas_match_setting       // Main stage data - PSI Rockers
     db 0xB                       // Partner ID (Ness)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FF                    // Announcement
-    dw progress_icon.psi_rockers     // progress icon
+    dh FGM.announcer.names.PSI_ROCKERS // pstinky rockers announcement
+    dw progress_icon.psi_rockers // progress icon
     dw SinglePlayer.name_texture.PSI_ROCKERS + 0x10    // name texture
 
     dw peppy_match_setting       // Main stage data - Star Fox
     db Character.id.SLIPPY       // Partner ID (Slippy)
     db 0x0                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x03C5                    // Announcement
+    dh FGM.announcer.names.STAR_FOX // Announcement
     dw progress_icon.starfox     // progress icon
     dw SinglePlayer.name_texture.STARFOX + 0x10    // name texture
 
     dw ds_match_setting          // Main stage data - Echoes
     db 0x3                       // Partner ID (Samus)
     db 0x0                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x04FC                    // Announcement
+    dh FGM.announcer.names.ECHOES // Announcement
     dw progress_icon.echoes      // progress icon
     dw SinglePlayer.name_texture.ECHOES + 0x10    // name texture
 
     dw goemon_match_setting      // Main stage data - Mystical Ninjas
     db Character.id.EBI          // Partner ID (Ebisumaru)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x0532                    // Announcement
+    dh FGM.announcer.names.MYSTICAL_NINJAS // Announcement
     dw progress_icon.mystical_ninjas // progress icon
     dw SinglePlayer.name_texture.MYSTICAL_NINJAS + 0x10    // name texture
 
     dw banjo_match_setting       // Main stage data - Rare Pair
     db Character.id.CONKER       // Partner ID (Conker)
     db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
-    dh 0x055C                    // Announcement
+    dh FGM.announcer.names.RARE_PAIR // Announcement
     dw progress_icon.rare_pair   // progress icon
     dw SinglePlayer.name_texture.RARE_PAIR + 0x10    // name texture
+
+    dw marth_match_setting       // Main stage data - Royal Rumble
+    db Character.id.ROY          // Partner ID (Roy)
+    db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
+    dh FGM.announcer.names.ROYAL_RUMBLE // Announcement
+    dw progress_icon.royal_rumble// progress icon
+    dw SinglePlayer.name_texture.ROYAL_RUMBLE + 0x10    // name texture
+
+    dw drm_match_setting         // Main stage data - Dr. Mario Bros
+    db Character.id.DRL          // Partner ID (Dr. Luigi)
+    db 0x0                       // who loads first flag (0 for Remix, 1 for vanilla)
+    dh FGM.announcer.names.DR_MARIO_BROS // Announcement
+    dw progress_icon.dr_mario_bros  // progress icon
+    dw SinglePlayer.name_texture.DR_MARIO_BROS + 0x10   // name texture
+
+    dw lanky_match_setting       // Main stage data - Lanky Kong
+    db Character.id.DK           // Partner ID (DK)
+    db 0x1                       // who loads first flag (0 for Remix, 1 for vanilla)
+    dh FGM.announcer.names.DK_CREW // Announcement
+    dw progress_icon.dk_crew     // progress icon
+    dw SinglePlayer.name_texture.DK_CREW + 0x10    // name texture
+
 
     OS.align(16)
 
@@ -3449,9 +3553,13 @@ scope SinglePlayerModes: {
         lw      t3, 0x0004(t0)              // load hat ID
         sw      t3, 0x0000(t7)              // save hat ID
         addiu   t2, t2, 0x0001              // move to next slot
-        addiu   t7, t7, 0x0004              // move to next slot
-        bnezl   t4, kirby_loop              // continue loop until all slots filled
         addiu   t4, t4, -0x0001             // subtract from slots
+        bnez    t4, kirby_loop              // continue loop until all slots filled
+        addiu   t7, t7, 0x0004              // move to next slot
+        lli     t4, 0x001C                  // t4 = power id of magic hat
+        sb      t4, 0x0000(t2)              // set last kirby as magic hat kirby
+        lli     t4, 0x0025                  // t4 = id of magic hat
+        sw      t4, 0x0000(t7)              // set last kirby as magic hat kirby
         addiu   t4, r0, NUM_REMIX_HATS      // total number of hats
 
         clear_kirby_loop:
@@ -3524,6 +3632,21 @@ scope SinglePlayerModes: {
 
         _team_skip:
         lbu     t4, 0x0004(t3)              // load character ID into t4
+
+        // Change name texture for Peach if Giant or Team
+        lli     a0, Character.id.PEACH
+        bne     t4, a0, _stage_id           // if not Peach, skip
+        lli     a0, 0x0004                  // Team Slot
+        beq     a0, v0, _change_peach_name_texture // if on team slot, change name texture
+        lli     a0, 0x0018                  // Giant Slot
+        bne     a0, v0, _stage_id           // if not giant slot, skip
+        nop
+
+        _change_peach_name_texture:
+        li      t6, SinglePlayer.name_texture.PEACH + 0x10 // t6 = "Peach" name texture
+        li      a0, name_textures
+        addu    a0, a0, v0                  // get location of current character
+        sw      t6, 0x0000(a0)              // save name texture to correct location
 
         // get stage ID
         _stage_id:
@@ -3717,9 +3840,9 @@ scope SinglePlayerModes: {
         addiu   t2, r0, 0x0001              // original line 1
         j       _return
         lui     at, 0x8014                  // original line 2
-        }
+    }
 
-        scope duo_select: {
+    scope duo_select: {
         addiu   sp, sp, -0x10
         sw      ra, 0x0004(sp)
 
@@ -3805,25 +3928,10 @@ scope SinglePlayerModes: {
 
     // @ Description
     // Polygon Character ID in chronological order
+    // Auto populated by Character.polygon_setup
+    constant polygon_id_table_origin(origin())
     polygon_id_table:
-    dw Character.id.NFALCO                  // Polygon Falco
-    dw Character.id.NGND                    // Polygon Ganondorf
-    dw Character.id.NYLINK                  // Polygon Young Link
-    dw Character.id.NDRM                    // Polygon Dr. Mario
-    dw Character.id.NDSAMUS                 // Polygon Dark Samus
-    dw Character.id.NWARIO                  // Polygon Wario
-    dw Character.id.NLUCAS                  // Polygon Lucas
-    dw Character.id.NBOWSER                 // Polygon Bowser
-    dw Character.id.NWOLF                   // Polygon Wolf
-    dw Character.id.NMTWO                   // Polygon Mewtwo
-    dw Character.id.NMARTH                  // Polygon Marth
-    dw Character.id.NSONIC                  // Polygon Sonic
-    dw Character.id.NSHEIK                  // Polygon Sheik
-    dw Character.id.NMARINA                 // Polygon Marina
-    dw Character.id.NDEDEDE                 // Polygon Dedede
-    dw Character.id.NGOEMON                 // Polygon Goemon
-    dw Character.id.NCONKER                 // Polygon Conker
-    dw Character.id.NBANJO                  // Polygon Banjo
+    fill Character.NUM_POLYGONS * 4
 
     // @ Description
     // Changes polygon match selection to be Remix Polygons
@@ -4102,8 +4210,18 @@ scope SinglePlayerModes: {
         addu    t8, sp, t6                  // t8 = stack position adjusted
         lw      t8, 0x0024(t8)              // t8 = name texture offset
         lli     t6, SinglePlayer.name_texture.MARINA + 0x10
-        bne     t8, t6, _adjust_footer_team // if not Marina, skip
+        beql    t8, t6, _set_alt_width_team // if Marina, use alternate width
         lli     t6, 0x002A                  // t6 = width of "Marina"
+        lli     t6, SinglePlayer.name_texture.BANJO + 0x10
+        beql    t8, t6, _set_alt_width_team // if Banjo, use alternate width
+        lli     t6, 0x0022                  // t6 = width of "Banjo"
+        lli     t6, SinglePlayer.name_texture.CRASH + 0x10
+        beql    t8, t6, _set_alt_width_team // if Crash, use alternate width
+        lli     t6, 0x0023                  // t6 = width of "Crash"
+        b       _adjust_footer_team         // otherwise, keep width
+        nop
+
+        _set_alt_width_team:
         sh      t6, 0x0014(v0)              // set width
 
         _adjust_footer_team:
@@ -4162,8 +4280,18 @@ scope SinglePlayerModes: {
         addu    t8, sp, t6                  // t8 = stack position adjusted
         lw      t8, 0x0024(t8)              // t8 = name texture offset
         lli     t6, SinglePlayer.name_texture.MARINA + 0x10
-        bne     t8, t6, _done_giant         // if not Marina, skip
+        beql    t8, t6, _set_alt_width_giant // if not Marina, skip
         lli     t6, 0x002A                  // t6 = width of "Marina"
+        lli     t6, SinglePlayer.name_texture.BANJO + 0x10
+        beql    t8, t6, _set_alt_width_giant // if Banjo, use alternate width
+        lli     t6, 0x0022                  // t6 = width of "Banjo"
+        lli     t6, SinglePlayer.name_texture.CRASH + 0x10
+        beql    t8, t6, _set_alt_width_giant // if Crash, use alternate width
+        lli     t6, 0x0023                  // t6 = width of "Crash"
+        b       _done_giant                 // otherwise, keep width
+        nop
+
+        _set_alt_width_giant:
         sh      t6, 0x0014(v0)              // set width
 
         _done_giant:
@@ -4362,7 +4490,7 @@ scope SinglePlayerModes: {
         bnel    t9, r0, _end
         lw      ra, 0x0014(sp)
 
-        jal     0x80000092C                 // put frame counter into v0
+        jal     0x8000092C                  // put frame counter into v0
         nop
 
         li      at, SinglePlayer.name_delay_table
@@ -4783,7 +4911,7 @@ scope SinglePlayerModes: {
         j        _return
         nop
         }
-        
+
         // Correct Stage Text for Metal Mario Bros. Event
         scope metal_bros_stage_text: {
         OS.patch_start(0x12E028, 0x80134CE8)
@@ -5640,12 +5768,11 @@ scope SinglePlayerModes: {
         bne     s0, a0, _normal             // if not Remix 1p, skip
         lui     s0, 0x8011                  // original line 1
 
-        j       _return
-        addiu   s1, s1, 0x0C1B              // load in Remix version of Kirby Stage File (which loads in various character files
+        Render.load_file(0xC1B, Render.file_pointer_4) // load kirby hats remix
 
         _normal:
         j       _return
-        addiu   s1, s1, 0x00E6              // original line 2
+        addiu   s1, r0, 0x00E6              // original line 2
     }
 
     // @ Description
@@ -5898,9 +6025,17 @@ scope SinglePlayerModes: {
     dw 0xAC000004                           // Set Texture Form
     dw 0xD0000000                           // FSM = 0.0
     dw 0x00000000                           // End
+    // Moveset commands for Crash team to allow him to experience joy.
+    team_moveset_crash:
+	dw 0xA0580001							// Set Model Form (big jaw)
+    dw 0xAC100001                           // Set Texture Form (grin)
+	dw 0xAC000003							// Set Texture Form (crazy eyes)
+    dw 0xD0000000                           // FSM = 0.0
+    dw 0x00000000                           // End
 
     // @ Description
-    // Array of menu action parameter overrides for defeated characters. Uses DownStandU animation.
+    // Array of menu action parameter overrides for defeated characters. Uses DownStandU animation. <- whoever wrote this is lying
+    // ACTUAL: Array of menu action parameter overrides for character teams. Uses Team Pose animation if it exists
     // Arguments          Animation file ID             Moveset data                Flags
     team_array:
     add_team_parameters(0x222,                        team_moveset_mario,     0)          // 0x00 - MARIO
@@ -5975,9 +6110,14 @@ scope SinglePlayerModes: {
     add_team_parameters(0x222,                        team_moveset_luigi,     0)          // 0x45 - METAL LUIGI
     add_team_parameters(File.GOEMON_TEAM_POSE,        team_moveset_ness,      0)          // 0x46 - EBI
     add_team_parameters(0x617,                        team_moveset_captain,   0)          // 0x47 - DRAGONKING
+    add_team_parameters(File.CRASH_TEAM_POSE,         team_moveset_crash,     0)          // 0x48 - CRASH
+    add_team_parameters(File.PEACH_TEAM_POSE,         team_moveset,           0)          // 0x49 - PEACH
+    add_team_parameters(File.MARTH_TEAM_POSE,         0x80000000,             0)          // 0x4A - ROY
+    add_team_parameters(0x222,                        team_moveset_luigi,     0)          // 0x4B - DRL
+    add_team_parameters(0x222,                        team_moveset_mario,     0)          // 0x4C - LANKY
     // ADD NEW CHARACTERS HERE
 
-	// REMIX POLYGONS
+    // REMIX POLYGONS
     add_team_parameters(File.WARIO_TEAM_POSE,         0x80000000,             0)          // - NWARIO
     add_team_parameters(File.LUCAS_TEAM_POSE,         0x80000000,             0)          // - NLUCAS
     add_team_parameters(File.BOWSER_TEAM_POSE,        0x80000000,             0)          // - NBOWSER
@@ -5988,6 +6128,16 @@ scope SinglePlayerModes: {
     add_team_parameters(File.MARINA_TEAM_POSE,        0x80000000,             0)          // - NMARINA
     add_team_parameters(File.FALCO_TEAM_POSE,         team_moveset,           0)          // - NFALCO
     add_team_parameters(File.GND_TEAM_POSE,           0x80000000,             0)          // - NGND
+    add_team_parameters(File.DSAMUS_TEAM_POSE,        0x80000000,             0)          // - NDSAMUS
+    add_team_parameters(File.MARTH_TEAM_POSE,         0x80000000,             0)          // - NMARTH
+    add_team_parameters(File.MTWO_TEAM_POSE,          0x80000000,             0)          // - NMTWO
+    add_team_parameters(File.DEDEDE_TEAM_POSE,        0x80000000,             0)          // - NDEDEDE
+    add_team_parameters(File.YLINK_TEAM_POSE,         0x80000000,             0)          // - NYLINK
+    add_team_parameters(File.GOEMON_TEAM_POSE,        0x80000000,             0)          // - NGOEMON
+    add_team_parameters(File.CONKER_TEAM_POSE,        0x80000000,             0)          // - NCONKER
+    add_team_parameters(File.BANJO_TEAM_POSE,         0x80000000,             0)          // - NBANJO
+    add_team_parameters(File.PEACH_TEAM_POSE,         0x80000000,             0)          // - NPEACH
+    add_team_parameters(File.CRASH_TEAM_POSE,         0x80000000,             0)          // - NCRASH
 
     // @ Description
     // Block of moveset commands for duo characters.
@@ -6017,7 +6167,7 @@ scope SinglePlayerModes: {
     dw 0x00000000                           // End
     // Moveset commands for duo Luigi.
     duo_moveset_luigi:
-    dw 0xAC000002                           // Set Texture Form
+    dw 0xAC000003                           // Set Texture Form
     dw 0xD0000000                           // FSM = 0.0
     dw 0x00000000                           // End
     // Moveset commands for duo Yoshi.
@@ -6068,22 +6218,26 @@ scope SinglePlayerModes: {
     duo_moveset_sheik:
     dw 0xD0000000                           // FSM = 0.0
     dw 0x00000000                           // End
-	// Moveset commands for duo Goemon
+    // Moveset commands for duo Goemon
     duo_moveset_goemon:
     dw 0xAC000001                           // Set Model Form (Shocked Face)
     dw 0x00000000                           // End
     duo_moveset_ebisumaru:
     dw 0xAC000005                           // Set Model Form (Blush Face)
     dw 0x00000000                           // End
-	// Moveset commands for duo Banjo.
-	duo_moveset_banjo:
-	dw 0xA0800002							// Set Model Form (Kazooie Feet in Right Hand)
-	dw 0xA0980002							// Set Model Form (Full Kazooie Body)
-	dw 0xA0600002							// Set Model Form (Angry Banjo Face)
-	dw 0xA0A80003							// Set Model Form (Angry Kazooie Face)
-	dw 0x00000000							// End
-	duo_moveset_conker:
-	dw 0xA0880002							// Set Model Form (Chainsaw)
+    // Moveset commands for duo Banjo.
+    duo_moveset_banjo:
+    dw 0xA0800002							// Set Model Form (Kazooie Feet in Right Hand)
+    dw 0xA0980002							// Set Model Form (Full Kazooie Body)
+    dw 0xA0600002							// Set Model Form (Angry Banjo Face)
+    dw 0xA0A80003							// Set Model Form (Angry Kazooie Face)
+    dw 0x00000000							// End
+    duo_moveset_conker:
+    dw 0xA0880002							// Set Model Form (Chainsaw)
+    dw 0x00000000                           // End
+    duo_moveset_lanky:
+    dw 0xA0900000							// Set Model Form (Grape Shooter)
+    dw 0xA0880001							// Set Model Form (Closed Right Hand)
     dw 0x00000000                           // End
 
     // @ Description
@@ -6091,7 +6245,7 @@ scope SinglePlayerModes: {
     // Arguments          Animation file ID             Moveset data                Flags
     duo_array:
     add_duo_parameters(0x170,                        duo_moveset_mario,     0)          // 0x00 - MARIO
-    add_duo_parameters(0x17C,                        duo_moveset_fox,       0)          // 0x01 - FOX
+    add_duo_parameters(File.FOX_DUO_POSE,            duo_moveset_fox,       0)          // 0x01 - FOX
     add_duo_parameters(File.DK_DUO_POSE,             duo_moveset_donkey,    0)          // 0x02 - DONKEY
     add_duo_parameters(File.SAMUS_DUO_POSE,          duo_moveset,           0)          // 0x03 - SAMUS
     add_duo_parameters(0x17B,                        duo_moveset_luigi,     0)          // 0x04 - LUIGI
@@ -6122,7 +6276,7 @@ scope SinglePlayerModes: {
     add_duo_parameters(File.FALCO_1P_DUO_POSE,       duo_moveset,           0)          // 0x1D - FALCO
     add_duo_parameters(File.GND_TEAM_POSE,           0x80000000,            0)          // 0x1E - GND
     add_duo_parameters(0x19F,                        0x80000000,            0)          // 0x1F - YLINK
-    add_duo_parameters(0x170,                        0x80000000,            0)          // 0x20 - DRM
+    add_duo_parameters(0x171,                        0x80000000,            0)          // 0x20 - DRM
     add_duo_parameters(0x170,                        0x80000000,            0)          // 0x21 - WARIO
     add_duo_parameters(File.DARK_SAMUS_DUO_POSE,     duo_moveset,           0)          // 0x22 - DARK SAMUS
     add_duo_parameters(0x19F,                        duo_moveset_link,      0)          // 0x23 - ELINK
@@ -6148,7 +6302,7 @@ scope SinglePlayerModes: {
     add_duo_parameters(File.WOLF_TEAM_POSE,          0x80000000,            0)          // 0x37 - WOLF
     add_duo_parameters(File.CONKER_DUO_POSE,         duo_moveset_conker,    0)          // 0x38 - CONKER
     add_duo_parameters(File.MTWO_DUO_POSE,           0x80000000,            0)          // 0x39 - MTWO
-    add_duo_parameters(File.MARTH_TEAM_POSE,         0x80000000,            0)          // 0x3A - MARTH
+    add_duo_parameters(File.MARTH_DUO_POSE,          0x80000000,            0)          // 0x3A - MARTH
     add_duo_parameters(File.SONIC_TEAM_POSE,         0x80000000,            0)          // 0x3B - SONIC
     add_duo_parameters(0x617,                        duo_moveset_captain,   0)          // 0x3C - SANDBAG
     add_duo_parameters(File.SONIC_TEAM_POSE,         0x80000000,            0)          // 0x3D - SSONIC
@@ -6162,6 +6316,11 @@ scope SinglePlayerModes: {
     add_duo_parameters(0x1D4,                        duo_moveset_luigi,     0)          // 0x45 - MLUIGI
     add_duo_parameters(File.EBISUMARU_DUO_POSE,      duo_moveset_ebisumaru, 0)          // 0x46 - EBISUMARU
     add_duo_parameters(0x617,                        duo_moveset_captain,   0)          // 0x47 - DRAGONKING
+    add_duo_parameters(0x170,                        duo_moveset_mario,     0)          // 0x48 - CRASH
+    add_duo_parameters(0x170,                        duo_moveset_mario,     0)          // 0x49 - PEACH
+    add_duo_parameters(File.ROY_DUO_POSE,            0x80000000,            0)          // 0x4A - ROY
+    add_duo_parameters(0x1D4,                        duo_moveset_luigi,     0)          // 0x4B - DRL
+    add_duo_parameters(File.LANKY_DUO_POSE,          duo_moveset_lanky,     0)          // 0x4C - LANKY
 
     // ADD NEW CHARACTERS HERE
 
@@ -6184,6 +6343,8 @@ scope SinglePlayerModes: {
     add_duo_parameters(File.GOEMON_TEAM_POSE,        0x80000000,             0)          // - NGOEMON
     add_duo_parameters(File.CONKER_TEAM_POSE,        0x80000000,             0)          // - NCONKER
     add_duo_parameters(File.BANJO_TEAM_POSE,         0x80000000,             0)          // - NBANJO
+    add_duo_parameters(File.PEACH_TEAM_POSE,         0x80000000,             0)          // - NPEACH
+    add_duo_parameters(File.CRASH_TEAM_POSE,         0x80000000,             0)          // - NCRASH
 
 // ALLSTAR
 
@@ -6471,7 +6632,7 @@ scope SinglePlayerModes: {
     dh  0x0909
 
     //  Giga Bowser
-    dw  0x00000305      // byte 1 team attack, byte 2 item spawn, byte 3 very easy cpu level, byte 4 easy cpu level
+    dw  0x00000306      // byte 1 team attack, byte 2 item spawn, byte 3 very easy cpu level, byte 4 easy cpu level
     dw  0x0709091E      // byte 1 normal cpu level, byte 2 hard cpu level, byte 3 very hard cpu level, byte 4 opponent knockback ratio very easy
     dw  0x1F1F2022      // byte 1 opponent easy knockback ratio, byte 2 opponent normal knockback ratio, byte 3 opponent hard knockback ratio, byte 4 opponent very hard knockback ratio
     dw  0x01010101      // byte 1 ally cpu level very easy, ally cpu level easy, ally cpu level normal, ally cpu level hard,
@@ -6805,6 +6966,15 @@ scope SinglePlayerModes: {
         bne     t6, r0, _normal             // if not stage zero (normal = Link/Hyrule, allstar= Rest Area), jump to normal
         nop
 
+        li      t7, CharacterSelectDebugMenu.PlayerTag.string_table + (2 * 4)
+        lw      t7, 0x0000(t7)              // t7 = 2nd tag
+        lw      t7, 0x0000(t7)              // t7 = tag
+        li      t6, 0x61666B00
+        bne     t7, t6, _set_flag           // branch if tag is not equal
+        nop
+        addiu   t6, r0, 0x0001              // set flag to 1 to prevent a crash
+        sb      t6, 0x0004(v1)
+
         _set_flag:
         addiu   t7, r0, 0x0001              // set flag to 1 to prevent a crash
         sb      t7, 0x0005(v1)
@@ -6945,6 +7115,9 @@ scope SinglePlayerModes: {
         constant MLUIGI(0x000020D8 + 0x10)
         constant EBI(0x000021B8 + 0x10)
         constant DRAGONKING(0x00002298 + 0x10)
+        constant ROY(0x00002528 + 0x10)
+        constant DRL(0x00002600 + 0x10)
+        constant LANKY(0x000026D8 + 0x10)
 
         // custom
         constant FALCO(0x00000CC8 + 0x10)
@@ -6964,6 +7137,8 @@ scope SinglePlayerModes: {
         constant DEDEDE(0x00001C88 + 0x10)
         constant GOEMON(0x00001D68 + 0x10)
         constant BANJO(0x00001FF8 + 0x10)
+        constant CRASH(0x00002378 + 0x10)
+        constant PEACH(0x00002450 + 0x10)
     }
 
     // @ Description
@@ -7041,6 +7216,11 @@ scope SinglePlayerModes: {
     dw icon_offsets.MLUIGI                   // Metal Luigi
     dw icon_offsets.EBI                      // Ebisumaru
     dw icon_offsets.DRAGONKING               // Dragon King
+    dw icon_offsets.CRASH                    // Crash
+    dw icon_offsets.PEACH                    // Peach
+    dw icon_offsets.ROY                      // Roy
+    dw icon_offsets.DRL                      // Dr. Luigi
+    dw icon_offsets.LANKY                    // Lanky Kong
     // ADD NEW CHARACTERS HERE
 
     // REMIX POLYGONS
@@ -7052,6 +7232,18 @@ scope SinglePlayerModes: {
     dw icon_offsets.POLY                     // Polygon Sonic
     dw icon_offsets.POLY                     // Polygon Sheik
     dw icon_offsets.POLY                     // Polygon Marina
+    dw icon_offsets.POLY                     // Polygon Falco
+    dw icon_offsets.POLY                     // Polygon Ganondorf
+    dw icon_offsets.POLY                     // Polygon Dark Samus
+    dw icon_offsets.POLY                     // Polygon Marth
+    dw icon_offsets.POLY                     // Polygon Mewtwo
+    dw icon_offsets.POLY                     // Polygon King Dedede
+    dw icon_offsets.POLY                     // Polygon Young Link
+    dw icon_offsets.POLY                     // Polygon Goemon
+    dw icon_offsets.POLY                     // Polygon Conker
+    dw icon_offsets.POLY                     // Polygon Banjo
+    dw icon_offsets.POLY                     // Polygon Peach
+    dw icon_offsets.POLY                     // Polygon Crash
 
     // @ Description
     // This establishes Rest Area functions such as portraits and heart spawns
@@ -7337,6 +7529,19 @@ scope SinglePlayerModes: {
         lui     at, 0xFFFF
         ori     at, at, 0x00FF
         and     t3, t2, at
+        // help 'afk' CPU to leave the stage, and not wonder aimlessly
+        li      at, CharacterSelectDebugMenu.PlayerTag.string_table + (2 * 4)
+        lw      at, 0x0000(at)              // at = 2nd tag
+        lw      at, 0x0000(at)              // at = tag
+        li      t1, 0x61666B00
+        bne     at, t1, _check_ending_clipping // branch if tag is not equal
+        nop
+        OS.read_word(Global.match_info, at) // at = match info
+        lw      at, 0x0018(at)              // at = frames elapsed
+        sltiu   at, at, 120                 // wait a second
+        beqz    at, _check_ending_clipping + 12  // skip check if we waited long enough
+        nop
+        _check_ending_clipping:
         addiu   at, r0, 0x000E      // insert stage ending clipping ID
         bnel    t3, at, _end        // skip to end if not over 0xE clipping ID
         lw      ra, 0x0014(sp)

@@ -67,9 +67,7 @@ scope GBowser {
     DASH:; insert "moveset/DASH.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters                  // Action                 // Animation                 // Moveset Data             // Flags
     Character.edit_action_parameters(GBOWSER,    Action.Entry,             File.BOWSER_IDLE,            -1,                        -1)
@@ -229,6 +227,7 @@ scope GBowser {
     Character.edit_action_parameters(GBOWSER,    Action.AttackAirF,      File.BOWSER_FAIR,           FAIR,                       -1)
     Character.edit_action_parameters(GBOWSER,    Action.LandingAirF,     File.BOWSER_FAIR_LAND,      -1,                         -1)
     Character.edit_action_parameters(GBOWSER,    Action.LandingAirN,     File.BOWSER_LANDING,        -1,                         -1)
+    Character.edit_action_parameters(GBOWSER,    Action.LandingAirX,     File.BOWSER_LANDING,        -1,                         -1)
     Character.edit_action_parameters(GBOWSER,    Action.Grab,            File.BOWSER_GRAB,           GRAB,                       0x10000000)
     Character.edit_action_parameters(GBOWSER,    Action.FSmash,          File.BOWSER_FSMASH,         FSMASH,                     0x40000000)
     Character.edit_action_parameters(GBOWSER,    Action.FSmashHigh,      0,                          0x80000000,                 0)
@@ -311,7 +310,7 @@ scope GBowser {
 	Character.edit_action_parameters(GBOWSER,    0xDD,     				 File.GBOWSER_ENTRY_LEFT,   ENTRY,                       -1)
 
     // Modify Actions            // Action          // Staling ID   // Main ASM                 // Interrupt/Other ASM                  // Movement/Physics ASM                         // Collision ASM
-    Character.edit_action(GBOWSER, 0xDE,             -1,             0x8015B6D0,                 -1,                                     BowserUSP.ground_physics_,                      0x800DDF44)
+    Character.edit_action(GBOWSER, 0xDE,             -1,             0x8015B6D0,                 -1,                                     BowserUSP.ground_physics_,                      -1)
     Character.edit_action(GBOWSER, 0xDF,             -1,             0x8015B6F0,                 BowserUSP.air_direction_,               BowserUSP.air_physics_,                         -1)
     Character.edit_action(GBOWSER, 0xE0,             -1,             -1,                         -1,                                     -1,                                             -1)
     Character.edit_action(GBOWSER, 0xE2,             -1,             -1,                         -1,                                     BowserDSP.air_physics_,                         -1)
@@ -413,39 +412,10 @@ scope GBowser {
     Character.table_patch_start(costume_shield_color, Character.id.GBOWSER, 0x4)
     dw Bowser.costume_shield_color
     OS.patch_end()
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.GBOWSER, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.GBOWSER, 0x2)
+    dh {MIDI.id.FIRST_DESTINATION}
     OS.patch_end()
-
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.GBOWSER, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.GBOWSER
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override,         start_hb, end_hb, min_x, max_x, min_y, max_y)
-    // Currently copying Bowser
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  10,  21,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  8,   44,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  24,  35,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  0,   48,  0, 600, -50, 200) // no DSPG
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  10,  39,  100, 800, 0, 350)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  10,  22,  100, 800, -50, 300)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  26,  36,  -100, 1200, 40, 700)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  12,  15,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  0,  0,  0, 0, 0, 0) // no grab
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  6,   9,   -20, 400, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,   31,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  0,  0,  -1, -1, -1, -1) // no NSPA
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  43,  80,  350, 600, 20, 400)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  7,   32,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   0x0D, 6,   50,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   0x0D, 5,   49,  -400, 400, 20, 325)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1, 23,  24,  -200, 150, 150, 1500)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  15,   17,  -200, 200, 300, 1500)
-
 
     // @ Description
     // Sets Giga Bowser's Passive Armor. This is based on Giant DK's script at 800D7DD4
@@ -468,30 +438,117 @@ scope GBowser {
 
     // he will not chase opponents while on Final Destination
     // we could prevent random hopping at 0x80133EBC
-    scope prevent_aerial_chase: {
-        OS.patch_start(0xAD524, 0x80132AE4)
-        j       prevent_aerial_chase
-        swc1    f20, 0x0060(v1)             // set target x coordinate
-        _return:
-        OS.patch_end()
+    // scope prevent_aerial_chase: {
+        // OS.patch_start(0xAD524, 0x80132AE4)
+        // j       prevent_aerial_chase
+        // swc1    f20, 0x0060(v1)             // set target x coordinate
+        // _return:
+        // OS.patch_end()
         
-        lw      t6, 0x0008(s1)              // get character id
-        addiu   at, r0, Character.id.GBOWSER
-        bne     at, t6, _normal
-        addiu   at, r0, Global.GAMEMODE.CLASSIC
+        // lw      t6, 0x0008(s1)              // get character id
+        // addiu   at, r0, Character.id.GBOWSER
+        // bne     at, t6, _normal
+        // addiu   at, r0, Global.GAMEMODE.CLASSIC
 
-        OS.read_word(Global.match_info, t6) // get game mode
-        lb      t6, 0x0000(t6)              // ~
-        bne     at, t6, _normal
+        // OS.read_word(Global.match_info, t6) // get game mode
+        // lb      t6, 0x0000(t6)              // ~
+        // bne     at, t6, _normal
+        // nop
+
+        // // if here, assume we are in remix 1P's final Boss on Final Destination
+        // j       _return
+        // sw      r0, 0x0064(v1)             // set target y coordinate to 0
+        
+        // _normal:
+        // j       _return
+        // swc1    f22, 0x0064(v1)             // set target y coordinate
+    // }
+
+    // prevent boss gbowser from dying in remix 1P
+    scope _remix_1p_prevent_bottom_blast_zone_KO: {
+        OS.patch_start(0xB77A4, 0x8013CD64)
+        j       _remix_1p_prevent_bottom_blast_zone_KO
+        nop
+        _return:
+        OS.patch_end();
+        
+        // Giga Bowser in 1P check
+        // s1 = player struct
+        lw      t0, 0x0008(s1)                  // t0 = fighter/character id
+        addiu   at, r0, Character.id.GBOWSER
+        bne     at, t0, _KO
+        li      t0, SinglePlayerModes.singleplayer_mode_flag
+        lw      t0, 0x0000(t0)
+        addiu   at, r0, 4                       // at = remix 1p mode
+        bne     at, t0, _KO
+        lw      at, 0x0020(s1)                  // at = player type
+        beqz    at, _KO                         // branch if fighter is a player
         nop
 
-        // if here, assume we are in remix 1P's final Boss on Final Destination
-        j       _return
-        sw      r0, 0x0064(v1)             // set target y coordinate to 0
+        // if here, remix 1p giga bowser
+        addiu   sp, sp, -0x0028                 // allocate stack space
+        sw      a1, 0x0004(sp)                  // save registers
+        sw      a2, 0x0008(sp)                  // ~
+        sw      a3, 0x000C(sp)                  // ~
+        sw      v0, 0x0014(sp)                  // ~
+        sw      v1, 0x0018(sp)
         
-        _normal:
+        // gbowser check y coordinate
+        lh      at, 0x004C(s1)                  // player y velocity
+        andi    at, at, 0x8000                  // at != 0 if negative y velocity
+        beqz    at, _skip_KO
+        nop
+        
+        lwc1    f4, 0x0004(a2)                  // f4 = player y coordinate
+        lui     at, 0xC5CA                      // y coordinate to check against
+        mtc1    at, f6
+        c.le.s  f4, f6                          // if fighter y < lower y
+
+        bc1fl   _skip_KO
+        nop
+
+        // if here, gbowser goes upwards
+        lui     at, 0x4380                      // at = y velocity
+        sw      at, 0x004C(s1)                  // save new y velocity
+        lb      t2, 0x018D(s1)
+        ori     t6, r0, 0x0007                  // t6 = bitmask (01111111)
+        and     t6, t2, t6                      // ~
+        sb      t6, 0x018D(s1)                  // disable fast fall flag
+
+        lh      at, 0x0000(a2)                  // at = player x coordinate
+        addiu   t0, r0, -1                      // t0 = player direction (right)
+        andi    at, 0x8000                      // at != 0 if negative x coordinate
+        beqz    at, _gbowser_continue
+        lui     at, 0x458f
+        addiu   t0, r0, 1                       // t0 = player direction (left)// t0 = player direction (right)
+        lui     at, 0xC58f
+        _gbowser_continue:
+        sw      at, 0x0000(a2)                  // save new x coordinate
+        
+        sw      t0, 0x0044(s1)                  // set new player direction
+        lw      a0, 0x0004(s1)                  // a0 = player obj
+
+        jal     0x800DEE54                      // transition to idle
+        nop
+
+        // gbowser play fgm
+        FGM.play(0x369)
+
+        _skip_KO:
+        lw      a1, 0x0004(sp)                    // restore registers
+        lw      a2, 0x0008(sp)                    // ~
+        lw      a3, 0x000C(sp)                    // ~
+        lw      v0, 0x0014(sp)                    // ~
+        lw      v1, 0x0018(sp)
+        addiu   sp, sp, 0x0028                    // deallocate stack space
+        j       0x8013CD78                        // go back to rest of routine
+        lh      t4, 0x0096(v1)                    // og branch line 2
+      
+        _KO:
+        jal     0x8013C1C4
+        nop
         j       _return
-        swc1    f22, 0x0064(v1)             // set target y coordinate
+        nop
     }
 
     // @ Description

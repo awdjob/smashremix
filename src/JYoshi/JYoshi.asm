@@ -26,6 +26,19 @@ scope JYoshi {
     dw  Action.YOSHI.action_string_table
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JYOSHI, 0x2)
+    dh {MIDI.id.YOSHI_TALE}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.JYOSHI, 0x4)
+    db      Character.id.YOSHI
+    db      Character.id.NONE
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
+
     // This alters the amount of Yoshi's armor during double jump. It's a simple floating point number written
     // to a specific location. In Japan it was 42DC0000(110) and internationally it was 430C0000(140)
     scope joshi_armor: {

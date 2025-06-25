@@ -5,21 +5,51 @@
 scope SonicNSP {
     constant MAX_X_RANGE(0x450A)            // current setting - float: 2208
     constant MIN_Y_RANGE(0x447A)            // current setting - float: 1000
-    constant MAX_X_RANGE_SS(0x453b)         // current setting (Super Sonic) - float: 3000
-    constant MIN_Y_RANGE_SS(0x447A)         // current setting (Super Sonic) - float: 1000
+    constant MAX_X_RANGE_SS(0x45BB)         // current setting (Super Sonic) - float: 5984
+    constant MIN_Y_RANGE_SS(0x457A)         // current setting (Super Sonic) - float: 4000
     constant SPEED(0x42DC)                  // current setting - float: 110
     constant LOCKED_SPEED(0x4302)           // current setting - float: 130
-    constant SPEED_SS(0x4316)               // current setting (Super Sonic) - float: 150
-    constant LOCKED_SPEED_SS(0x4320)        // current setting (Super Sonic) - float: 160
+    constant SPEED_SS(0x4302)               // current setting (Super Sonic) - float: 130
+    constant LOCKED_SPEED_SS(0x4302)        // current setting (Super Sonic) - float: 130
     constant RECOIL_X_SPEED(0xC1A0)         // current setting - float: -20
     constant RECOIL_Y_SPEED(0x42A0)         // current setting - float: 80
     constant BOUNCE_Y_SPEED(0x4270)         // current setting - float: 60
     constant TURN_SPEED(0x3E0EFA1E)         // current setting - float: 0.139626 rads/8 degrees
+    constant TURN_SPEED_SS(0x3CD7)          // current setting - float: 0.026 rads/1.5 degrees
     constant DEFAULT_ANGLE(0xBEBBA861)      // current setting - float: -0.366519 rads/-21 degrees
     constant MAX_INITAL_ANGLE(0x3F1C61A6)   // current setting - float: 0.610865 rads/35 degrees
     constant MIN_INITAL_ANGLE(0xBF1C61A6)   // current setting - float: -0.610865 rads/-35 degrees
     constant DURATION(12)
     constant LOCKED_DURATION(20)
+
+    // returns TRUE if player is either super sonic or is kirby wearing super sonics hat
+    // a0 = player struct
+    scope is_super_sonic: {
+        // check if character id = kirby or jkirby
+        lw      t0, 0x0008(a0)              // load character id
+        ori     at, r0, Character.id.KIRBY  // at = KIRBY
+        beq     at, t0, _kirby_hat_check    // branch if not Dedede
+        ori     at, r0, Character.id.JKIRBY // at = JKIRBY
+        beq     at, t0, _kirby_hat_check    // branch if not Dedede
+        nop
+        
+        ori     at, r0, Character.id.SSONIC  // at = SSONIC
+        beql    at, t0, _return
+        addiu   v0, r0, 1                   // return TRUE
+        jr      ra
+        addiu   v0, r0, 0                   // return FALSE
+
+        _kirby_hat_check:
+        lb      at, 0x0980(a0)              // at = current hat ID
+        addiu   t0, r0, 0x002F              // t0 = ssonics hat id
+        beql    at, t0, _return             // branch if ssonic hat
+        addiu   v0, r0, 1                   // return TRUE if ssonic hat
+        addiu   v0, r0, 0                   // return FALSE if sonic hat
+
+        _return:
+        jr      ra
+        nop
+    }
 
     // @ Description
     // Subroutine which runs when Sonic initiates a neutral special.
@@ -67,9 +97,56 @@ scope SonicNSP {
         and     v1, v1, t6                  // ~
         sb      v1, 0x018D(a0)              // disable fast fall flag
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
+        addiu   sp, sp, 0x0050              // deallocate stack space
+    }
+
+    // @ Description
+    // Subroutine which runs when Sonic initiates a neutral special.
+    scope ssonic_begin_initial_: {
+        addiu   sp, sp,-0x0050              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0038(sp)              // 0x0038(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        lw      t0, 0x014C(a0)              // t0 = kinetic state
+        bnez    t0, _continue               // skip if kinetic state = aerial
+        sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
+        jal     0x800DEEC8                  // set aerial state
         nop
+
+        _continue:
+        lw      a0, 0x0038(sp)              // a0 = player object
+
+        lw      a2, 0x0084(a0)              // ~
+        lw      a2, 0x0008(a2)              // a2 = current character ID
+        lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
+        beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
+        lli     a1, Kirby.Action.SSONIC_NSP_Begin
+        lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
+        beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
+        lli     a1, Kirby.Action.SSONIC_NSP_Begin
+
+        lli     a1, SSonic.Action.NSP_Begin // a1(action id) = NSP_Begin
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        // jal     0x800E0830                  // unknown common subroutine
+        // lw      a0, 0x0038(sp)              // a0 = player object
+        lw      a0, 0x0034(sp)              // a0 = player struct
+        sw      r0, 0x017C(a0)              // temp variable 1 = 0
+        sw      r0, 0x0180(a0)              // temp variable 2 = 0
+        sw      r0, 0x0184(a0)              // temp variable 3 = 0
+        lui     t0, 0x4140                  // ~
+        sw      r0, 0x0048(a0)              // x velocity = 0
+        sw      t0, 0x004C(a0)              // y velocity = 12
+        lbu     v1, 0x018D(a0)              // v1 = fast fall flag
+        ori     t6, r0, 0x0007              // t6 = bitmask (01111111)
+        and     v1, v1, t6                  // ~
+        sb      v1, 0x018D(a0)              // disable fast fall flag
+        lw      ra, 0x001C(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -112,9 +189,21 @@ scope SonicNSP {
         _end:
         lw      ra, 0x0014(sp)              // ~
         lw      s0, 0x001C(sp)              // load ra, s0
-        addiu   sp, sp, 0x0040              // deallocate stack space
         jr      ra                          // return
+        addiu   sp, sp, 0x0040              // deallocate stack space
+    }
+
+    // @ Description
+    // Main subroutine for SSonic NSP_Begin
+    scope ssonic_begin_main_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, ssonic_move_initial_    // a1(transition subroutine) = ssonic_move_initial_
+        jal     0x800D9480                  // common main subroutine (transition on animation end)
         nop
+        lw      ra, 0x0014(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -214,9 +303,8 @@ scope SonicNSP {
         lw      s0, 0x0020(sp)              // ~
         lw      s1, 0x0024(sp)              // ~
         lw      s2, 0x0028(sp)              // load ra, s0-s2
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -228,6 +316,7 @@ scope SonicNSP {
     // v0 - target object (NULL when no valid target)
     // v1 - target X_DIFF
     scope check_target_: {
+        OS.routine_begin(0x20)
         lw      t8, 0x0078(a0)              // t8 = player x/y/z coordinates
         addiu   t9, a1, 0x001C              // t9 = target x/y/z coordinates
 
@@ -239,11 +328,14 @@ scope SonicNSP {
         lwc1    f8, 0x0044(a0)              // ~
         cvt.s.w f8, f8                      // f8 = DIRECTION
         mul.s   f10, f10, f8                // f10 = X_DIFF * DIRECTION
+
+        jal     is_super_sonic              // returns 1 if super sonic
+        nop
+        beqzl   v0, _apply_max_x_range
         lui     at, MAX_X_RANGE             // at = MAX_X_RANGE
-        ori     t6, r0, Character.id.SSONIC // t6 = id.SSONIC
-        lw      t7, 0x0008(a0)              // t7 = character id
-        beql    t7, t6, pc() + 8            // if character = SSONIC...
-        lui     at, MAX_X_RANGE_SS          // ...use MAX_X_RANGE_SS instead
+        lui     at, MAX_X_RANGE_SS          // ... or use MAX_X_RANGE_SS instead
+
+        _apply_max_x_range:
         mtc1    at, f8                      // f8 = MAX_X_RANGE
         c.le.s  f10, f8                     // ~
         nop                                 // ~
@@ -271,11 +363,14 @@ scope SonicNSP {
         lwc1    f4, 0x0004(t9)              // f4 = target y coordinate
         sub.s   f12, f4, f2                 // f12 = Y_DIFF (target y - player y)
         abs.s   f12, f12                    // f12 = absolute Y_DIFF
+
+        jal     is_super_sonic              // returns 1 if super sonic
+        nop
+        beqzl   v0, _apply_min_y_range
         lui     at, MIN_Y_RANGE             // at = MIN_Y_RANGE
-        ori     t6, r0, Character.id.SSONIC // t6 = id.SSONIC
-        lw      t7, 0x0008(a0)              // t7 = character id
-        beql    t7, t6, pc() + 8            // if character = SSONIC...
         lui     at, MIN_Y_RANGE_SS          // ...use MIN_Y_RANGE_SS instead
+
+        _apply_min_y_range:
         mtc1    at, f8                      // f8 = MIN_Y_RANGE
         lui     at, 0x3F00                  // ~
         mtc1    at, f6                      // f6 = 0.5
@@ -291,8 +386,7 @@ scope SonicNSP {
         mfc1    v1, f10                     // v1 = X_DIFF
 
         _end:
-        jr      ra                          // return
-        nop
+        OS.routine_end(0x20)
     }
 
     // @ Description
@@ -304,15 +398,25 @@ scope SonicNSP {
         sw      s0, 0x0024(sp)              // store ra, a0, s0
 
         lw      a2, 0x0084(a0)              // ~
-        lw      a2, 0x0008(a2)              // a2 = current character ID
+        lw      at, 0x0008(a2)              // at = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
-        beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
-        lli     a1, Kirby.Action.SONIC_NSP_Locked_Move
+        beq     a1, at, _ssonic_hat_check   // if Kirby, ssonic hat check
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
-        beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
-        lli     a1, Kirby.Action.SONIC_NSP_Locked_Move
+        beq     a1, at, _ssonic_hat_check   // if J Kirby, ssonic hat check
+        nop
 
+        // if here, sonic
+        b       _change_action
         lli     a1, Sonic.Action.NSP_Locked_Move // a1(action id) = NSP_Locked_Move
+
+        _ssonic_hat_check:
+        lb      at, 0x0980(a2)              // at = current hat ID
+        addiu   t0, r0, 0x002F              // t0 = ssonics hat id
+        bnel    t0, at, _change_action
+        lli     a1, Kirby.Action.SONIC_NSP_Locked_Move  // sonic hat
+        lli     a1, Kirby.Action.SSONIC_NSP_Locked_Move // super sonic hat
+
+        _change_action:
         or      a2, r0, r0                  // a2(starting frame) = 0
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
@@ -376,15 +480,24 @@ scope SonicNSP {
         sw      s0, 0x0024(sp)              // store ra, a0, s0
 
         lw      a2, 0x0084(a0)              // ~
-        lw      a2, 0x0008(a2)              // a2 = current character ID
+        lw      at, 0x0008(a2)              // at = current character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
-        beql    a1, a2, pc() + 24           // if Kirby, load alternate action ID
-        lli     a1, Kirby.Action.SONIC_NSP_Move
+        beq     a1, at, _ssonic_hat_check   // if Kirby, ssonic hat check
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
-        beql    a1, a2, pc() + 12           // if J Kirby, load alternate action ID
-        lli     a1, Kirby.Action.SONIC_NSP_Move
+        beq     a1, at, _ssonic_hat_check   // if J Kirby, ssonic hat check
+        nop
 
+        b       _change_action
         lli     a1, Sonic.Action.NSP_Move   // a1(action id) = NSP_Move
+
+        _ssonic_hat_check:
+        lb      at, 0x0980(a2)              // at = current hat ID
+        addiu   t0, r0, 0x002F              // t0 = ssonics hat id
+        bnel    t0, at, _change_action
+        lli     a1, Kirby.Action.SONIC_NSP_Move  // sonic hat
+        lli     a1, Kirby.Action.SSONIC_NSP_Move // super sonic hat
+
+        _change_action:
         or      a2, r0, r0                  // a2(starting frame) = 0
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
@@ -412,40 +525,60 @@ scope SonicNSP {
     }
 
     // @ Description
+    // Subroutine which begins NSP movement for SSonic.
+    scope ssonic_move_initial_: {
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x0014(sp)              // ~
+        sw      a0, 0x0018(sp)              // ~
+        sw      s0, 0x001C(sp)              // store ra, a0, s0
+        lw      s0, 0x0084(a0)              // s0 = player struct
+        sw      r0, 0x0B18(s0)              // target = NULL
+        sw      r0, 0x0B1C(s0)              // X_DIFF = 0
+        sw      r0, 0x0048(s0)              // x velocity = 0
+        sw      r0, 0x004C(s0)              // y velocity = 0
+
+        jal     check_for_targets_          // check_for_targets_
+        lw      a0, 0x0018(sp)              // a0 = player object
+        lw      t0, 0x0B18(s0)              // t0 = target object
+        beq     t0, r0, _no_target          // branch if no target was found
+        nop
+        jal     locked_move_initial_        // locked_move_initial_
+        lw      a0, 0x0018(sp)              // a0 = player object
+        b       _end                        // end
+        nop
+
+        // if no target was found, then move in a fixed direction instead
+        _no_target:
+        jal     move_initial_               // move_initial_
+        lw      a0, 0x0018(sp)              // a0 = player object
+
+        _end:
+        lw      ra, 0x0014(sp)              // ~
+        lw      s0, 0x001C(sp)              // load ra, s0
+        jr      ra                          // return
+        addiu   sp, sp, 0x0040              // deallocate stack space
+    }
+
+    // @ Description
     // Main subroutine for NSP_Move and NSP_Locked_Move.
     scope move_main_: {
-        addiu   sp, sp,-0x0030              // allocate stack space
-        sw      ra, 0x001C(sp)              // store
-        lw      v0, 0x0084(a0)              // v0 = player struct
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0020(sp)              // 0x0020(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
 
-        _check_collision:
-        addiu   t8, v0, 0x0294              // t8 = first hitbox struct
-        addiu   t9, t8, 0xC4 * 3            // t9 = last hitbox struct
-        or      t6, r0, r0                  // t6 = 0
-        _loop:
-        lw      t0, 0x0000(t8)              // t0 = hitbox state
-        beqz    t0, _loop_end               // skip if hitbox is disabled
-        nop
-        lbu     t1, 0x0060(t8)              // t1 = hitbox collision flags(1/4)
-        or      t6, t6, t1                  // t6 = t6 | collision flags
-        lbu     t1, 0x0068(t8)              // t1 = hitbox collision flags(2/4)
-        or      t6, t6, t1                  // t6 = t6 | collision flags
-        lbu     t1, 0x0070(t8)              // t1 = hitbox collision flags(3/4)
-        or      t6, t6, t1                  // t6 = t6 | collision flags
-        lbu     t1, 0x0078(t8)              // t1 = hitbox collision flags(4/4)
-        or      t6, t6, t1                  // t6 = t6 | collision flags
-        _loop_end:
-        bne     t8, t9, _loop               // loop if t8 != last hitbox struct
-        addiu   t8, t8, 0x00C4              // t8 = next hitbox struct
-        // t6 = collision flags for all active hitboxes
-        andi    t6, t6, 0x00F0              // t6 != 0 if hitbox collision has occured
-        beq     t6, r0, _check_movement_end // skip if no hitbox collision is detected
-        nop
+        // v0 = collision flags for all active hitboxes
+        jal     Character.get_hitbox_collision_flags_
+        sw      a0, 0x0024(sp)              // 0x0024(sp) = player struct
+
+        andi    v0, v0, 0x00F0              // v0 != 0 if hitbox collision has occured
+        beq     v0, r0, _check_movement_end // skip if no hitbox collision is detected
+        lw      v0, 0x0024(sp)              // v0 = player struct
 
         // If we're here, then a hitbox collision has occured, so begin recoil
         _begin_recoil:
         jal     air_recoil_initial_         // transition to NSP_Air_Recoil
-        nop
+        lw      a0, 0x0020(sp)              // a0 = player object
         b       _end                        // end
         nop
 
@@ -462,46 +595,81 @@ scope SonicNSP {
 
         _grounded:
         jal     ground_end_initial_         // transition to NSP_Ground_End
-        nop
+        lw      a0, 0x0020(sp)              // a0 = player object
         b       _end                        // end
         nop
 
         _aerial:
         jal     air_end_initial_            // transition to NSP_Air_End
-        nop
+        lw      a0, 0x0020(sp)              // a0 = player object
 
         _end:
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
+        addiu   sp, sp, 0x0040              // deallocate stack space
+    }
+
+    // @ Description
+    // Main subroutine for SSonic NSP_Moveand NSP_Locked_Move.
+    scope ssonic_move_main_: {
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        lw      v1, 0x0084(a0)              // v1 = player struct
+
+        lw      t6, 0x0180(v1)              // t6 = temp variable 2
+        beqz    t6, _end                    // end if temp variable 2 not set
+        lh      t6, 0x01BC(v1)              // t6 = buttons_held
+
+        _check_b_held:
+        andi    t6, t6, Joypad.B            // t6 = 0x0020 if (B_HELD); else t6 = 0
+        bnez    t6, _end                    // skip if (B_HELD)
         nop
+
+        _end_movement:
+        lui     at, 0x3E80                  // ~
+        mtc1    at, f6                      // f6 = 0.25
+        lwc1    f2, 0x0048(v1)              // ~
+        mul.s   f2, f2, f6                  // ~
+        swc1    f2, 0x0048(v1)              // multiply x velocity by 0.25
+        lwc1    f2, 0x004C(v1)              // ~
+        mul.s   f2, f2, f6                  // ~
+        jal     0x800DEE54                  // transition to idle
+        swc1    f2, 0x004C(v1)              // multiply x velocity by 0.25
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0040              // deallocate stack space
     }
 
     // @ Description
     // Subroutine which controls movement for NSP_Move and NSP_Locked_Move.
     scope move_physics_: {
-        addiu   sp, sp,-0x0040              // allocate stack space
+        addiu   sp, sp,-0x0050              // allocate stack space
         sw      ra, 0x0014(sp)              // ~
         sw      a0, 0x0020(sp)              // ~
         sw      s0, 0x0024(sp)              // store ra, a0, s0
         lw      s0, 0x0084(a0)              // s0 = player struct
+        sw      s0, 0x0044(sp)              // store ~
         lw      t9, 0x0B18(s0)              // t9 = target object
 
-        ori     at, r0, Character.id.SSONIC // at = SSONIC
-        lw      t8, 0x0008(s0)              // load character id
-        beql    t8, at, _save_speed
-        lui     at, SPEED_SS                // ~
+        jal     is_super_sonic              // returns 1 if super sonic
+        lw      a0, 0x0044(sp)              // a0 = player struct
 
-        lui     at, SPEED                   // ~
+        bnez    v0, _save_speed
+        lui     at, SPEED_SS                // super sonic speed
+
+        lui     at, SPEED                   // sonic speed
 
         _save_speed:
         beqz    t9, _apply_movement         // branch if target object = NULL
         sw      at, 0x0030(sp)              // 0x0030(sp) = SPEED
 
         _get_angle:
-        ori     at, r0, Character.id.SSONIC // at = SSONIC
-        lw      t8, 0x0008(s0)              // load character id
-        beql    t8, at, _move_locked
+        jal     is_super_sonic              // returns 1 if super sonic
+        lw      a0, 0x0044(sp)              // a0 = player struct
+
+        bnez    v0, _move_locked
         lui     at, LOCKED_SPEED_SS         // ~
 
         lui     at, LOCKED_SPEED            // ~
@@ -531,7 +699,14 @@ scope SonicNSP {
         mtc1    at, f2                      // f2 = 6.28319 rads/360 degrees
         li      at, 0xC0490FD0              // ~
         mtc1    at, f4                      // f4 = -3.14159 rads/-180 degrees
-        li      at, TURN_SPEED              // ~
+
+        jal     is_super_sonic              // returns 1 if super sonic
+        lw      a0, 0x0044(sp)              // a0 = player struct
+        li      at, TURN_SPEED              // sonics turn speed
+        bnezl   v0, _apply_turn_speed
+        lui     at, TURN_SPEED_SS           // ...use Super Sonic turn speed instead
+
+        _apply_turn_speed:
         mtc1    at, f6                      // f6 = TURN_SPEED
         lwc1    f10, 0x0B20(s0)             // f10 = current movement angle
         sub.s   f8, f12, f10                // f8 = angle difference: DIFF_ANGLE - current angle
@@ -590,7 +765,7 @@ scope SonicNSP {
         lw      s0, 0x0024(sp)              // ~
         lw      ra, 0x0014(sp)              // load s0, ra
         jr      ra                          // return
-        addiu   sp, sp, 0x0040              // deallocate stack space
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -602,9 +777,33 @@ scope SonicNSP {
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
+        addiu   sp, sp, 0x0018              // deallocate stack space
+    }
+
+    // @ Description
+    // Subroutine which handles collision for Super Sonic NSP_Move and NSP_Locked_Move.
+    scope ssonic_move_collision_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        lw      t6, 0x0180(v1)              // t6 = temp variable 2
+        beqz    t6, _project                // branch if temp variable 2 not set
         nop
+        // if temp variable 2 is set, allow landing
+        jal     0x800DE978                  // mpCommonProcFighterCliffWaitOrLanding
+        nop
+        b       _end                        // end
+        nop
+
+        _project:
+        jal     0x800DE958                  // mpCommonProcFighterProject
+        nop
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -640,9 +839,8 @@ scope SonicNSP {
         lui     at, BOUNCE_Y_SPEED          // at = BOUNCE_Y_SPEED
         sw      at, 0x004C(a0)              // set y velocity to BOUNCE_Y_SPEED
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -676,9 +874,8 @@ scope SonicNSP {
         mul.s   f2, f2, f0                  // ~
         swc1    f2, 0x0060(a0)              // multiply x velocity by 0.5 and update
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -715,9 +912,8 @@ scope SonicNSP {
         mul.s   f2, f2, f0                  // ~
         swc1    f2, 0x004C(a0)              // multiply y velocity by 0.5 and update
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -729,9 +925,8 @@ scope SonicNSP {
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -743,9 +938,8 @@ scope SonicNSP {
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -774,9 +968,8 @@ scope SonicNSP {
         jal     0x800E6F24                  // change action
         sw      t6, 0x0010(sp)              // argument 4 = 1 (continue hitbox)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -808,9 +1001,8 @@ scope SonicNSP {
         jal     0x800D8EB8                  // momentum capture?
         lw      a0, 0x0084(a0)              // a0 = player struct
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -847,9 +1039,8 @@ scope SonicNSP {
         swc1    f4, 0x0048(a0)              // set x velocity to RECOIL_X_SPEED
         sw      at, 0x004C(a0)              // set y velocity to RECOIL_Y_SPEED
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -861,9 +1052,8 @@ scope SonicNSP {
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -875,9 +1065,8 @@ scope SonicNSP {
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -906,9 +1095,8 @@ scope SonicNSP {
         jal     0x800E6F24                  // change action
         sw      t6, 0x0010(sp)              // argument 4 = 1 (continue hitbox)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -940,9 +1128,8 @@ scope SonicNSP {
         jal     0x800D8EB8                  // momentum capture?
         lw      a0, 0x0084(a0)              // a0 = player struct
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0050              // deallocate stack space
     }
 
     // @ Description
@@ -992,6 +1179,21 @@ scope SonicNSP {
     }
 }
 
+// @ Description
+// Refreshes USP flag when hit
+scope SonicUSPRefresh: {
+    sw  r0, 0x0ADC(a0)              // set up special bool to FALSE
+    jr  ra
+    nop
+}
+
+Character.table_patch_start(on_hit, Character.id.SONIC, 0x4)
+dw SonicUSPRefresh;
+OS.patch_end()
+
+Character.table_patch_start(on_hit, Character.id.SSONIC, 0x4)
+dw SonicUSPRefresh;
+OS.patch_end()
 
 scope SonicUSP {
     constant Y_SPEED(0x4301)                // current setting - float: 129.0
@@ -1201,9 +1403,9 @@ scope SonicUSP {
 
 
         lw      t6, 0x0008(a1)              // t6 = character id
-        lli     at, Character.id.SSONIC     // at = id.SSONIC
+        // lli     at, Character.id.SSONIC     // at = id.SSONIC
 
-        beq     t6, at, _sonic              // branch if character = SSonic
+        // beq     t6, at, _sonic              // branch if character = SSonic
         lli     at, Character.id.SONIC      // at = id.SONIC
 
         bne     t6, at, _end                // skip if character != Sonic
@@ -1222,39 +1424,6 @@ scope SonicUSP {
         _end:
         j       _return
         or      a2, a0, r0                  // original line 2
-    }
-
-    // @ Description
-    // Patch which allows Sonic to use special moves again after being hit.
-    scope restore_specials_on_hit_: {
-        OS.patch_start(0x63A44, 0x800E8244)
-        j       restore_specials_on_hit_
-        nop
-        _return:
-        OS.patch_end()
-
-        sw      a0, 0x0020(sp)              // store a0 (original line 1)
-        lw      a0, 0x0084(a0)              // a0 = player struct (original line 2)
-        lw      t6, 0x0008(a0)              // t6 = character id
-        lli     at, Character.id.SSONIC     // at = id.SSONIC
-
-        beq     t6, at, _sonic              // branch if character = SSonic
-        lli     at, Character.id.EBI        // at = id.EBI
-
-        // Ebisumaru will use this as well
-        beq     t6, at, _sonic              // branch if character = Ebisumaru
-        lli     at, Character.id.SONIC      // at = id.SONIC
-
-        bne     t6, at, _end                // skip if character != Sonic
-        nop
-
-        // if the character is Sonic
-        _sonic:
-        sw      r0, 0x0ADC(a0)              // set up special bool to FALSE
-
-        _end:
-        j       _return                     // return
-        nop
     }
 
     // @ Description
@@ -2544,14 +2713,13 @@ scope SonicDSP {
 
         // if we're here then Sonic is now considered actionable, so do a normal transition on landing
         _interrupt:
-        jal      0x800DE99C                 // air collision subroutine (cancel on landing)
+        jal      0x800DE978                 // air collision subroutine (cancel on landing)
         nop
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -2719,5 +2887,831 @@ scope SonicDSP {
         addiu   sp, sp, 0x0050              // deallocate stack space
         jr      ra                          // return
         nop
+    }
+}
+
+scope SSonicUSP {
+    constant DEFAULT_ANGLE(0x3FC90FDB) // float 1.570796 rads
+    constant LANDING_FSM(0x3FC00000) // float 1.5
+    constant SPEED(0x4320) // float 160
+
+    // @ Description
+    // Subroutine which runs when SSonic initiates a grounded up special.
+    scope ground_begin_initial_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+        lli     a1, SSonic.Action.USP_Ground_Begin // a1(action id) = USP_Ground_Begin
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // ~
+        sw      r0, 0x017C(a0)              // temp variable 1 = 0
+        sw      r0, 0x0180(a0)              // temp variable 2 = 0
+        sw      r0, 0x0184(a0)              // temp variable 3 = 0
+        lui     t0, 0x3F00                  // ~
+        mtc1    t0, f0                      // f0 = 0.5
+        lwc1    f2, 0x0060(a0)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0060(a0)              // multiply x velocity by 0.5 and update
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which runs when SSonic initiates an aerial up special.
+    scope air_begin_initial_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        lw      t6, 0x0ADC(v1)              // t6 = up special counter
+        sltiu   at, t6, 2                   // ~
+        beqz    at, _end                    // skip if up special counter >= 2
+        addiu   t6, t6, 0x0001              // increment up special counter
+
+        sw      t6, 0x0ADC(v1)              // store updated up special counter
+        lli     a1, SSonic.Action.USP_Air_Begin // a1(action id) = USP_Air_Begin
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // ~
+        sw      r0, 0x017C(a0)              // temp variable 1 = 0
+        sw      r0, 0x0180(a0)              // temp variable 2 = 0
+        sw      r0, 0x0184(a0)              // temp variable 3 = 0
+        lui     t0, 0x3F00                  // ~
+        mtc1    t0, f0                      // f0 = 0.5
+        lwc1    f2, 0x0048(a0)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0048(a0)              // multiply x velocity by 0.5 and update
+        lwc1    f2, 0x004C(a0)              // f2 = y velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x004C(a0)              // multiply y velocity by 0.5 and update
+        lbu     v1, 0x018D(a0)              // v1 = fast fall flag
+        ori     t6, r0, 0x0007              // t6 = bitmask (01111111)
+        and     v1, v1, t6                  // ~
+        sb      v1, 0x018D(a0)              // disable fast fall flag
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // Main subroutine for USP_Ground_Begin and USP_Air_Begin
+    scope begin_main_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, move_initial_           // a1(transition subroutine) = move_initial_
+        jal     0x800D9480                  // common main subroutine (transition on animation end)
+        nop
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0018              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Collision subroutine for USP_Ground_Begin.
+    scope ground_begin_collision_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, air_begin_transition_   // a1(transition subroutine) = air_begin_transition_
+        jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
+        nop
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0018              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Collision subroutine for USP_Air_Begin.
+    scope air_begin_collision_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, ground_begin_transition_ // a1(transition subroutine) = ground_begin_transition_
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
+        nop
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0018              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which transitions to USP_Ground_Begin.
+    scope ground_begin_transition_: {
+        addiu   sp, sp,-0x0050              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0038(sp)              // 0x0038(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        jal     0x800DEE98                  // set grounded state
+        sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
+        lw      a0, 0x0038(sp)              // a0 = player object
+        lli     a1, SSonic.Action.USP_Ground_Begin // a1(action id) = USP_Ground_Begin
+        lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0050              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which transitions to USP_Air_Begin.
+    scope air_begin_transition_: {
+        addiu   sp, sp,-0x0050              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0038(sp)              // 0x0038(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        jal     0x800DEEC8                  // set aerial state
+        sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
+        lw      a0, 0x0038(sp)              // a0 = player object
+        lli     a1, SSonic.Action.USP_Air_Begin // a1(action id) = USP_Air_Begin
+        lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800D8EB8                  // momentum capture?
+        lw      a0, 0x0034(sp)              // a0 = player struct
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0050              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which begins SSonic's up special movement actions.
+    scope move_initial_: {
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // ~
+        jal     PokemonAnnouncer.teleport_announcement_
+        sw      s0, 0x0024(sp)              // store a0, s0, ra
+        lw      s0, 0x0084(a0)              // s0 = player struct
+        lb      v0, 0x01C2(s0)              // v0 = stick_x
+        bltzl   v0, _check_turnaround       // branch if stick_x is negative...
+        subu    v0, r0, v0                  // ...and make stick_x positive
+
+        _check_turnaround:
+        // v0 = absolute stick_x
+        slti    at, v0, 0x000B              // at = 1 if absolute stick_x < 11, else at = 0
+        bnez    at, _check_deadzone         // skip if absolute stick_x < 11
+        nop
+        jal     0x800E8044                  // apply turnaround
+        or      a0, s0, r0                  // a0 = player struct
+
+        _check_deadzone:
+        lw      t8, 0x014C(s0)              // t8 = kinetic state
+        sw      t8, 0x0028(sp)              // 0x0028(sp) = kinetic state
+        lb      t0, 0x01C2(s0)              // t0 = stick_x
+        lb      t1, 0x01C3(s0)              // t1 = stick_y
+        multu   t0, t0                      // ~
+        mflo    t2                          // t2 = stick_x ^ 2
+        multu   t1, t1                      // ~
+        mflo    t3                          // t3 = stick_y ^ 2
+        addu    t2, t2, t3                  // ~
+        mtc1    t2, f12                     // ~
+        cvt.s.w f12, f12                    // ~
+        sqrt.s  f12, f12                    // f12 = absolute stick input
+        cvt.w.s f12, f12                    // ~
+        mfc1    t2, f12                     // t2 = absolute stick input (int)
+        slti    at, t2, 0x000B              // at(use_default_angle) = 1 if absolute stick < 11, else at = 0
+        sw      at, 0x002C(sp)              // 0x002C(sp) = use_default_angle
+        bnez    at, _aerial                 // branch if use_default_angle = 1
+        nop
+
+        bnez    t8, _change_action          // skip if kinetic state !grounded
+        lli     a1, SSonic.Action.USP_Air_Move // a1(action id) = USP_Air_Move
+
+        _grounded:
+        lb      t0, 0x01C3(s0)              // t0 = stick_y
+        bnez    t0, _aerial                 // branch if stick_y = 0
+        lli     a1, SSonic.Action.USP_Air_Move // a1(action id) = USP_Air_Move
+        lb      t0, 0x01C2(s0)              // t0 = stick_x
+        beqz    t0, _aerial                 // branch if stick_x = 0
+        lli     a1, SSonic.Action.USP_Air_Move // a1(action id) = USP_Air_Move
+
+        // if we're here, stick_y is 0 and stick_x is not 0, so use grounded action
+        b       _change_action              // change action
+        lli     a1, SSonic.Action.USP_Ground_Move // a1(action id) = USP_Ground_Move
+
+        _aerial:
+        jal     0x800DEEC8                  // set aerial state
+        or      a0, s0, r0                  // a0 = player struct
+        lli     a1, SSonic.Action.USP_Air_Move // a1(action id) = USP_Air_Move
+
+        _change_action:
+        lw      a0, 0x0020(sp)              // a0 = player object
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+
+        li      t0, DEFAULT_ANGLE           // t0 = DEFAULT_ANGLE
+        lw      at, 0x002C(sp)              // at = use_default_angle
+        bnez    at, _movement               // branch if use_default_angle = 1
+        sw      t0, 0x0B20(s0)              // store DEFAULT_ANGLE
+
+        _continue:
+        lb      t0, 0x01C2(s0)              // t0 = stick_x
+        lb      t1, 0x01C3(s0)              // t1 = stick_y
+        lw      t2, 0x0044(s0)              // t2 = direction
+        multu   t0, t2                      // ~
+        mflo    t0                          // t0 = stick_x * direction
+        mtc1    t1, f12                     // ~
+        mtc1    t0, f14                     // ~
+        cvt.s.w f12, f12                    // f12 = stick y
+        jal     0x8001863C                  // f0 = atan2(f12,f14)
+        cvt.s.w f14, f14                    // f14 = stick x * direction
+        swc1    f0, 0x0B20(s0)              // store movement angle
+
+        _movement:
+        or      a0, s0, r0                  // a0 = player struct
+        lli     at, 000012                  // at = 12
+        jal     apply_movement_             // apply movement
+        sw      at, 0x0B18(a0)              // set movement timer to 12
+
+        _visibility:
+        lbu     at, 0x018D(s0)              // at = bit field
+        ori     at, at, 0x0001              // enable bitflag for invisibility
+        sb      at, 0x018D(s0)              // update bit field
+        li      t0, CharEnvColor.moveset_table
+        lbu     t1, 0x000D(s0)              // t1 = port
+        sll     t1, t1, 0x0002              // t1 = offset to env color override value
+        addu    t0, t0, t1                  // t0 = address of env color override value
+        li      t1, 0xFFFFFF00              // env color for full transparency
+        sw      t1, 0x0000(t0)              // store updated env color
+
+        _intangibility:
+        lli     t0, 0x0003                  // ~
+        sb      t0, 0x05BB(s0)              // set hurtbox state to 0x0003(intangible)
+
+        _platform:
+        lw      at, 0x0028(sp)              // at = kinetic state
+        bnez    at, _end                    // skip if kinetic state was !grounded
+        nop
+
+        // if the original kinetic state was grounded, this will allow dropping through platforms
+        lw      t8, 0x00EC(s0)              // t8 = platform ID
+        sw      t8, 0x0144(s0)              // allows pass through given ID?
+
+
+        _end:
+        lw      ra, 0x001C(sp)              // ~
+        lw      s0, 0x0024(sp)              // load s0
+        addiu   sp, sp, 0x0040              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Main subroutine for USP_Ground_Move and USP_Air_Move.
+    scope move_main_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // store
+        lw      v0, 0x0084(a0)              // v0 = player struct
+        lw      t6, 0x0B18(v0)              // t6 = movement timer
+        addiu   t6, t6,-0x0001              // decrement timer
+        bnez    t6, _end                    // skip if timer !0
+        sw      t6, 0x0B18(v0)              // update movement timer
+
+        // If we're here, then the movement timer has ended, so transition to ending animation
+        lw      t6, 0x014C(v0)              // t6 = kinetic state
+        bnez    t6, _aerial                 // branch if kinetic state !grounded
+        nop
+
+        _grounded:
+        jal     ground_end_initial_         // transition to USP_Ground_End
+        nop
+        b       _end                        // end
+        nop
+
+        _aerial:
+        jal     air_end_initial_            // transition to USP_Air_End
+        nop
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Physics subroutine for USP_Ground_Move and USP_Air_Move.
+    scope move_physics_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        jal     apply_movement_             // apply movement
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Collision subroutine for USP_Ground_Move.
+    scope ground_move_collision_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, air_move_transition_    // a1(transition subroutine) = air_move_transition_
+        jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
+        nop
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0018              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Collision subroutine for USP_Air_Move.
+    scope air_move_collision_: {
+        addiu   sp, sp,-0x0018              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        li      a1, ground_move_transition_ // a1(transition subroutine) = ground_move_transition_
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
+        nop
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0018              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which transitions to USP_Ground_Move.
+    scope ground_move_transition_: {
+        addiu   sp, sp,-0x0050              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0038(sp)              // 0x0038(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        jal     0x800DEE98                  // set grounded state
+        sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
+        lw      a0, 0x0038(sp)              // a0 = player object
+        lli     a1, SSonic.Action.USP_Ground_Move // a1(action id) = USP_Ground_Move
+        lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+
+        _visibility:
+        lw      a0, 0x0034(sp)              // a0 = player struct
+        lbu     at, 0x018D(a0)              // at = bit field
+        ori     at, at, 0x0001              // enable bitflag for invisibility
+        sb      at, 0x018D(a0)              // update bit field
+        li      t0, CharEnvColor.moveset_table
+        lbu     t1, 0x000D(a0)              // t1 = port
+        sll     t1, t1, 0x0002              // t1 = offset to env color override value
+        addu    t0, t0, t1                  // t0 = address of env color override value
+        li      t1, 0xFFFFFF00              // env color for full transparency
+        sw      t1, 0x0000(t0)              // store updated env color
+
+        _intangibility:
+        lli     t0, 0x0003                  // ~
+        sb      t0, 0x05BB(a0)              // set hurtbox state to 0x0003(intangible)
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0050              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which transitions to USP_Air_Move.
+    scope air_move_transition_: {
+        addiu   sp, sp,-0x0050              // allocate stack space
+        sw      ra, 0x001C(sp)              // store ra
+        sw      a0, 0x0038(sp)              // 0x0038(sp) = player object
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        jal     0x800DEEC8                  // set aerial state
+        sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
+        lw      a0, 0x0038(sp)              // a0 = player object
+        lli     a1, SSonic.Action.USP_Air_Move // a1(action id) = USP_Air_Move
+        lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800D8EB8                  // momentum capture?
+        lw      a0, 0x0034(sp)              // a0 = player struct
+        lw      a0, 0x0034(sp)              // a0 = player struct
+        sw      r0, 0x0B20(a0)              // set angle to 0
+
+        _visibility:
+        lbu     at, 0x018D(a0)              // at = bit field
+        ori     at, at, 0x0001              // enable bitflag for invisibility
+        sb      at, 0x018D(a0)              // update bit field
+        li      t0, CharEnvColor.moveset_table
+        lbu     t1, 0x000D(a0)              // t1 = port
+        sll     t1, t1, 0x0002              // t1 = offset to env color override value
+        addu    t0, t0, t1                  // t0 = address of env color override value
+        li      t1, 0xFFFFFF00              // env color for full transparency
+        sw      t1, 0x0000(t0)              // store updated env color
+
+        _intangibility:
+        lli     t0, 0x0003                  // ~
+        sb      t0, 0x05BB(a0)              // set hurtbox state to 0x0003(intangible)
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0050              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which begins SSonic's grounded up special ending action.
+    scope ground_end_initial_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+        lli     a1, SSonic.Action.USP_Ground_End // a1(action id) = USP_Ground_End
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        lui     t0, 0x3F00                  // ~
+        mtc1    t0, f0                      // f0 = 0.5
+        lwc1    f2, 0x0060(a0)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0060(a0)              // multiply x velocity by 0.5 and update
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which begins SSonic's aerial up special ending action.
+    scope air_end_initial_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+        lli     a1, SSonic.Action.USP_Air_End // a1(action id) = USP_Air_End
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        lui     t0, 0x3E80                  // ~
+        mtc1    t0, f0                      // f0 = 0.25
+        lwc1    f2, 0x0048(a0)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0048(a0)              // multiply x velocity by 0.25 and update
+        lwc1    f2, 0x004C(a0)              // f2 = y velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x004C(a0)              // multiply y velocity by 0.25 and update
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Main subroutine for USP_Air_End.
+    scope air_end_main_: {
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x0024(sp)              // ~
+        sw      a0, 0x0028(sp)              // store a0, ra
+
+        jal     end_invisibility_           // check for invisibility
+        lw      a0, 0x0084(a0)              // a0 = player struct
+
+        // checks the current animation frame to see if we've reached end of the animation
+        lw      a0, 0x0028(sp)              // a0 = player object
+        lwc1    f6, 0x0078(a0)              // ~
+        mtc1    r0, f4                      // ~
+        c.le.s  f6, f4                      // ~
+        nop
+        bc1fl   _end                        // skip if animation end has not been reached
+        lw      ra, 0x0024(sp)              // restore ra
+
+        //if the end of the animation has been reached
+        jal     0x800DEE54                  // transition to idle
+        nop
+        lw      ra, 0x0024(sp)              // restore ra
+
+        _end:
+        addiu   sp, sp, 0x0040              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Main subroutine for USP_Ground_End.
+    // Transitions to idle on animation end, and makes the character invisible if temp variable 3 is set.
+    scope ground_end_main_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+
+        jal     end_invisibility_           // check for invisibility
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        jal     0x800D94C4                  // check for idle transition
+        lw      a0, 0x0020(sp)              // a0 = player object
+
+        _end:
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which makes the character invisible if temp variable 3 is set during up special ending actions.
+    // a0 - player struct
+    scope end_invisibility_: {
+        lbu     at, 0x018D(a0)              // at = bit field
+        lw      t0, 0x0184(a0)              // t0 = temp variable 3
+        beqz    t0, _end                    // branch if temp variable 3 = 0
+        andi    at, at, 0xFFFE              // disable bitflag for invisibility
+        // if temp variable 3 is set
+        ori     at, at, 0x0001              // enable bitflag for invisibility
+
+        _end:
+        jr      ra                          // return
+        sb      at, 0x018D(a0)              // update bit field
+    }
+
+    // @ Description
+    // Interrupt subroutine for USP_Ground_End.
+    scope ground_end_interrupt_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0014(sp)              // ~
+        sw      a0, 0x0018(sp)              // store ra, a0
+        lw      t6, 0x0084(a0)              // t6 = player struct
+        lw      t6, 0x0180(t6)              // t6 = temp variable 2
+        beqz    t6, _end                    // skip if temp variable 2 is not set
+        nop
+
+        // if we're here then Sonic is now considered actionable, so allow interrupts
+        _interrupt:
+        jal      0x80143394                 // crouchend interrupt subroutine
+        nop
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Interrupt subroutine for USP_Air_End.
+    scope air_end_interrupt_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0014(sp)              // ~
+        sw      a0, 0x0018(sp)              // store ra, a0
+        lw      t6, 0x0084(a0)              // t6 = player struct
+        lw      t6, 0x0180(t6)              // t6 = temp variable 2
+        beqz    t6, _end                    // skip if temp variable 2 is not set
+        nop
+
+        // if we're here then Sonic is now considered actionable, so allow interrupts
+        _interrupt:
+        jal      0x8013F660                 // jump interrupt subroutine
+        nop
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Collision subroutine for USP_Ground_End and USP_Air_End.
+    // Based on subroutine 0x8015DD58, which is the collision subroutine for Samus' up special.
+    // Modified to load SSonic's landing FSM value.
+    scope end_collision_: {
+        // Copy the first 26 lines of subroutine 0x8015DD58
+        OS.copy_segment(0xD8798, 0x68)
+        lli     a1, OS.FALSE                // interrupt flag = FALSE
+        lui     a2, LANDING_FSM >> 16       // load upper 2 bytes of LANDING_FSM
+        // Copy the next 7 lines
+        OS.copy_segment(0xD8808, 0x1C)
+        jal     0x80142E3C                  // original line, landing transition
+        addiu   a2, a2, LANDING_FSM & 0xFFFF// load lower 2 bytes of LANDING_FSM
+        b       _end                        // end
+        lw      ra, 0x0014(sp)              // load ra
+
+        _grounded:
+        jal     0x800DDEE8                  // grounded subroutine
+        nop
+        lw      ra, 0x0014(sp)
+
+        _end:
+        addiu   sp, sp, 0x0020              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Subroutine which applies movement to Super Sonic's up special based on the angle stored at 0x0B20 in the player struct.
+    // a0 - player struct
+    scope apply_movement_: {
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x0014(sp)              // store ra
+        lui     at, SPEED                   // ~
+        sw      at, 0x0018(sp)              // 0x0018(sp) = SPEED
+        lw      at, 0x0B20(a0)              // ~
+        sw      at, 0x001C(sp)              // 0x001C(sp) = movement angle
+        sw      a0, 0x0020(sp)              // 0x0020(sp) = player struct
+
+        // ultra64 cosf function
+        jal     0x80035CD0                  // f0 = cos(f12)
+        lwc1    f12, 0x001C(sp)             // f12 = movement angle
+        lwc1    f4, 0x0018(sp)              // f4 = SPEED
+        mul.s   f4, f4, f0                  // f4 = x velocity (SPEED * cos(angle))
+        swc1    f4, 0x0024(sp)              // 0x0024(sp) = x velocity
+        // ultra64 sinf function
+        jal     0x800303F0                  // f0 = sin(f12)
+        lwc1    f12, 0x001C(sp)             // f12 = movement angle
+        lwc1    f4, 0x0018(sp)              // f4 = SPEED
+        mul.s   f4, f4, f0                  // f4 = y velocity (SPEED * sin(angle))
+
+        lw      at, 0x0020(sp)              // at = player struct
+        lw      t0, 0x014C(at)              // t0 = kinetic state
+        bnez    t0, _aerial                 // branch if kinetic state !grounded
+        lwc1    f2, 0x0024(sp)              // f2 = x velocity
+
+        _grounded:
+        swc1    f2, 0x0060(at)              // store updated ground x velocity
+        lwc1    f0, 0x0044(at)              // ~
+        cvt.s.w f0, f0                      // f0 = direction
+        mul.s   f2, f2, f0                  // f2 = x velocity * direction
+        b       _end                        // end
+        swc1    f2, 0x0048(at)              // store updated air x velocity
+
+        _aerial:
+        lwc1    f0, 0x0044(at)              // ~
+        cvt.s.w f0, f0                      // f0 = direction
+        mul.s   f2, f2, f0                  // f2 = x velocity * direction
+        swc1    f2, 0x0048(at)              // store updated x velocity
+        swc1    f4, 0x004C(at)              // store updated y velocity
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        addiu   sp, sp, 0x0040              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Allow sonic to cancel into teleport if he's holding B when he lands a hit.
+    scope teleport_cancel_patch_: {
+        OS.patch_start(0x5D198, 0x800E1998)
+        jal     teleport_cancel_patch_
+        sw      a2, 0x001C(sp)              // original line 2
+        _return:
+        OS.patch_end()
+
+        addiu   sp, sp, -0x0040             // allocate stack space
+        sw      ra, 0x0020(sp)              // store ra
+        sw      v0, 0x0024(sp)              // store v0
+        sw      a0, 0x0028(sp)              // 0x0028(sp) = player object
+        lw      v1, 0x0084(a0)              // v1 = player struct
+
+        lw      t0, 0x0008(v1)              // t0 = character ID
+        lli     t1, Character.id.SSONIC     // t1 = id.KIRBY
+        bne     t0, t1, _continue           // skip if character isn't Super Sonic
+        lb      t0, 0x01C3(v1)              // t0 = stick_y
+        slti    t0, t0, 40                  // ~
+        bnez    t0, _continue               // skip if stick_y < 40
+        lh      t0, 0x01BE(v1)              // t0 = buttons_pressed
+        andi    t0, t0, Joypad.B            // t0 = 0x0020 if (B_PRESSED); else t0 = 0
+        beqz    t0, _continue               // skip to end if B is not pressed
+        nop
+
+        // if up B is being input and the character is Super Sonic
+        // v0 = collision flags for all active hitboxes
+        jal     Character.get_hitbox_collision_flags_
+        or      a0, v1, r0                  // a0 = player struct
+
+        andi    v0, v0, 0x00F0              // v0 != 0 if hitbox collision has occured
+        beq     v0, r0, _continue           // skip if no hitbox collision is detected
+        nop
+
+        // if we're here, cancel into USP
+        jal     air_begin_initial_          // begin usp
+        lw      a0, 0x0028(sp)              // a0 = player object
+        b       _end                        // end function
+        nop
+
+        _continue:
+        lw      v0, 0x0024(sp)              // load v0
+        jalr    ra, v0                      // original line 1
+        lw      a0, 0x0028(sp)              // a0 = player object
+
+        _end:
+        lw      ra, 0x0020(sp)              // load ra
+        jr      ra
+        addiu   sp, sp, 0x0040              // deallocate stack space
+    }
+}
+
+scope SSonicDSP {
+    // @ Description
+    // Initial function for SSonic DSPGround
+    scope ground_initial_: {
+        addiu   sp, sp,-0x0028              // allocate stack space
+        sw      ra, 0x0014(sp)              // ~
+        sw      a0, 0x0018(sp)              // store ra, a0
+        lli     a1, Action.FOX.ReflectorStart // a1(action id) = ReflectorStart
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // known common subroutine (plays first animation frame)
+        lw      a0, 0x0018(sp)              // a0 = player object
+        jal     SSonic.emerald_graphic_init_ // create emerald graphic
+        lw      a0, 0x0018(sp)              // a0 = player object
+        lw      a0, 0x0018(sp)              // a0 = player object
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        sw      r0, 0x017C(v1)              // temp variable 1 = 0
+        sw      r0, 0x0180(v1)              // temp variable 2 = 0
+        sw      r0, 0x0184(v1)              // temp variable 3 = 0
+        lli     t0, 10                      // ~
+        sw      t0, 0x0B28(v1)              // set gravity delay
+        lui     t0, 0x3FA0                  // ~
+        mtc1    t0, f0                      // f0 = 1.25
+        lwc1    f2, 0x0060(v1)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0060(v1)              // multiply x velocity by 1.25 and update
+        beqz    v0, _end                    // branch if no gfx object created
+        sw      v0, 0x0B24(v1)              // store gfx object
+        lbu     t0, 0x018F(v1)              // ~
+        ori     t0, t0, 0x0010              // ~
+        sb      t0, 0x018F(v1)              // enable is_attach_effect bitflag
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0028              // deallocate stack space
+    }
+
+    // @ Description
+    // Initial function for SSonic DSPAir
+    scope air_initial_: {
+        addiu   sp, sp,-0x0028              // allocate stack space
+        sw      ra, 0x0014(sp)              // ~
+        sw      a0, 0x0018(sp)              // store ra, a0
+        lli     a1, Action.FOX.ReflectorStartAir // a1(action id) = ReflectorStart
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        jal     0x800E6F24                  // change action
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E0830                  // known common subroutine (plays first animation frame)
+        lw      a0, 0x0018(sp)              // a0 = player object
+        jal     SSonic.emerald_graphic_init_ // create emerald graphic
+        lw      a0, 0x0018(sp)              // a0 = player object
+        lw      a0, 0x0018(sp)              // a0 = player object
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        sw      r0, 0x017C(v1)              // temp variable 1 = 0
+        sw      r0, 0x0180(v1)              // temp variable 2 = 0
+        sw      r0, 0x0184(v1)              // temp variable 3 = 0
+        lli     t0, 10                      // ~
+        sw      t0, 0x0B28(v1)              // set gravity delay
+        lui     t0, 0x3FA0                  // ~
+        mtc1    t0, f0                      // f0 = 1.25
+        lwc1    f2, 0x0048(v1)              // f2 = x velocity
+        mul.s   f2, f2, f0                  // ~
+        swc1    f2, 0x0048(v1)              // multiply x velocity by 1.25 and update
+        sw      r0, 0x004C(v1)              // y velocity = 0
+        beqz    v0, _end                    // branch if no gfx object created
+        sw      v0, 0x0B24(v1)              // store gfx object
+        lbu     t0, 0x018F(v1)              // ~
+        ori     t0, t0, 0x0010              // ~
+        sb      t0, 0x018F(v1)              // enable is_attach_effect bitflag
+
+        _end:
+        lw      ra, 0x0014(sp)              // load ra
+        jr      ra                          // return
+        addiu   sp, sp, 0x0028              // deallocate stack space
     }
 }

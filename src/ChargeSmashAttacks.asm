@@ -1,3 +1,4 @@
+// Coded by HaloFactory
 
     // @ Description
     // ChargeSmashAttacks
@@ -35,7 +36,7 @@
 
             bnez    v0, _end            // branch if aerial transition
             nop
-            
+
             Toggles.read(entry_charged_smashes, at) // at = toggle address
             beqz    at, _end            // branch if toggle disabled
             lw      v1, 0x0084(a0)      // v1 = fighter struct
@@ -152,6 +153,10 @@
             _increment_charge_continue:
             addiu   t4, t4, 1           // charge time +=1
             sw      t4, 0x0000(t3)      // overwrite value
+
+            Toggles.read(entry_charged_smashes, at) // at = toggle
+            andi    at, at, 2                       // at != 0 if 2
+            bnez    at, _end                        // don't auto cancel charged smash if unlimited time
             addiu   at, r0, MAX_CHARGE_TIME
             bne     at, t4, _end
             nop
@@ -173,6 +178,7 @@
 
 
         entry_mario:
+        entry_luigi:
         db 5        // forward
         db 5        // up
         db 4        // down
@@ -345,7 +351,7 @@
         db 4        // up
         db 3        // down
         db 0        // unused
-        
+
         entry_ebisumaru:
         db 3        // forward
         db 3        // up
@@ -376,101 +382,123 @@
         db 4        // down
         db 0        // unused
 
-        frame_table:
-        // vanilla fighters
-        dw entry_mario  // mario
-        dw entry_fox    // fox
-        dw entry_dk     // dk
-        dw entry_samus  // samus
-        dw entry_mario  // luigi
-        dw entry_link   // link
-        dw entry_yoshi  // yoshi
-        dw entry_falcon // falcon
-        dw entry_kirby
-        dw entry_pikachu
-        dw entry_puff
-        dw entry_ness
-        // 1P mode fighters
-        dw 0
-        dw entry_mario
-        dw entry_mario
-        dw entry_fox
-        dw entry_dk
-        dw entry_samus
-        dw entry_mario
-        dw entry_link
-        dw entry_yoshi
-        dw entry_falcon
-        dw entry_kirby
-        dw entry_pikachu
-        dw entry_puff
-        dw entry_ness
-        dw entry_dk
-        // placeholders
-        dw 0
-        dw 0
-        // remix fighters
-        dw entry_falco      // FALCO
-        dw entry_ganon      // GND
-        dw entry_link       // YLINK
-        dw entry_drmario    // DRM
-        dw entry_wario      // WARIO
-        dw entry_darksamus  // DARK SAMUS
-        dw entry_link       // ELINK
-        dw entry_samus      // JSAMUS
-        dw entry_ness       // JNESS
-        dw entry_lucas      // LUCAS
-        dw entry_link       // JLINK
-        dw entry_falcon     // JFALCON
-        dw entry_fox        // JFOX
-        dw entry_mario      // JMARIO
-        dw entry_mario      // JLUIGI
-        dw entry_dk         // JDK
-        dw entry_pikachu    // EPIKA
-        dw entry_puff       // JPUFF
-        dw entry_puff       // EPUFF
-        dw entry_kirby      // JKIRBY
-        dw entry_yoshi      // JYOSHI
-        dw entry_pikachu    // JPIKA
-        dw entry_samus      // ESAMUS
-        dw entry_bowser     // BOWSER
-        dw entry_bowser     // GBOWSER
-        dw entry_piano      // PIANO
-        dw entry_wolf       // WOLF
-        dw entry_conker     // CONKER
-        dw entry_mewtwo     // MEWTWO
-        dw entry_marth      // MARTH
-        dw entry_sonic      // SONIC
-        dw 0                // SANDBAG
-        dw entry_super_sonic// SUPER SONIC
-        dw entry_sheik      // SHEIK 
-        dw entry_marina     // MARINA
-        dw entry_dedede     // DEDEDE
-        dw entry_goemon     // GOEMON
-        dw entry_peppy      // PEPPY
-        dw entry_slippy     // SLIPPY
-        dw entry_banjo      // BANJO
-        dw entry_mario      // METAL LUIGI
-        dw entry_ebisumaru  // EBI
-        dw entry_dragonking // DRAGON KING
+        entry_lanky:
+        db 6        // forward
+        db 6        // up
+        db 6        // down
+        db 0        // unused
 
-        // remix polygons
-        dw entry_wario
-        dw entry_lucas
-        dw entry_bowser
-        dw entry_wolf
-        dw entry_drmario
-        dw entry_sonic
-        dw entry_sheik
-        dw entry_marina
-        dw entry_falco
-        dw entry_ganon
-        dw entry_darksamus
-        dw entry_marth
-        dw entry_mewtwo
-        dw entry_dedede
-        dw entry_link
-        dw entry_goemon
-        dw entry_conker
-        dw entry_banjo
+        OS.align(4)
+
+        // character table with pointers to each characters charge smash attack frame data
+        constant frame_table_origin(origin())
+        frame_table:
+        fill Character.NUM_CHARACTERS * 4
+
+        // @ Description
+        // NOTE: only works for remix characters
+        macro set_charged_smash_attacks(character_id, charged_smash_array) {
+            pushvar origin, base
+            origin  ChargeSmashAttacks.frame_table_origin + ({character_id} * 4)
+            dw  {charged_smash_array}
+            OS.patch_end()
+        }
+
+        // Set charged smash attacks starting frame for each character
+        // YOU CAN USE THIS OUTSIDE OF THIS FILE
+        // VANILLA
+        set_charged_smash_attacks(Character.id.MARIO, entry_mario)
+        set_charged_smash_attacks(Character.id.FOX, entry_fox)
+        set_charged_smash_attacks(Character.id.DK, entry_dk)
+        set_charged_smash_attacks(Character.id.SAMUS, entry_samus)
+        set_charged_smash_attacks(Character.id.LUIGI, entry_mario)
+        set_charged_smash_attacks(Character.id.LINK, entry_link)
+        set_charged_smash_attacks(Character.id.YOSHI, entry_yoshi)
+        set_charged_smash_attacks(Character.id.FALCON, entry_falcon)
+        set_charged_smash_attacks(Character.id.KIRBY, entry_kirby)
+        set_charged_smash_attacks(Character.id.PIKA, entry_pikachu)
+        set_charged_smash_attacks(Character.id.PUFF, entry_puff)
+        set_charged_smash_attacks(Character.id.NESS, entry_ness)
+        // VANILLA SPECIAL
+        set_charged_smash_attacks(Character.id.METAL, entry_mario)
+        set_charged_smash_attacks(Character.id.BOSS, entry_mario)
+        // VANILLA POLY
+        set_charged_smash_attacks(Character.id.NMARIO, entry_mario)
+        set_charged_smash_attacks(Character.id.NFOX, entry_fox)
+        set_charged_smash_attacks(Character.id.NDK, entry_dk)
+        set_charged_smash_attacks(Character.id.NSAMUS, entry_samus)
+        set_charged_smash_attacks(Character.id.NLUIGI, entry_mario)
+        set_charged_smash_attacks(Character.id.NLINK, entry_link)
+        set_charged_smash_attacks(Character.id.NYOSHI, entry_yoshi)
+        set_charged_smash_attacks(Character.id.NFALCON, entry_falcon)
+        set_charged_smash_attacks(Character.id.NKIRBY, entry_kirby)
+        set_charged_smash_attacks(Character.id.NPIKA, entry_pikachu)
+        set_charged_smash_attacks(Character.id.NPUFF, entry_puff)
+        set_charged_smash_attacks(Character.id.NNESS, entry_ness)
+        set_charged_smash_attacks(Character.id.GDK, entry_dk)
+        // REMIX
+        set_charged_smash_attacks(Character.id.FALCO, entry_falco)
+        set_charged_smash_attacks(Character.id.GND, entry_ganon)
+        set_charged_smash_attacks(Character.id.YLINK, entry_link)
+        set_charged_smash_attacks(Character.id.DRM, entry_drmario)
+        set_charged_smash_attacks(Character.id.WARIO, entry_wario)
+        set_charged_smash_attacks(Character.id.DSAMUS, entry_darksamus)
+        set_charged_smash_attacks(Character.id.ELINK, entry_link)
+        set_charged_smash_attacks(Character.id.JSAMUS, entry_samus)
+        set_charged_smash_attacks(Character.id.JNESS, entry_ness)
+        set_charged_smash_attacks(Character.id.LUCAS, entry_lucas)
+        set_charged_smash_attacks(Character.id.JLINK, entry_link)
+        set_charged_smash_attacks(Character.id.JFALCON, entry_falcon)
+        set_charged_smash_attacks(Character.id.JFOX, entry_fox)
+        set_charged_smash_attacks(Character.id.JMARIO, entry_mario)
+        set_charged_smash_attacks(Character.id.JLUIGI, entry_mario)
+        set_charged_smash_attacks(Character.id.JDK, entry_dk)
+        set_charged_smash_attacks(Character.id.EPIKA, entry_pikachu)
+        set_charged_smash_attacks(Character.id.JPUFF, entry_puff)
+        set_charged_smash_attacks(Character.id.EPUFF, entry_puff)
+        set_charged_smash_attacks(Character.id.JKIRBY, entry_kirby)
+        set_charged_smash_attacks(Character.id.JYOSHI, entry_yoshi)
+        set_charged_smash_attacks(Character.id.JPIKA, entry_pikachu)
+        set_charged_smash_attacks(Character.id.ESAMUS, entry_samus)
+        set_charged_smash_attacks(Character.id.BOWSER, entry_bowser)
+        set_charged_smash_attacks(Character.id.GBOWSER, entry_bowser)
+        set_charged_smash_attacks(Character.id.PIANO, entry_piano)
+        set_charged_smash_attacks(Character.id.WOLF, entry_wolf)
+        set_charged_smash_attacks(Character.id.CONKER, entry_conker)
+        set_charged_smash_attacks(Character.id.MTWO, entry_mewtwo)
+        set_charged_smash_attacks(Character.id.MARTH, entry_marth)
+        set_charged_smash_attacks(Character.id.SONIC, entry_sonic)
+        set_charged_smash_attacks(Character.id.SANDBAG, entry_mario)
+        set_charged_smash_attacks(Character.id.SSONIC, entry_sonic)
+        set_charged_smash_attacks(Character.id.SHEIK, entry_sheik)
+        set_charged_smash_attacks(Character.id.MARINA, entry_marina)
+        set_charged_smash_attacks(Character.id.DEDEDE, entry_dedede)
+        set_charged_smash_attacks(Character.id.GOEMON, entry_goemon)
+        set_charged_smash_attacks(Character.id.PEPPY, entry_peppy)
+        set_charged_smash_attacks(Character.id.SLIPPY, entry_slippy)
+        set_charged_smash_attacks(Character.id.BANJO, entry_banjo)
+        set_charged_smash_attacks(Character.id.MLUIGI, entry_mario)
+        set_charged_smash_attacks(Character.id.EBI, entry_ebisumaru)
+        set_charged_smash_attacks(Character.id.DRAGONKING, entry_dragonking)
+        // REMIX POLYGONS
+        set_charged_smash_attacks(Character.id.NWARIO, entry_wario)
+        set_charged_smash_attacks(Character.id.NLUCAS, entry_lucas)
+        set_charged_smash_attacks(Character.id.NBOWSER, entry_bowser)
+        set_charged_smash_attacks(Character.id.NWOLF, entry_wolf)
+        set_charged_smash_attacks(Character.id.NDRM, entry_drmario)
+        set_charged_smash_attacks(Character.id.NSONIC, entry_sonic)
+        set_charged_smash_attacks(Character.id.NSHEIK, entry_sheik)
+        set_charged_smash_attacks(Character.id.NMARINA, entry_marina)
+        set_charged_smash_attacks(Character.id.NFALCO, entry_falco)
+        set_charged_smash_attacks(Character.id.NGND, entry_ganon)
+        set_charged_smash_attacks(Character.id.NDSAMUS, entry_darksamus)
+        set_charged_smash_attacks(Character.id.NMARTH, entry_marth)
+        set_charged_smash_attacks(Character.id.NMTWO, entry_mewtwo)
+        set_charged_smash_attacks(Character.id.NDEDEDE, entry_dedede)
+        set_charged_smash_attacks(Character.id.NYLINK, entry_link)
+        set_charged_smash_attacks(Character.id.NGOEMON, entry_goemon)
+        set_charged_smash_attacks(Character.id.NCONKER, entry_conker)
+        set_charged_smash_attacks(Character.id.NBANJO, entry_banjo)
+        // See NPeach.asm for Peach's entry
+        // See NCrash.asm for Peach's entry
 }

@@ -1,15 +1,17 @@
 // AerialAttackFastFall.asm
-
+// Adds the ability to fast fall while performing a normal aerial attack. A mechanic intrduced in smash melee
+// coded by halofactory
+// based on gameshark code @ https://smashboards.com/threads/gameshark-code-collection.341009/
 scope AerialAttackFastFall {
 
     // @ Description
     // This routine checks if the remix toggle is enabled
     scope fast_fall_check: {
-    
+
         Toggles.read(entry_fast_fall_aerials, at)      // at = toggle
         beqz    at, _normal
         nop
-        
+
         // if here, fast fall during aerial attacks is ENABLED
         j       0x800D9160 + 4              // allow fast fall routine
         addiu   sp, sp, -0x0020             // alternate routine line 1
@@ -20,7 +22,6 @@ scope AerialAttackFastFall {
 
     }
 
-    // based on gameshark code @ https://smashboards.com/threads/gameshark-code-collection.341009/
     OS.patch_start(0xA5638, 0x80129E38) // nair
     dw  fast_fall_check
     OS.patch_end()

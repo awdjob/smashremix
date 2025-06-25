@@ -1,7 +1,7 @@
 scope luigi_costumes {
     // @ Description
     // Number of additional costumes
-    constant NUM_EXTRA_COSTUMES(3)
+    constant NUM_EXTRA_COSTUMES(4)
 
     // @ Description
     // Number of parts
@@ -10,17 +10,6 @@ scope luigi_costumes {
     // @ Description
     // Number of original costumes
     constant NUM_COSTUMES(4)
-
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
 
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
@@ -75,7 +64,7 @@ scope luigi_costumes {
         Costumes.set_prim_color_for_part(0, 14, 0, 0x080020FF)
         Costumes.set_prim_color_for_part(0, 15, 0, 0x080020FF)
         Costumes.set_diffuse_ambient_colors_for_part(0, 6, 0, 0xFFFFFF00, 0x4C4C4C00)   // glove
-        Costumes.set_diffuse_ambient_colors_for_part(0, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin 
+        Costumes.set_diffuse_ambient_colors_for_part(0, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(0, 8, 3, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(0, 8, 4, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(0, 8, 5, 0xFFFFFF00, 0x8C666600)   // skin
@@ -107,7 +96,7 @@ scope luigi_costumes {
         Costumes.set_prim_color_for_part(1, 14, 0, 0x1128B5FF)  // pants
         Costumes.set_prim_color_for_part(1, 15, 0, 0x1128B5FF)  // pants
         Costumes.set_diffuse_ambient_colors_for_part(1, 6, 0, 0xFFFFFF00, 0x4C4C4C00)   // glove
-        Costumes.set_diffuse_ambient_colors_for_part(1, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin 
+        Costumes.set_diffuse_ambient_colors_for_part(1, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(1, 8, 3, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(1, 8, 4, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(1, 8, 5, 0xFFFFFF00, 0x8C666600)   // skin
@@ -142,7 +131,7 @@ scope luigi_costumes {
         Costumes.set_prim_color_for_part(2, 14, 0, second_color)  // pants
         Costumes.set_prim_color_for_part(2, 15, 0, second_color)  // pants
         Costumes.set_diffuse_ambient_colors_for_part(2, 6, 0, 0xFFFFFF00, 0x4C4C4C00)   // glove
-        Costumes.set_diffuse_ambient_colors_for_part(2, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin 
+        Costumes.set_diffuse_ambient_colors_for_part(2, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(2, 8, 3, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(2, 8, 4, 0xFFFFFF00, 0x8C666600)   // skin
         Costumes.set_diffuse_ambient_colors_for_part(2, 8, 5, 0xFFFFFF00, 0x8C666600)   // skin
@@ -151,5 +140,39 @@ scope luigi_costumes {
         Costumes.set_stock_icon_palette_for_costume(2, Luigi/cos_6_stock_icon.bin)
     }
 
+    // Costume 0x6, orange
+    scope costume_0x7 {
+        palette_1:; insert "Luigi/cos_7_1.bin"
+        palette_2:; insert "Luigi/cos_7_2.bin"
+        palette_3:; insert "Luigi/face_standard.bin"
+        constant main_color(0xf8e40000)
+        constant second_color(0xde680000)
+
+        Costumes.set_palette_for_part(3, 2, 0, palette_1)       // overalls
+        Costumes.set_palette_for_part(3, 8, 0, palette_3)       // face
+        Costumes.set_palette_for_part(3, 8, 1, palette_2)       // hat - front
+        Costumes.set_prim_color_for_part(3, 4, 0, 0xF88800FF)   // arms
+        Costumes.set_prim_color_for_part(3, 5, 0, 0xF88800FF)   // arms
+        Costumes.set_prim_color_for_part(3, 6, 0, 0xFFFFFFFF)   // glove
+        Costumes.set_prim_color_for_part(3, 8, 2, 0xF88800FF)   // hat
+        Costumes.set_prim_color_for_part(3, 8, 3, 0xFFE199FF)   // skin
+        Costumes.set_prim_color_for_part(3, 8, 4, 0xFFE199FF)   // skin
+        Costumes.set_prim_color_for_part(3, 8, 5, 0xFFE199FF)   // skin
+        Costumes.set_prim_color_for_part(3, A, 0, 0xF88800FF)   // arms
+        Costumes.set_prim_color_for_part(3, B, 0, 0xF88800FF)   // arms
+        Costumes.set_prim_color_for_part(3, C, 0, 0xFFFFFFFF)   // glove
+        Costumes.set_prim_color_for_part(3, F, 0, 0x30A0C8FF)   // pants
+        Costumes.set_prim_color_for_part(3, 10, 0, 0x30A0C8FF)  // pants
+        Costumes.set_prim_color_for_part(3, 14, 0, 0x30A0C8FF)  // pants
+        Costumes.set_prim_color_for_part(3, 15, 0, 0x30A0C8FF)  // pants
+        Costumes.set_diffuse_ambient_colors_for_part(3, 6, 0, 0xFFFFFF00, 0x4C4C4C00)   // glove
+        Costumes.set_diffuse_ambient_colors_for_part(3, 8, 0, 0xFFFFFF00, 0x8C666600)   // skin 
+        Costumes.set_diffuse_ambient_colors_for_part(3, 8, 3, 0xFFFFFF00, 0x8C666600)   // skin
+        Costumes.set_diffuse_ambient_colors_for_part(3, 8, 4, 0xFFFFFF00, 0x8C666600)   // skin
+        Costumes.set_diffuse_ambient_colors_for_part(3, 8, 5, 0xFFFFFF00, 0x8C666600)   // skin
+        Costumes.set_diffuse_ambient_colors_for_part(3, C, 0, 0xFFFFFF00, 0x4C4C4C00)   // glove
+
+        Costumes.set_stock_icon_palette_for_costume(3, Luigi/cos_7_stock_icon.bin)
+    }
 
 }

@@ -1,4 +1,6 @@
 // CharacterDataScreen.asm
+// Coded by MarioReincarnate
+// Additional help from Halofactory
 if !{defined __CharacterDataScreen__} {
 define __CharacterDataScreen__()
 
@@ -90,59 +92,16 @@ scope CharacterDataScreen {
     macro extend_tables() {
         // character id
 
-        // originally, we copied the existing table
-        // id_table:
-        // OS.copy_segment(TABLE_ORIGIN, 0x30)
+        // we copy the existing table, but these get overridden with set_char_order()
+        id_table:
+        constant ID_TABLE_ORIGIN(origin())
+        OS.copy_segment(TABLE_ORIGIN, 0x30)
         evaluate n(0)
         while {n} < new_characters {
             global evaluate CHAR_ID_{n}(Character.id.{DATA_SCREEN_CHAR_{n}})
-            // dw {CHAR_ID_{n}}
+            dw {CHAR_ID_{n}}
             evaluate n({n} + 1)
         }
-
-        id_table:
-        // Mario
-        dw Character.id.MARIO
-        dw Character.id.LUIGI
-        dw Character.id.BOWSER
-        dw Character.id.DRM
-        // DK
-        dw Character.id.DK
-        // Wario
-        dw Character.id.WARIO
-        // Zelda
-        dw Character.id.LINK
-        dw Character.id.YLINK
-        dw Character.id.SHEIK
-        dw Character.id.GND
-        // Metroid
-        dw Character.id.SAMUS
-        dw Character.id.DSAMUS
-        // Yoshi
-        dw Character.id.YOSHI
-        // Kirby
-        dw Character.id.KIRBY
-        dw Character.id.DEDEDE
-        // Starfox
-        dw Character.id.FOX
-        dw Character.id.FALCO
-        dw Character.id.WOLF
-        // Pokemon
-        dw Character.id.PIKACHU
-        dw Character.id.JIGGLYPUFF
-        dw Character.id.MTWO
-        // F-Zero
-        dw Character.id.CAPTAIN
-        dw Character.id.NESS
-        dw Character.id.LUCAS
-        // Fire Emblem
-        dw Character.id.MARTH
-        // Third party (sorting by year of appearance)
-        dw Character.id.GOEMON
-        dw Character.id.SONIC
-        dw Character.id.BANJO
-        dw Character.id.CONKER
-        dw Character.id.MARINA
 
         // This table is used to map character ID to data screen ID
         scope character_id_to_data_screen_id_table: {
@@ -159,14 +118,14 @@ scope CharacterDataScreen {
             // Marios = 0x0000ACA8
         }
 
-        // ?
+        // logo zoom anim offsets
         scope unknown_table_2: {
             constant ORIGIN(origin())
             OS.copy_segment(TABLE_ORIGIN + 0xC0, 0x30)
             fill ((Character.NUM_CHARACTERS - 12) * 4), 0
         }
 
-        // ??
+        // logo color anim offsets
         scope unknown_table_3: {
             constant ORIGIN(origin())
             OS.copy_segment(TABLE_ORIGIN + 0xF0, 0x30)
@@ -386,6 +345,21 @@ scope CharacterDataScreen {
         pullvar base, origin
     }
 
+    global variable data_screen_id(0)
+    macro set_char_order(name) {
+        pushvar origin, base
+
+        origin character_id_to_data_screen_id_table.ORIGIN + (Character.id.{name} * 4)
+        dw data_screen_id
+
+        origin ID_TABLE_ORIGIN + (data_screen_id * 4)
+        dw Character.id.{name}
+
+        global variable data_screen_id(data_screen_id + 1)
+
+        pullvar base, origin
+    }
+
     scope setup_files {
         // Extend the file array
         OS.patch_start(0x162288, 0x80136238)
@@ -558,16 +532,7 @@ scope CharacterDataScreen {
         sll     t5, t5, 0x0002                           // t5 = v0 * 0x000C = offset in table
         addu    t7, t7, t5                               // t7 = offset array for char
         b       0x80132E60                               // skip past copy table to stack stuff
-        sw      t7, 0x0034(sp)                           // save to stack
-        OS.patch_end()
-
-        OS.patch_start(0x15EF6C, 0x80132F1C)
-        lw      t7, 0x0034(sp)                           // t7 = special attacks array
-        lui     t6, 0x8013                               // original line 2
-        lw      t6, 0x6A78(t6)                           // original line 3 - t6 = file location
-        addu    t7, t7, v1                               // t7 = address of offset
-        b       0x80132F40                               // skip older code
-        lw      t7, 0x0000(t7)                           // t7 = offset
+        sw      t7, 0x0034(sp)                           // save to stack (for extend_special_attacks_file)
         OS.patch_end()
     }
 
@@ -626,7 +591,8 @@ scope CharacterDataScreen {
     }
 
     scope extend_special_attacks_file: {
-        OS.patch_start(0x15EF70, 0x80132F20)
+        OS.patch_start(0x15EF6C, 0x80132F1C)
+        lw      t7, 0x0034(sp)          // t7 = special attacks array (set in extend_special_attack_offsets)
         j       extend_special_attacks_file
         addu    t7, t7, v1              // get offset to attack image offset
         _return:
@@ -674,8 +640,6 @@ scope CharacterDataScreen {
         beq     v0, at, _large_border       // branch to use large border
         addiu   at, r0, Character.id.DRM    // at = Character ID
         beq     v0, at, _large_border       // branch to use large border
-        addiu   at, r0, Character.id.DSAMUS // at = Character ID
-        beq     v0, at, _large_border       // branch to use large border
         addiu   at, r0, Character.id.GND    // at = Character ID
         beq     v0, at, _large_border       // branch to use large border
         addiu   at, r0, Character.id.BANJO  // at = Character ID
@@ -692,6 +656,86 @@ scope CharacterDataScreen {
         j       0x801321B8
         lui     t0, 0x8013
 
+    }
+
+    // Allow inifintely many characters to be loaded
+    scope allow_infinite_characters_: {
+        OS.patch_start(0x15ED18, 0x80132CC8)
+        j       allow_infinite_characters_
+        sw      t1, 0x0070(sp)              // original line 2
+        _return:
+        OS.patch_end()
+
+        li      at, over_threshold
+        li      t7, 0x80700000              // t7 = ram threshold
+        li      t8, 0x800465E8              // t8 = main heap struct
+        lw      t8, 0x000C(t8)              // t8 = current free memory address
+        sltu    t1, t7, t8                  // t1 = 1 if above threshold, 0 if not
+        sb      t1, 0x0000(at)              // save over_threshold flag
+
+        li      t7, 0x800D62E0              // t7 = file manager struct
+        lw      t0, 0x0018(t7)              // t0 = total files loaded
+        sh      t0, 0x0002(at)              // save total files loaded
+        sw      t8, 0x0004(at)              // save current free memory address
+
+        beqz    t1, _make_fighter           // if not over threshold, skip
+        lb      t0, 0x0001(at)              // t0 = previous char_id
+
+        bltz    t0, _make_fighter           // if hasn't been set yet, skip
+        sll     t0, t0, 0x0002              // t0 = offset in character struct table
+
+        lui     t7, 0x8078                  // t7 = start of dynamic heap slot
+        li      t8, 0x800465E8              // t8 = main heap struct
+        sw      t7, 0x000C(t8)              // set free memory address to dynamic heap slot
+
+        li      t1, 0x80116E10              // t1 = character struct table
+        addu    t1, t1, t0                  // t1 = pointer to character struct
+        lw      t1, 0x0000(t1)              // t1 = character struct
+        lw      t0, 0x0028(t1)              // t0 = main file pointer
+        lw      t2, 0x0000(t0)              // t2 = main file address
+        sltu    t3, t2, t8                  // t3 = 1 if before ram threshold was passed
+        beqzl   t3, pc() + 8                // only clear pointer if it is after threshold
+        sw      r0, 0x0000(t0)              // clear main file pointer
+
+        lw      a0, 0x0080(sp)              // a0 = char_id
+        jal     0x800D786C                  // ftManagerSetupFilesAllKind
+        addiu   sp, sp, -0x0010
+        addiu   sp, sp, 0x0010
+
+        jal     0x800D782C                  // ftManagerSetupFilesPlayablesAll
+        nop
+
+        _make_fighter:
+        lw      t1, 0x0080(sp)              // t1 = char_id
+        li      at, over_threshold
+        lbu     t0, 0x0000(at)              // t0 = over_threshold flag
+        beqz    t0, _end                    // if not over threshold, skip
+        lhu     t0, 0x0002(at)              // t0 = files loaded
+        sb      t1, 0x0001(at)              // set previous char_id
+        li      t7, 0x800D62E0              // t7 = file manager struct
+        sw      t0, 0x0018(t7)              // save total files loaded to what it was before loading the character
+        lw      t0, 0x0004(at)              // t0 = free memory address before load
+        li      t8, 0x800465E8              // t8 = main heap struct
+        sw      t0, 0x000C(t8)              // restore current free memory address to what it was before loading the character
+
+        _end:
+        jal     0x800D7F3C                  // original line 1 - ftManagerMakeFighter
+        or      a0, s0, r0                  // make sure a0 is set
+
+        j       _return
+        nop
+
+        over_threshold:
+        db OS.FALSE
+
+        previous_char_id:
+        db -1
+
+        files_loaded:
+        dh 0
+
+        free_memory_address_before_load:
+        dw 0
     }
 
     // offsets to image file for special attacks with special flag added
@@ -711,12 +755,9 @@ scope CharacterDataScreen {
         constant cork_screw(0x8000C048)
         constant body_slam(0x8000C188)
         constant ground_pound(0x8000C2C8)
-        constant screw_attack(0x8000C408)
-        constant charge_shot(0x8000C548)
-        constant bomb(0x8000C688)
-        constant pk_thunder(0x8000C7C8)
-        constant pk_fire(0x8000C908)
-        constant psychic_magnet(0x8000CA48)
+        constant peach_parasol(0x8000C408)
+        constant peach_bomber(0x8000C548)
+        constant vegetable(0x8000C688)
         constant whirling_fortress(0x8000CB88)
         constant flame_breath(0x8000CCC8)
         constant bowser_bomb(0x8000CE08)
@@ -750,6 +791,9 @@ scope CharacterDataScreen {
         constant egg_fire(0x80019068)
         constant beak_barge_buster(0x800191A0)
         constant beak_bomb(0x800192D8)
+        constant crash_body_slam(0x8000C7C8)
+        constant spin(0x8000C908)
+        constant diggin_it(0x8000CA48)
 
     }
 
@@ -767,7 +811,7 @@ scope CharacterDataScreen {
         // set_action(JAB, 0x000200DC, 0x0000029A, 0x00000000)
         // set_action(JAB, 0x000200DD, 0x0000029A, 0x00000000)
         // set_action(JAB, 0x000200DE, 0x0000029A, 0x00000000)
-    add_char_to_data_screen(GND,    0x80004888, 0x00000000, 0x00000000, 33, 48, 0x80014920, 0x80000A08, offset.warlock_punch, offset.wizards_foot, offset.flame_choke, 1, FALCON,   1, NESS)
+    add_char_to_data_screen(GND,    0x80004888, 0x00000000, 0x00000000, 33, 48, 0x80014920, 0x80000A08, offset.warlock_punch, offset.wizards_foot, offset.flame_choke, 1, FALCON,   1, PIKACHU)
     add_char_to_data_screen(YLINK,  0x80006D08, 0x00000000, 0x00000000, 33, 48, 0x800155E0, 0x80001468, offset.boomerang, offset.bombchu, offset.spin_attack, 1, LINK,     1, LINK)
     add_char_to_data_screen(DRM,    0x80009188, 0x00000000, 0x00000000, 33, 48, 0x80013C60, 0x80008688, offset.mega_vitamin, offset.dr_tornado, offset.super_jump_punch, 1, MARIO,    1, MARIO)
     add_char_to_data_screen(WARIO,  0x8000B608, 0x00000000, 0x00000000, 33, 50, 0x800122E8, 0x80001EC8, offset.body_slam, offset.ground_pound, offset.cork_screw, 0, 0,    1, DK)
@@ -775,8 +819,6 @@ scope CharacterDataScreen {
         set_action(NSP, Wario.Action.BodySlam, 0x0000029A, 0x00000000)
         set_action(DSP, Wario.Action.GroundPound, 0x0000029A, 0x00000000)
         set_action(DSP, Wario.Action.GroundPoundLanding, 0x0000029A, 0x00000000)
-    add_char_to_data_screen(DSAMUS, 0x8000DA88, 0x00000000, 0x00000000, 33, 46, 0x80012FA0, 0x800090E8, offset.charge_shot, offset.bomb, offset.screw_attack, 1, SAMUS,    1, SAMUS)
-    add_char_to_data_screen(LUCAS,  0x8000FF08, 0x00000000, 0x00000000, 33, 50, 0x80010128, 0x80009B48, offset.pk_fire, offset.psychic_magnet, offset.pk_thunder, 1, NESS,     1, MARIO)
     add_char_to_data_screen(BOWSER, 0x80012388, 0x00000000, 0x00000000, 24, 50, 0x80016DB8, 0x80002928, offset.flame_breath, offset.bowser_bomb, offset.whirling_fortress, 1, YOSHI,    0, -1)
         set_action(JAB, Action.Jab2, 0x0000029A, 0x00000000)
         set_action(JAB, Bowser.Action.Jab3, 0x0000029A, 0x00000000)
@@ -833,10 +875,9 @@ scope CharacterDataScreen {
         set_action(DSP, Sheik.Action.DSP_LANDING, 0x0000029A, 0x00000000)
     add_char_to_data_screen(MARINA, 0x80022308, 0x00000000, 0x00000000, 26, 48, 0x80010E90, 0x80006768, offset.ultra_grab, offset.clancer_pot, offset.cyber_uppercut, 0, 0,        1, FOX)
         set_action(USP, Marina.Action.USPG, 0x0000029A, 0x00000000)
-        set_action(NSP, Marina.Action.CargoWalk1, 0x00000023, 0x00000000)
-        set_action(NSP, Marina.Action.CargoShake, 0x0000003C, 0x00000000)
-        set_action(NSP, Marina.Action.CargoWalk2, 0x00000023, 0x00000000)
-        set_action(NSP, Marina.Action.CargoThrow, 0x0000029A, 0x00000000)
+        set_action(NSP, Marina.Action.NSPGround, 0x0000029A, 0x00000000)
+        set_action(NSP, Marina.Action.NSPGroundPull, 0x0000029A, 0x00000000)
+        set_action(NSP, Marina.Action.NSPGroundThrow, 0x0000029A, 0x00000000)
         set_action(DSP, Marina.Action.DSPG_Begin, 0x0000029A, 0x00000000)
         set_action(DSP, Marina.Action.DSPG_Wait, 0x0000003C, 0x00000000)
         set_action(DSP, Marina.Action.DSPG_End, 0x0000029A, 0x00000000)
@@ -864,13 +905,79 @@ scope CharacterDataScreen {
     add_char_to_data_screen(BANJO, 0x80029088, 0x00000000, 0x00000000, 20, 48, 0x8001A200, 0x8000A5A8, offset.egg_fire, offset.beak_barge_buster, offset.beak_bomb, 0, 0,        0, -1)
         set_action(USP, Banjo.Action.USPBegin, 0x0000003C, 0x00000000)
         set_action(USP, Banjo.Action.USPAttack, 0x0000029A, 0x00000000)
-        set_action(NSP, Banjo.Action.NSPBeginG, 0x0000029A, 0x00000000)
+        set_action(NSP, Banjo.Action.NSPBeginA, 0x0000029A, 0x00000000)
         set_action(NSP, Banjo.Action.NSPForwardA, 0x0000029A, 0x00000000)
         set_action(DSP, Banjo.Action.DSPG, 0x0000029A, 0x00000000)
+        set_action(DSP, Banjo.Action.DSPA, 0x0000029A, 0x00000000)
+        set_action(DSP, Banjo.Action.DSPALoop, 0x00000033, 0x00000000)
+        set_action(DSP, Banjo.Action.DSPLand, 0x0000029A, 0x00000000)
         set_action(JAB, Action.Jab2, 0x0000029A, 0x00000000)
         set_action(JAB, Banjo.Action.Jab3, 0x0000029A, 0x40000000)
+    add_char_to_data_screen(CRASH, 0x8000FF08, 0x00000000, 0x00000000, 33, 50, 0x80010128, 0x80009B48, offset.spin, offset.diggin_it, offset.crash_body_slam, 0, 0,        1, PIKACHU)
+        set_action(USP, Crash.Action.USPG, 0x0000003C, 0x00000000)
+        set_action(USP, Crash.Action.USPLanding, 0x0000029A, 0x00000000)
+        set_action(NSP, Crash.Action.NSPG, 0x0000029A, 0x00000000)
+        set_action(DSP, Crash.Action.DSPBegin, 0x0000029A, 0x00000000)
+        set_action(DSP, Crash.Action.DSPWait, 0x00000028, 0x00000000)
+        set_action(DSP, Crash.Action.DSPEnd, 0x0000029A, 0x00000000)
+    add_char_to_data_screen(PEACH, 0x8000DA88, 0x00000000, 0x00000000, 23, 50, 0x8001A8C0, 0x800090E8, offset.peach_bomber, offset.vegetable, offset.peach_parasol, 0, 0,        0, -1)
+        set_action(USP, Peach.Action.USPG, 0x0000003C, 0x00000000)
+        set_action(USP, Peach.Action.USPOpen, 0x0000003C, 0x00000000)
+        set_action(USP, Peach.Action.USPFloat, 0x0000029A, 0x00000000)
+        set_action(NSP, Peach.Action.NSPG, 0x0000029A, 0x00000000)
+        set_action(DSP, Peach.Action.DSPPull, 0x0000029A, 0x00000000)
+        set_action(JAB, Action.Jab2, 0x0000029A, 0x00000000)
+        // Hijacking JAB for showing float
+        set_action(JAB, Action.Idle, 0x0000001E, 0x00000000) // idle
+        set_action(JAB, Action.JumpF, 0x000001E, 0x00000000)
+        set_action(JAB, Action.JumpAerialF, 0x000001E, 0x00000000)
+        set_action(JAB, Peach.Action.Float, 0x000005C, 0x00000000)
 
     extend_tables()
+
+    // define order here
+    // Mario
+    set_char_order(MARIO)
+    set_char_order(LUIGI)
+    set_char_order(PEACH)
+    set_char_order(BOWSER)
+    set_char_order(DRM)
+    // DK
+    set_char_order(DK)
+    // Wario
+    set_char_order(WARIO)
+    // Zelda
+    set_char_order(LINK)
+    set_char_order(YLINK)
+    set_char_order(SHEIK)
+    set_char_order(GND)
+    // Metroid
+    set_char_order(SAMUS)
+    // Yoshi
+    set_char_order(YOSHI)
+    // Kirby
+    set_char_order(KIRBY)
+    set_char_order(DEDEDE)
+    // Starfox
+    set_char_order(FOX)
+    set_char_order(FALCO)
+    set_char_order(WOLF)
+    // Pokemon
+    set_char_order(PIKACHU)
+    set_char_order(JIGGLYPUFF)
+    set_char_order(MTWO)
+    // F-Zero
+    set_char_order(CAPTAIN)
+    set_char_order(NESS)
+    // Fire Emblem
+    set_char_order(MARTH)
+    // Third party (sorting by year of appearance)
+    set_char_order(GOEMON)
+    set_char_order(SONIC)
+    set_char_order(CRASH)
+    set_char_order(MARINA)
+    set_char_order(BANJO)
+    set_char_order(CONKER)
 
     scope extend_index_: {
         // scroll left

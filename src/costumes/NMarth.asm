@@ -11,17 +11,6 @@ scope polygon_marth_costumes {
     // Number of original costumes
     constant NUM_COSTUMES(6)
 
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
-
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
     // part 0x0 never has images, so we can store extra info here
@@ -35,10 +24,12 @@ scope polygon_marth_costumes {
     Costumes.define_part(2, 1, Costumes.part_type.PALETTE)      // part 0x2_0 - torso
     Costumes.define_part(4, 1, Costumes.part_type.PALETTE)      // part 0x4_0 - left upper arm
     Costumes.define_part(5, 1, Costumes.part_type.PALETTE)      // part 0x5_0 - left lower arm
+    Costumes.define_part(6, 1, Costumes.part_type.PALETTE)      // part 0x6_0 - left hand
     Costumes.define_part(8, 1, Costumes.part_type.PALETTE)      // part 0x8_0 - neck?
     Costumes.define_part(9, 1, Costumes.part_type.PALETTE)      // part 0x9_0 - head
     Costumes.define_part(B, 1, Costumes.part_type.PALETTE)      // part 0xB_0 - right upper arm
     Costumes.define_part(C, 1, Costumes.part_type.PALETTE)      // part 0xC_0 - right lower arm
+    Costumes.define_part(D, 1, Costumes.part_type.PALETTE)      // part 0xD_0 - r Hand
     Costumes.define_part(E, 1, Costumes.part_type.PALETTE)      // part 0xE_0 - sword
     Costumes.define_part(13, 1, Costumes.part_type.PALETTE)     // part 0x13_0 - right shoulder pad
     Costumes.define_part(14, 1, Costumes.part_type.PALETTE)     // part 0x14_0 - left shoulder pad
@@ -61,10 +52,12 @@ scope polygon_marth_costumes {
         Costumes.set_palette_for_part(0, 2, 0, palette)
         Costumes.set_palette_for_part(0, 4, 0, palette)
         Costumes.set_palette_for_part(0, 5, 0, palette)
+        Costumes.set_palette_for_part(0, 6, 0, palette)
         Costumes.set_palette_for_part(0, 8, 0, palette)
         Costumes.set_palette_for_part(0, 9, 0, palette)
         Costumes.set_palette_for_part(0, B, 0, palette)
         Costumes.set_palette_for_part(0, C, 0, palette)
+        Costumes.set_palette_for_part(0, D, 0, palette)
         Costumes.set_palette_for_part(0, E, 0, palette)
         Costumes.set_palette_for_part(0, 13,0, palette)
         Costumes.set_palette_for_part(0, 14, 0, palette)

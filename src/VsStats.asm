@@ -482,16 +482,50 @@ scope VsStats {
         nop
     }
 
+    constant STATS_TIME_UNTIL_ACTIVE(105)   // 120 frames until victory wreath is displayed
+    constant STATS_PRESS_BUFFER_PERIOD(15)  // frame count until you can press button to toggle stats again
+    stats_button_press_buffer:
+    dw 0
+
     // @ Description
     // Runs every frame and checks if the stats menu should be displayed, and handles toggling display of rooms
     scope check_menu_toggle_: {
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x0004(sp)              // save registers
 
+        li      a0, stats_button_press_buffer
+        lw      at, 0x0000(a0)              // load buffer
+        beqz    at, _check_victory_dance_timer
+        nop
+        addiu   at, at, -1                  // buffer time--
+        sw      at, 0x0000(a0)              // write new buffer time
+
+        _check_victory_dance_timer:
+        lui     t0, 0x8014
+        lw      a0, 0x9B78(t0)                  // a0 = current timer
+        lw      t0, 0x9C18(t0)                  // t0 = time until player can press START to continue
+        addiu   a0, a0, STATS_TIME_UNTIL_ACTIVE // offset (in time with results 'Place')
+        blt     a0, t0, _end
+        nop
+
+        // if here, reveal the text for "press a for match stats"
+        li      at, press_a_obj
+        lw      t0, 0x0000(at)
+        sw      r0, 0x007C(t0)
+        lw      t0, 0x0004(at)
+        sw      r0, 0x007C(t0)
+
+        _check_status:
         li      t0, toggle_match_stats                   // t0 = address of toggle_match_stats
         lbu     t0, 0x0000(t0)                           // t0 = toggle_match_stats
         bne     t0, r0, _match_status_up                 // if (match stats displayed) skip to _match_status_up
         nop                                              // ~
+
+        // don't check A press if buffer > 0
+        li      a0, stats_button_press_buffer
+        lw      at, 0x0000(a0)              // load buffer
+        bnez    at, _end
+        nop
 
         // check for a press
         lli     a0, Joypad.A                             // a0 - button_mask
@@ -501,6 +535,12 @@ scope VsStats {
         nop
         beqz    v0, _end                                 // if (!a_pressed), end
         nop
+
+        // if here, set button press buffer
+        li      a0, stats_button_press_buffer
+        addiu   at, r0, STATS_PRESS_BUFFER_PERIOD
+        sw      at, 0x0000(a0)                           // write buffer
+
         lli     a0, FGM.menu.TOGGLE                      // a0 - fgm_id
         jal     FGM.play_                                // play menu toggle sound
         nop
@@ -524,6 +564,12 @@ scope VsStats {
         nop                                              // ~
 
         _match_status_up:
+        // don't check B press if buffer > 0
+        li      a0, stats_button_press_buffer
+        lw      at, 0x0000(a0)              // load buffer
+        bnez    at, _end
+        nop
+
         // check for b press
         lli     a0, Joypad.B                             // a0 - button_mask
         lli     a1, 000069                               // a1 - whatever you like!
@@ -532,6 +578,12 @@ scope VsStats {
         nop
         beqz    v0, _end                                 // if (!b_pressed), end
         nop
+
+        // if here, set button press buffer
+        li      a0, stats_button_press_buffer
+        addiu   at, r0, STATS_PRESS_BUFFER_PERIOD
+        sw      at, 0x0000(a0)                           // write buffer
+
         lli     a0, FGM.menu.TOGGLE                      // a0 - fgm_id
         jal     FGM.play_                                // play menu toggle sound
         nop
@@ -600,6 +652,10 @@ scope VsStats {
         addiu   sp, sp, 0x0018              // original line 1
     }
 
+    press_a_obj:
+    dw 0
+    dw 0
+
     // @ Description
     // Sets up the custom display objects
     scope setup_: {
@@ -623,7 +679,16 @@ scope VsStats {
 
         // Menu instructions
         Render.draw_string(0x1F, 0x0D, press_a, Render.NOOP, 0x43200000, 0x435A0000, 0xFFFFFFFF, 0x3F500000, Render.alignment.CENTER, OS.FALSE)
+        li      at, press_a_obj
+        sw      v0, 0x0000(at)  // store ptr to press A obj
+        addiu   at, r0, 1       // hide this text
+        sw      at, 0x007C(v0)  // ~
+
         Render.draw_texture_at_offset(0x1F, 0x0D, Render.file_pointer_1, Render.file_c5_offsets.A, Render.NOOP, 0x42FC0000, 0x43580000, 0x50A8FFFF, 0x0010FFFF, 0x3F800000)
+        li      at, press_a_obj
+        sw      v0, 0x0004(at)  // store ptr to press A obj
+        addiu   at, r0, 1       // hide this text
+        sw      at, 0x007C(v0)  // ~
 
         // Stats menu:
 

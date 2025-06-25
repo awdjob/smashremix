@@ -1,4 +1,4 @@
-// @ Description (code by goom)
+// @ Description (code by goombapatrol)
 // These constants must be defined for a menu item.
 define LABEL("Dpad ctrl")
 constant VALUE_TYPE(CharacterSelectDebugMenu.value_type.STRING)
@@ -42,7 +42,7 @@ string_stickless_j:; String.insert("Stickless J")
 // 4 = Stickless J      // ~
 
 // @ Description
-// Disables setting shield button mask yet (moved after Joystick.set_taunt_mask_)
+// Disables setting shield button mask yet (moved after Joypad.set_taunt_mask_)
 scope dont_set_shield_mask_: {
     OS.patch_start(0x53CB8, 0x800D84B8)
     nop                     // original line 1 was: sh t5, 0x01B8(s5)
@@ -445,6 +445,10 @@ scope css_cursor_and_dpad_controls_: {
     addiu   t4, r0, 0x50            // t4 = partial min stick Y value
 
     _end:
+    // check if Single Button Mode is enabled
+    j       single_button_mode._check_toggle
+    nop
+    _sbm_checked:
     sh      t8, 0x0000(v0)          // t8 = original line (update held buttons)
     sh      t9, 0x0002(v0)          // t9 = original line (update pressed buttons)
     sh      t1, 0x0006(v0)          // original line 1 (write released buttons)

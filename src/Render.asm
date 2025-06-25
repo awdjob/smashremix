@@ -206,6 +206,7 @@ scope Render {
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('-' - 0x20)); db 0x04
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('.' - 0x20)); db 0x02
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * (':' - 0x20)); db 0x04
+    origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('/' - 0x20)); db 0x04
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('\b' - 0x20)); db 0x04
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('?' - 0x20)); db 0x06
     origin  CHARACTER_OFFSETS_CUSTOM_ORIGIN + (8 * ('@' - 0x20)); db 0x0B
@@ -304,6 +305,7 @@ scope Render {
     // Creates an object that will run the given function every frame
     // @ Arguments
     // functionAddress - pointer to routine to run (a0 will be object address)
+    // group - the group to put the object in
     // order - higher than 0x8000 will make it run before most objects, lower will make it run after... usually 0x8000
     // @ Returns
     // v0 - pointer to object created
@@ -464,6 +466,35 @@ scope Render {
         lli     a1, {group}
         li      a2, {file}
         lw      a2, 0x0000(a2)            // load the pointer to get base file
+        li      a3, {offset}
+        addu    a2, a2, a3                // add offset
+        li      a3, {routine}
+        li      s1, {ulx}
+        li      s2, {uly}
+        li      s3, {color}
+        li      s4, {palette}
+        li      s5, {scale}
+        jal     Render.draw_texture_
+        nop
+    }
+
+    // @ Description
+    // Draws a texture at an offset of the given file address in a2
+    // @ Arguments
+    // room - room
+    // group - linked list to append
+    // offset - offset in file to footer
+    // routine - routine to run every frame
+    // ulx - upper left X coordinate for texture
+    // uly - upper left Y coordinate for texture
+    // color - color and alpha for texture if supported for type: 0xRRGGBBAA
+    // palette - color and alpha for texture palette if supported for type: 0xRRGGBBAA
+    // scale - scale
+    // @ Returns
+    // v0 - pointer to object created
+    macro draw_texture_at_offset_in_a2(room, group, offset, routine, ulx, uly, color, palette, scale) {
+        lli     a0, {room}
+        lli     a1, {group}
         li      a3, {offset}
         addu    a2, a2, a3                // add offset
         li      a3, {routine}
@@ -888,9 +919,9 @@ scope Render {
     // a0 - file ID to load
     // a1 - address for storing pointer to file
     scope load_file_: {
-        addiu   sp, sp, -0x0010             // allocate stack space
-        sw      ra, 0x0004(sp)              // save ra
-        sw      a1, 0x0008(sp)              // save a1
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      ra, 0x0014(sp)              // save ra
+        sw      a1, 0x0018(sp)              // save a1
 
         li      a2, temp_file_ID            // a2 = pointer to file ID of file
         sw      a0, 0x0000(a2)              // set file ID to load
@@ -903,13 +934,13 @@ scope Render {
         addiu   a1, r0, 0x0010              // a1 = align to 0x10
 
         li      a0, temp_file_ID            // a2 = pointer to file ID of file
-        lw      a2, 0x0008(sp)              // a2 = file RAM address to use for later referencing
+        lw      a2, 0x0018(sp)              // a2 = file RAM address to use for later referencing
         or      a3, v0, r0                  // a3 = address to load file to
         jal     0x800CDE04                  // load file
         addiu   a1, r0, 0x0001              // a1 = 1 (number of files in array)
 
-        lw      ra, 0x0004(sp)              // restore ra
-        addiu   sp, sp, 0x0010              // deallocate stack space
+        lw      ra, 0x0014(sp)              // restore ra
+        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra
         nop
 
@@ -2166,11 +2197,6 @@ scope Render {
         beq     t0, t1, _1p_pose            // if (screen_id = 1p pose), jump to _1p_pose
         nop
 
-        // VS Game Mode
-        lli     t1, 0x0009                  // t1 = VS Game Mode screen_id
-        beq     t0, t1, _vs_game_mode       // if (screen_id = VS Game Mode), jump to _vs_game_mode
-        nop
-
         // VS Options Item Switch
         lli     t1, 0x000B                  // t1 = VS Options Item Switch screen_id
         beq     t0, t1, _item_switch        // if (screen_id = VS Options Item Switch), jump to _item_switch
@@ -2198,6 +2224,8 @@ scope Render {
         blt     a0, t1, _1p                 // if (first file loaded < 0x28), skip to 1p
         lli     t1, File.TRANSITION_SMASH_LOGO
         beq     a0, t1, _end                // if (first file loaded = new transition), skip to end (debug screen transition tests)
+        lli     t1, File.TRANSITION_REMIX_LOGO
+        beq     a0, t1, _end                // if (first file loaded = new transition), skip to end (debug screen transition tests)
         lli     t1, 0x0033                  // t1 = 0x33
         ble     a0, t1, _end                // if (first file loaded between 0x28 and 0x33), skip to end (debug screen transition tests)
         nop
@@ -2211,7 +2239,7 @@ scope Render {
         nop
         jal     ZCancel.setup_
         nop
-        jal     ComboMeter.setup_              // Setup the Combo Meter
+        jal     ComboMeter.setup_           // Setup the Combo Meter
         nop
 
         _end:
@@ -2229,22 +2257,34 @@ scope Render {
         _multiman:
         jal     SinglePlayerModes.setup_    // Setup the KO counter
         nop
-        jal     ComboMeter.setup_              // Setup the Combo Meter
+        jal     ComboMeter.setup_           // Setup the Combo Meter
         nop
 
         b       _end
         nop
 
         _vs:
-        jal     ComboMeter.setup_              // Setup the Combo Meter
+        jal     ComboMeter.setup_           // Setup the Combo Meter
         nop
 
         // Collect VS stats
+        OS.read_word(VsRemixMenu.vs_mode_flag, t7) // t7 = vs_mode_flag
+        lli     t8, VsRemixMenu.mode.SMASHKETBALL
+        bne     t7, t8, _reset_player_count // if not Smashketball, reset player_count normally
+        OS.read_byte(0x800A4AE0, t7)        // t7 = is_suddendeath (yes, delay slot)
+        bnez    t7, _register_run_collect   // if sudden death, don't reset player count
+        nop
+        _reset_player_count:
         li      t1, VsStats.player_count    // t1 = address of number of players
         sb      r0, 0x0000(t1)              // Set player_count to 0
+        _register_run_collect:
         register_routine(VsStats.run_collect_)
 
         jal     TwelveCharBattle.game_setup_ // Setup 12cb functionality
+        nop
+        jal     KingOfTheHill.setup_        // Setup KOTH functionality
+        nop
+        jal     Smashketball.setup_         // Setup Smashketball functionality
         nop
         jal     Item.clear_active_custom_items_
         nop
@@ -2266,6 +2306,10 @@ scope Render {
         // Always clear 1P practice active flag
         li      t9, Practice_1P.practice_active // t9 = practice flag location
         sw      r0, 0x0000(t9)              // set state inactive
+        // Always reset extended item switch bitmask
+        li      t9, Item.EXTENDED_ENABLED_BITMASK
+        lw      a0, 0x0004(t9)              // a0 = saved bitmask
+        sw      a0, 0x0000(t9)              // restore bitmask
         li      a0, TwelveCharBattle.twelve_cb_flag
         lw      a0, 0x0000(a0)              // a0 = 1 if 12cb mode, 0 otherwise
         beqz    a0, _normal_css             // if not 12cb, then do normal css setup
@@ -2280,6 +2324,8 @@ scope Render {
         _normal_css:
         jal     CharacterSelect.setup_
         addu    a0, r0, t0                  // a0 = screen_id
+        jal     TagTeam.css.setup_
+        nop
         jal     Item.clear_active_custom_items_
         nop
         jal     GFXRoutine.port_override.clear_gfx_override_table_
@@ -2381,18 +2427,19 @@ scope Render {
         _mode_select:
         li      t0, SinglePlayerModes.page_flag // safeguard clear 1P page_flag if on from Main menu...
         sw      r0, 0x0000(t0)                  // ...this is to handle non-standard cases of leaving Remix 1P (e.g. Credits)
+        li      t0, VsRemixMenu.page_flag       // safeguard clear VS page_flag
+        sw      r0, 0x0000(t0)                  // ~
+        li      t0, VsRemixMenu.vs_mode_flag    // safeguard clear VS vs_mode_flag
+        sw      r0, 0x0000(t0)                  // ~
+        li      at, custom_heap_address         // at = custom_heap_address
+        li      t0, custom_heap                 // t0 = custom_heap
+        sw      t0, 0x0000(at)                  // safeguard reset custom_heap_address
+        li      t0, TwelveCharBattle.twelve_cb_flag
         jal     Toggles.mode_select_setup_
-        nop
+        sw      r0, 0x0000(t0)                  // safeguard clear twelve_cb_flag
 
         _1p_pose:
         jal     GFXRoutine.port_override.clear_gfx_override_table_
-        nop
-
-        b       _end
-        nop
-
-        _vs_game_mode:
-        jal     TwelveCharBattle.vs_game_mode_setup_
         nop
 
         b       _end
@@ -2408,9 +2455,17 @@ scope Render {
         _title:
         jal     Boot.draw_version_on_title_screen_
         nop
-
-        b       _end
+        // Ensure HTP variables are set in case someone goes
+        // to Settings > Other Screens > How to Play on first boot
+        OS.read_byte(0x800A4ADD, t0)            // t0 = gSCManagerSceneData.demo_fkind[0]
+        lli     t1, Character.id.NONE
+        bne     t0, t1, _end                    // if demo_fkind[0] has been set previously, skip
         nop
+        jal     0x80131BC4                      // mnTitleSetDemoFighterKinds
+        nop
+        li      t0, 0x80132008                  // location of original call to mnTitleSetDemoFighterKinds
+        b       _end
+        sw      r0, 0x0000(t0)                  // ensure mnTitleSetDemoFighterKinds is only called once
     }
 
 }

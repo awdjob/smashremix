@@ -91,6 +91,7 @@ scope Dedede {
     insert USMASH,"moveset/USMASH.bin"
     insert DSMASH,"moveset/DSMASH.bin"
     insert ATTACK_AIR_D,"moveset/ATTACK_AIR_D.bin"
+    insert LANDING_AIR_D,"moveset/LANDING_AIR_D.bin"
     insert ATTACK_AIR_F,"moveset/ATTACK_AIR_F.bin"
     insert ATTACK_AIR_U,"moveset/ATTACK_AIR_U.bin"
     insert ATTACK_AIR_B,"moveset/ATTACK_AIR_B.bin"
@@ -98,7 +99,6 @@ scope Dedede {
     insert DOWNATTACK_D,"moveset/DOWNATTACK_D.bin"
     insert DOWNATTACK_U,"moveset/DOWNATTACK_U.bin"
 	insert LANDING_AIR_U,"moveset/LANDING_AIR_U.bin"
-    insert LANDING_AIR_D,"moveset/LANDING_AIR_D.bin"
 
     insert NSP_SUBROUTINE,"moveset/NSP_SUBROUTINE.bin"
     insert NSP_BEGIN,"moveset/NSP_BEGIN.bin"; Moveset.SUBROUTINE(NSP_SUBROUTINE); dw 0x00000000
@@ -121,7 +121,7 @@ scope Dedede {
     insert DSP_SHOOT,"moveset/DSP_SHOOT.bin"
 
     insert SPARKLE,"moveset/SPARKLE.bin"; Moveset.GO_TO(SPARKLE)                    // loops
-	SHIELD_BREAK:
+    SHIELD_BREAK:
     dw EYES.CLOSED_2; dw MOUTH.OPEN;
     insert SHIELD_BREAK_CMD,"moveset/SHIELD_BREAK.bin"; Moveset.GO_TO(SPARKLE)      // loops
     insert STUN, "moveset/STUN.bin"; Moveset.GO_TO(STUN)                            // loops
@@ -129,14 +129,14 @@ scope Dedede {
 
     insert STARRING,"moveset/STARRING.bin"
 
+	HAMMER:; dw 0xC4000007; dw 0xBC000004; dw 0xAC000004; dw 0xAC100004; Moveset.SUBROUTINE(Moveset.shared.HAMMER); dw 0x04000010; dw 0x18000000; Moveset.GO_TO(HAMMER)
+
     insert CLAP,"moveset/CLAP.bin"
     insert VICTORY_2,"moveset/VICTORY_2.bin"
     insert VICTORY_3,"moveset/VICTORY_3.bin"
 
 	// Insert AI attack options
-	constant CPU_ATTACKS_ORIGIN(origin())
-	insert CPU_ATTACKS,"AI/attack_options.bin"
-	OS.align(16)
+    include "AI/Attacks.asm"
 
     // Action name constants.
     scope Action {
@@ -287,14 +287,14 @@ Character.edit_action_parameters(DEDEDE, Action.JumpSquat,              File.DED
 Character.edit_action_parameters(DEDEDE, Action.ShieldJumpSquat,        File.DEDEDE_LANDING,                -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.JumpF,                  File.DEDEDE_JUMP_F,                 JUMP,                       -1)
 Character.edit_action_parameters(DEDEDE, Action.JumpB,                  File.DEDEDE_JUMP_B,                 JUMP,                       -1)
-Character.edit_action_parameters(DEDEDE, Action.JumpAerialF,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_AERIAL_EARLY,                -1)
-Character.edit_action_parameters(DEDEDE, Action.JumpAerialB,            File.DEDEDE_JUMP_AERIAL_B,          JUMP_AERIAL_EARLY,                0)
+Character.edit_action_parameters(DEDEDE, Action.JumpAerialF,            File.DEDEDE_JUMP_AERIAL_1,          JUMP_AERIAL_EARLY,                -1)
+Character.edit_action_parameters(DEDEDE, Action.JumpAerialB,            File.DEDEDE_JUMP_AERIAL_1,          JUMP_AERIAL_EARLY,                0)
 
-Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump2,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_AERIAL_EARLY,                0)
-Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump3,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_AERIAL_EARLY,                0)
-Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump4,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_AERIAL,                0)
-Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump5,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_LAST,                  0)
-Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump6,            File.DEDEDE_JUMP_AERIAL_F,          JUMP_LAST,                  0)
+Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump2,            File.DEDEDE_JUMP_AERIAL_1,          JUMP_AERIAL_EARLY,                0)
+Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump3,            File.DEDEDE_JUMP_AERIAL_2,          JUMP_AERIAL_EARLY,                0)
+Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump4,            File.DEDEDE_JUMP_AERIAL_3,          JUMP_AERIAL,                0)
+Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump5,            File.DEDEDE_JUMP_AERIAL_4,          JUMP_LAST,                  0)
+Character.edit_action_parameters(DEDEDE, Action.KIRBY.Jump6,            File.DEDEDE_JUMP_AERIAL_4,          JUMP_LAST,                  0)
 
 Character.edit_action_parameters(DEDEDE, Action.Fall,                   File.DEDEDE_FALL,                   -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.FallAerial,             File.DEDEDE_FALL_AERIAL,            -1,                         -1)
@@ -407,12 +407,12 @@ Character.edit_action_parameters(DEDEDE, Action.RayGunShoot,            File.DED
 Character.edit_action_parameters(DEDEDE, Action.RayGunShootAir,         File.DEDEDE_ITEM_SHOOT_AIR,         -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.FireFlowerShoot,        File.DEDEDE_ITEM_SHOOT,             -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.FireFlowerShootAir,     File.DEDEDE_ITEM_SHOOT_AIR,         -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerIdle,             File.DEDEDE_HAMMER_IDLE,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerWalk,             File.DEDEDE_HAMMER_MOVE,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerTurn,             File.DEDEDE_HAMMER_MOVE,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerJumpSquat,        File.DEDEDE_HAMMER_MOVE,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerAir,              File.DEDEDE_HAMMER_MOVE,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.HammerLanding,          File.DEDEDE_HAMMER_MOVE,            -1,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerIdle,             File.DEDEDE_HAMMER_IDLE,            HAMMER,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerWalk,             File.DEDEDE_HAMMER_MOVE,            HAMMER,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerTurn,             File.DEDEDE_HAMMER_MOVE,            HAMMER,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerJumpSquat,        File.DEDEDE_HAMMER_MOVE,            HAMMER,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerAir,              File.DEDEDE_HAMMER_MOVE,            HAMMER,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.HammerLanding,          File.DEDEDE_HAMMER_MOVE,            HAMMER,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.ShieldOn,               File.DEDEDE_SHIELD_ON,              -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.ShieldOff,              File.DEDEDE_SHIELD_OFF,             -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.ShieldDrop,             File.DEDEDE_SHIELD_DROP,            -1,                         -1)
@@ -420,13 +420,13 @@ Character.edit_action_parameters(DEDEDE, Action.Pass,                   File.DED
 Character.edit_action_parameters(DEDEDE, Action.RollF,                  File.DEDEDE_ROLL_F,                 -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.RollB,                  File.DEDEDE_ROLL_B,                 -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.ShieldBreak,             File.DEDEDE_DAMAGE_FLY_TOP,        SHIELD_BREAK,               -1)
-Character.edit_action_parameters(DEDEDE, Action.ShieldBreakFall,         File.DEDEDE_TUMBLE,                  -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.StunLandD,               File.DEDEDE_DOWN_BOUNCE_D,           -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.StunLandU,               File.DEDEDE_DOWN_BOUNCE_U,           -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.StunStartD,              File.DEDEDE_DOWN_STAND_D,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.StunStartU,              File.DEDEDE_DOWN_STAND_U,            -1,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.Stun,                    File.DEDEDE_STUN,                    STUN,                         -1)
-Character.edit_action_parameters(DEDEDE, Action.Sleep,                   File.DEDEDE_STUN,                    SLEEP,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.ShieldBreakFall,         File.DEDEDE_TUMBLE,                SPARKLE,                    -1)
+Character.edit_action_parameters(DEDEDE, Action.StunLandD,               File.DEDEDE_DOWN_BOUNCE_D,         -1,                       -1)
+Character.edit_action_parameters(DEDEDE, Action.StunLandU,               File.DEDEDE_DOWN_BOUNCE_U,         -1,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.StunStartD,              File.DEDEDE_DOWN_STAND_D,          -1,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.StunStartU,              File.DEDEDE_DOWN_STAND_U,          -1,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.Stun,                    File.DEDEDE_STUN,                  STUN,                         -1)
+Character.edit_action_parameters(DEDEDE, Action.Sleep,                   File.DEDEDE_STUN,                  SLEEP,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.Grab,                   File.DEDEDE_GRAB,                   GRAB,                       -1)
 Character.edit_action_parameters(DEDEDE, Action.GrabPull,               File.DEDEDE_GRAB_PULL,              -1,                         -1)
 Character.edit_action_parameters(DEDEDE, Action.ThrowF,                 File.DEDEDE_THROW_F,                THROW_F,                    -1)
@@ -508,7 +508,7 @@ Character.edit_action_parameters(DEDEDE, Action.LandingAirX,            File.DED
     Character.edit_action(DEDEDE, Action.JUMP_6,              -1,              0x8013FB00,                   0x8013FB2C,                      0x8013FC4C,                     0x800DE978)
     Character.edit_action(DEDEDE, Action.USP_BEGIN,           0x11,            DededeUSP.begin_main_,        0,                               DededeUSP.begin_physics_,       DededeUSP.begin_collision_)
     Character.edit_action(DEDEDE, Action.USP_MOVE,            0x11,            0x00000000,                   DededeUSP.move_cancel_,          DededeUSP.move_physics_,        DededeUSP.move_collision_)
-    Character.edit_action(DEDEDE, Action.USP_LAND,            0x11,            DededeUSP.landing_main_,      0,                               0x800D8BB4,                     0x800DDEC4)
+    Character.edit_action(DEDEDE, Action.USP_LAND,            0x11,            DededeUSP.landing_main_,      0,                               0x800D8BB4,                     0x800DDEE8)
     Character.edit_action(DEDEDE, Action.USP_CANCEL,          0x11,            DededeUSP.cancel_main_,       0,                               0x800D90E0,                     DededeUSP.cancel_collision_)
     Character.edit_action(DEDEDE, Action.NSP_BEGIN_GROUND,    0x12,            DededeNSP.ground_begin_main_, 0,                               0x800D8BB4,                     0x80162750)
     Character.edit_action(DEDEDE, Action.NSP_LOOP_GROUND,     0x12,            0x8016201C,                   0x80162468,                      0x800D8BB4,                     DededeNSP.inhale_loop_ground_to_air_check_)
@@ -555,8 +555,8 @@ Character.edit_action_parameters(DEDEDE, Action.LandingAirX,            File.DED
     Character.add_new_action_params(DEDEDE, DEDEDE_NSP_WALK_2,           -1,             File.DEDEDE_NSP_INHALED_WALK,  0x80000000,                0)
     Character.add_new_action_params(DEDEDE, DEDEDE_NSP_WALK_3,           -1,             File.DEDEDE_NSP_INHALED_WALK,  0x80000000,                0)
     Character.add_new_action_params(DEDEDE, DEDEDE_USP_CEILING_BONK,     -1,             File.DEDEDE_USP_CEILING_BONK,  USP_BONK,                  0)
-    Character.add_new_action_params(DEDEDE, DEDEDE_STARRING_RIGHT,       -1,             File.DEDEDE_STARRING_RIGHT,    STARRING,                  0x40000008)
-    Character.add_new_action_params(DEDEDE, DEDEDE_STARRING_LEFT,        -1,             File.DEDEDE_STARRING_LEFT,     STARRING,                  0x40000008)
+    Character.add_new_action_params(DEDEDE, DEDEDE_STARRING_RIGHT,       -1,             File.DEDEDE_STARRING_RIGHT,    STARRING,                  0x40000000)
+    Character.add_new_action_params(DEDEDE, DEDEDE_STARRING_LEFT,        -1,             File.DEDEDE_STARRING_LEFT,     STARRING,                  0x40000000)
 
     // Add Actions                    // Action Name             // Base Action //Parameters                                // Staling ID    // Main ASM            // Interrupt/Other ASM                  // Movement/Physics ASM     // Collision ASM
     Character.add_new_action(DEDEDE, DEDEDE_NSP_END_GROUND,      -1,           ActionParams.DEDEDE_NSP_END_GROUND,          0x12,            0x800D94C4,            0,                                      0x800D8BB4,                 0x80162798)
@@ -684,38 +684,16 @@ Character.edit_action_parameters(DEDEDE, Action.LandingAirX,            File.DED
 	Character.table_patch_start(initial_script, Character.id.DEDEDE, 0x4)
 	dw		initial_script_
 	OS.patch_end()
-    
+
     // Set Magnifying Glass Scale Override
     Character.table_patch_start(magnifying_glass_zoom, Character.id.DEDEDE, 0x2)
     dh  0x005E
     OS.patch_end()
 
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.DEDEDE, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.USP		// skip USP if unsafe
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.DEDEDE, 0x2)
+    dh {MIDI.id.DEDEDE}
     OS.patch_end()
-
-	// TODO:
-    // Edit cpu attack behaviours, original table is from Falcon
-    // edit_attack_behavior(table, attack, override,	start_hb, end_hb, 	min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,  	-1,  9,   		0,  -132, 276, -90, 329)	// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  32,   		0,  0, 100, 100, 330)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  32,   		0,  0, 100, 100, 330)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  9,   		0,  -320, 320, -100, 300)	// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  3,   		0,  -50, 499, -100, 325)	// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  10,  		0,  -40, 280, 100, 300)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  26,  		0,  250, 1170, 50, 590)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,   		0,  45, 560, -45, 270)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   		0,  50, 240, 65, 355.0)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  5,   		0,  25, 495, 280, 510)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  6,   		0,  -192, 201, -30, 280)	// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  15,  		0,  200, 900, 100, 250)		// todo need to look at kirbys
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  15,  		0,  200, 900, 100, 250)		// todo need to look at kirbys
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  11,   		0,  50, 200, 128, 500)		// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  0,  		0,  0, 0, 0, 0)             // no attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  0,  		0,  0, 0, 0, 0)             // no attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  20,  		0,  -174, 243, 177, 940)	// todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,   		0,  -274, 326, 196, 717)	// todo: coords
 
     // @ Description
     // cleanup script is performed when spawning in
@@ -725,7 +703,6 @@ Character.edit_action_parameters(DEDEDE, Action.LandingAirX,            File.DED
 		j       0x800D7F0C                      // back to original routine
 		sw 		r0, 0x0AE4(v1)					// clear "ammo" count
 	}
-
 
     // an associated moveset command: b0bc0000 removes the white flicker, this is identical to Samus
     // @ Description

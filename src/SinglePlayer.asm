@@ -1664,6 +1664,11 @@ scope SinglePlayer {
         constant MLUIGI(0x0000AAB0)
         constant EBI(0x0000AF80)
         constant DRAGONKING(0x0000B4B0)
+        constant CRASH(0x0000C0E8)
+        constant PEACH(0x0000C558)
+        constant ROY(0x0000C908)
+        constant DRL(0x0000D188)
+        constant LANKY(0x0000D658)
 
         // Duo Teams
         constant STARFOX(0x00006238)
@@ -1676,6 +1681,9 @@ scope SinglePlayer {
         constant METAL_MARIO_BROS(0x0000ADA8)
         constant MYSTICAL_NINJAS(0x0000BD98)
         constant RARE_PAIR(0x0000BF70)
+        constant ROYAL_RUMBLE(0x0000D010)
+        constant DR_MARIO_BROS(0x0000D420)
+        constant DK_CREW(0x0000D890)
 
         // remix polygons
         constant NWARIO(0x00006F78)
@@ -1696,6 +1704,8 @@ scope SinglePlayer {
         constant NDEDEDE(0x0000B6E8)
         constant NGOEMON(0x0000B928)
         constant NBANJO(0x0000BB08)
+        constant NCRASH(0x0000CB40)
+        constant NPEACH(0x0000CD78)
 
         // TODO: update J names
         constant JSAMUS(0x00004268)
@@ -1802,10 +1812,19 @@ scope SinglePlayer {
         lui     t0, 0x8013
         lw      t0, 0x5CC8(t0)                    // t0 = char_id
         lli     t6, Character.id.MARINA           // t6 = MARINA
-        bne     t0, t6, _return                   // skip if not Marina
+        beql    t0, t6, _alt_width                // use alt width if Marina
+        lli     t6, 0x002A                        // t6 = width of "Marina"
+        lli     t6, Character.id.BANJO            // t6 = BANJO
+        beql    t0, t6, _alt_width                // use alt width if Banjo
+        lli     t6, 0x0022                        // t6 = width of "Banjo"
+        lli     t6, Character.id.CRASH            // t6 = CRASH
+        beql    t0, t6, _alt_width                // use alt width if Crash
+        lli     t6, 0x0023                        // t6 = width of "Crash"
+        b       _return                           // use normal width otherwise
         lhu     t0, 0x0024(v0)                    // original line 1
 
-        lli     t6, 0x002A                        // t6 = width of "Marina"
+        _alt_width:
+        lhu     t0, 0x0024(v0)                    // original line 1
         jr      ra
         sh      t6, 0x0014(v0)                    // set width
     }
@@ -1848,63 +1867,39 @@ scope SinglePlayer {
         constant NESS(0x00000032)
         constant METAL(0x00000024 + MARIO)
         constant POLYGON(0x00000028)
-        constant NMARIO(POLYGON + MARIO)
-        constant NFOX(POLYGON + FOX)
-        constant NDONKEY(POLYGON + DONKEY_KONG)
-        constant NSAMUS(POLYGON + SAMUS)
-        constant NLUIGI(POLYGON + LUIGI)
-        constant NLINK(POLYGON + LINK)
-        constant NYOSHI(POLYGON + YOSHI)
-        constant NCAPTAIN(POLYGON + CAPTAIN_FALCON)
-        constant NKIRBY(POLYGON + KIRBY)
-        constant NPIKACHU(POLYGON + PIKACHU)
-        constant NJIGGLY(POLYGON + JIGGLYPUFF)
-        constant NNESS(POLYGON + NESS)
-        constant NWARIO(POLYGON + WARIO)
-        constant NLUCAS(POLYGON + LUCAS)
-        constant NBOWSER(POLYGON + BOWSER)
-        constant NWOLF(POLYGON + WOLF)
-        constant NDRM(POLYGON + DRM)
-        constant NSONIC(POLYGON + SONIC)
-        constant NSHEIK(POLYGON + SHEIK)
-        constant NMARINA(POLYGON + MARINA)
-        constant NFALCO(POLYGON + FALCO)
-        constant NGND(POLYGON + GND)
-        constant NDSAMUS(POLYGON + DSAMUS)
-        constant NMARTH(POLYGON + MARTH)
-        constant NMTWO(POLYGON + MTWO)
-        constant NDEDEDE(POLYGON + DEDEDE)
-        constant NCONKER(POLYGON + CONKER)
-        constant NGOEMON(POLYGON + GOEMON)
-        constant NBANJO(POLYGON + BANJO)
-        constant NYLINK(POLYGON + YLINK)
+        constant NFIGHTER(0x0000005A)
         constant GDONKEY(0x00000024 + DONKEY_KONG)
-        constant GND(0x00000046)
-        constant FALCO(0x00000032)
+        constant GND(0x0000003C)
+        constant FALCO(0x0000003C)
         constant YLINK(0x00000046)
-        constant DRM(0x00000060)
+        constant DRM(0x0000004A)
         constant WARIO(0x0000003C)
-        constant DSAMUS(0x00000046)
+        constant DSAMUS(0x0000004A)
         constant LUCAS(0x00000032)
         constant BOWSER(0x0000003C)
-        constant GBOWSER(0x00000014 + BOWSER)
+        constant GBOWSER(0x00000056)
         constant PIANO(0x00000046)
-        constant WOLF(0x00000028)
-        constant CONKER(0x0000002C)
-        constant MTWO(0x0000003C)
-        constant MARTH(0x00000028)
-        constant SONIC(0x00000030)
-        constant SSONIC(0x00000014 + SONIC)
-        constant SHEIK(0x00000032)
-        constant MARINA(0x00000032)
-        constant DEDEDE(0x00000054)
-        constant GOEMON(0x00000032)
+        constant WOLF(0x0000002C)
+        constant CONKER(0x00000036)
+        constant MTWO(0x00000044)
+        constant MARTH(0x00000038)
+        constant SONIC(0x0000003C)
+        constant SSONIC(0x00000050)
+        constant SHEIK(0x0000003A)
+        constant MARINA(0x0000003F)
+        constant DEDEDE(0x00000060)
+        constant GOEMON(0x0000003C)
         constant PEPPY(0x00000032)
-        constant SLIPPY(0x00000032)
-        constant BANJO(0x0000004E)
-        constant MLUIGI(0x00000024 + LUIGI)
+        constant SLIPPY(0x0000003C)
+        constant BANJO(0x00000064)
+        constant MLUIGI(0x0000005E)
         constant EBI(0x00000046)
-        constant DRAGONKING(0x00000046)
+        constant DRAGONKING(0x0000004E)
+        constant CRASH(0x00000036)
+        constant PEACH(0x00000032)
+        constant ROY(0x0000002E)
+        constant DRL(0x00000062)
+        constant LANKY(0x00000054)
         // TODO: make sure these are good
         constant JSAMUS(0x00000032)
         constant JNESS(0x00000032)
@@ -1921,7 +1916,7 @@ scope SinglePlayer {
         // TODO: make sure these are good
         constant ESAMUS(0x00000032)
         constant ELINK(0x00000038)
-        constant EPIKA(0x00000032)
+        constant EPIKA(0x00000046)
         constant EPUFF(0x00000032)
         constant PLACEHOLDER(0x00000032)
     }
@@ -1942,18 +1937,18 @@ scope SinglePlayer {
     dw name_delay.NESS                    // Ness
     dw name_delay.PLACEHOLDER             // Master Hand
     dw name_delay.METAL                   // Metal Mario
-    dw name_delay.NMARIO                  // Polygon Mario
-    dw name_delay.NFOX                    // Polygon Fox
-    dw name_delay.NDONKEY                 // Polygon Donkey Kong
-    dw name_delay.NSAMUS                  // Polygon Samus
-    dw name_delay.NLUIGI                  // Polygon Luigi
-    dw name_delay.NLINK                   // Polygon Link
-    dw name_delay.NYOSHI                  // Polygon Yoshi
-    dw name_delay.NCAPTAIN                // Polygon Captain Falcon
-    dw name_delay.NKIRBY                  // Polygon Kirby
-    dw name_delay.NPIKACHU                // Polygon Pikachu
-    dw name_delay.NJIGGLY                 // Polygon Jigglypuff
-    dw name_delay.NNESS                   // Polygon Ness
+    dw name_delay.NFIGHTER                // Polygon Mario
+    dw name_delay.NFIGHTER                // Polygon Fox
+    dw name_delay.NFIGHTER                // Polygon Donkey Kong
+    dw name_delay.NFIGHTER                // Polygon Samus
+    dw name_delay.NFIGHTER                // Polygon Luigi
+    dw name_delay.NFIGHTER                // Polygon Link
+    dw name_delay.NFIGHTER                // Polygon Yoshi
+    dw name_delay.NFIGHTER                // Polygon Captain Falcon
+    dw name_delay.NFIGHTER                // Polygon Kirby
+    dw name_delay.NFIGHTER                // Polygon Pikachu
+    dw name_delay.NFIGHTER                // Polygon Jigglypuff
+    dw name_delay.NFIGHTER                // Polygon Ness
     dw name_delay.GDONKEY                 // Giant Donkey Kong
     dw name_delay.PLACEHOLDER             // (Placeholder)
     dw name_delay.PLACEHOLDER             // None (Placeholder)
@@ -2305,6 +2300,7 @@ scope SinglePlayer {
     // @ Description
     // constants for a custom victory picture per custom character.
     // Assume next file will always be the top part of the image
+    constant custom_victory_file_table_origin(origin())
     custom_victory_file_table:
     dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // BOSS
     dh 0xBA                                                 // METAL (same as Mario)
@@ -2321,58 +2317,65 @@ scope SinglePlayer {
     dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // NJIGGLY
     dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // NNESS
     dh 0xB8                                                 // GDONKEY (same as DK)
-    dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // PLACEHOLDER
-    dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // PLACEHOLDER
-    dh File.FALCO_VICTORY_IMAGE_BOTTOM                      // FALCO
-    dh File.GANON_VICTORY_IMAGE_BOTTOM                      // GND
-    dh File.YLINK_VICTORY_IMAGE_BOTTOM                      // YLINK
-    dh File.DRM_VICTORY_IMAGE_BOTTOM                        // DRM
-    dh File.WARIO_VICTORY_IMAGE_BOTTOM                      // WARIO
-    dh File.DSAMUS_VICTORY_IMAGE_BOTTOM                     // DARK SAMUS
-    dh 0xB2                                                 // ELINK
-    dh 0xB0                                                 // JSAMUS
-    dh 0xC0                                                 // JNESS
-    dh File.LUCAS_VICTORY_IMAGE_BOTTOM                      // LUCAS
-    dh 0xB2                                                 // JLINK
-    dh 0xB6                                                 // JFALCON
-    dh 0xBE                                                 // JFOX
-    dh 0xBA                                                 // JMARIO
-    dh 0xBC                                                 // JLUIGI
-    dh 0xB8                                                 // JDK
-    dh 0xAE                                                 // EPIKA
-    dh 0xB4                                                 // JPUFF
-    dh 0xB4                                                 // EPUFF
-    dh 0xAA                                                 // JKIRBY
-    dh 0xAC                                                 // JYOSHI
-    dh 0xAE                                                 // JPIKA
-    dh 0xB0                                                 // ESAMUS
-    dh File.BOWSER_VICTORY_IMAGE_BOTTOM                     // BOWSER
-    dh File.BOWSER_VICTORY_IMAGE_BOTTOM                     // GBOWSER (using Bowser)
-    dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // PIANO
-    dh File.WOLF_VICTORY_IMAGE_BOTTOM                       // WOLF
-    dh File.CONKER_VICTORY_IMAGE_BOTTOM                     // CONKER
-    dh File.MTWO_VICTORY_IMAGE_BOTTOM                       // MEWTWO
-    dh File.MARTH_VICTORY_IMAGE_BOTTOM                      // MARTH
-    dh File.SONIC_VICTORY_IMAGE_BOTTOM                      // SONIC
-    dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // SANDBAG
-    dh File.SONIC_VICTORY_IMAGE_BOTTOM                      // SUPER SONIC (using Sonic)
-    dh File.SHEIK_VICTORY_IMAGE_BOTTOM                      // SHEIK
-    dh File.MARINA_VICTORY_IMAGE_BOTTOM                     // MARINA
-    dh File.DEDEDE_VICTORY_IMAGE_BOTTOM                     // DEDEDE
-    dh File.GOEMON_VICTORY_IMAGE_BOTTOM                     // GOEMON
-    dh File.PEPPY_SLIPPY_VICTORY_IMAGE_BOTTOM               // PEPPY
-    dh File.PEPPY_SLIPPY_VICTORY_IMAGE_BOTTOM               // SLIPPY
-    dh File.BANJO_VICTORY_IMAGE_BOTTOM                      // BANJO
-    dh 0xBC                                                 // MLUIGI
-    dh File.EBI_VICTORY_IMAGE_BOTTOM                        // EBISUMARU
-    dh File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM               // DRAGON KING
-
-    // ADD NEW CHARACTERS HERE
-
-    // ADD FOR REMIX POLYGONS HERE
-    fill Character.NUM_POLYGONS * 2
+    // remix characters
+    fill (Character.NUM_CHARACTERS - Character.NUM_VANILLA_CHARACTERS) * 2
 
     OS.align(4)
+
+    // @ Description
+    // begins a patch in a character id based table, use OS.patch_end() to end
+    // NOTE: only works for remix characters
+    macro set_ending_image(character_id, image_footer) {
+        pushvar origin, base
+        origin  SinglePlayer.custom_victory_file_table_origin + (({character_id} - 12) * 2)
+        dh  {image_footer}
+        OS.patch_end()
+    }
+
+    // Set ending image for characters.
+    // YOU CAN USE THIS OUTSIDE OF THIS FILE
+    set_ending_image(Character.id.FALCO, File.FALCO_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.GND, File.GANON_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.YLINK, File.YLINK_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.DRM, File.DRM_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.WARIO, File.WARIO_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.DSAMUS, File.DSAMUS_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.ELINK, 0xB2)
+    set_ending_image(Character.id.JSAMUS, 0xB0)
+    set_ending_image(Character.id.JNESS, 0xC0)
+    set_ending_image(Character.id.LUCAS, File.LUCAS_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.JLINK, 0xB2)
+    set_ending_image(Character.id.JFALCON, 0xB6)
+    set_ending_image(Character.id.JFOX, 0xBE)
+    set_ending_image(Character.id.JMARIO, 0xBA)
+    set_ending_image(Character.id.JLUIGI, 0xBC)
+    set_ending_image(Character.id.JDK, 0xB8)
+    set_ending_image(Character.id.EPIKA, 0xAE)
+    set_ending_image(Character.id.JPUFF, 0xB4)
+    set_ending_image(Character.id.EPUFF, 0xB4)
+    set_ending_image(Character.id.JKIRBY, 0xAA)
+    set_ending_image(Character.id.JYOSHI, 0xAC)
+    set_ending_image(Character.id.JPIKA, 0xAE)
+    set_ending_image(Character.id.ESAMUS, 0xB0)
+    set_ending_image(Character.id.BOWSER, File.BOWSER_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.GBOWSER, File.BOWSER_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.PIANO, File.PIANO_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.WOLF, File.WOLF_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.CONKER, File.CONKER_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.MTWO, File.MTWO_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.MARTH, File.MARTH_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.SONIC, File.SONIC_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.SANDBAG, File.SINGLEPLAYER_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.SSONIC, File.SONIC_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.SHEIK, File.SHEIK_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.MARINA, File.MARINA_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.DEDEDE, File.DEDEDE_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.GOEMON, File.GOEMON_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.PEPPY, File.PEPPY_SLIPPY_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.SLIPPY, File.PEPPY_SLIPPY_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.BANJO, File.BANJO_VICTORY_IMAGE_BOTTOM)
+    set_ending_image(Character.id.MLUIGI, 0xBC)
+    set_ending_image(Character.id.EBI, File.EBI_VICTORY_IMAGE_BOTTOM)
 
     // @ Description
     // Patch which substitutes the victory picture with a custom one for all non-original characters.
@@ -2739,26 +2742,33 @@ scope SinglePlayer {
     add_to_single_player(Character.id.MLUIGI,     name_texture.MLUIGI,     name_delay.MLUIGI)
     add_to_single_player(Character.id.EBI,        name_texture.EBI,        name_delay.EBI)
     add_to_single_player(Character.id.DRAGONKING, name_texture.DRAGONKING, name_delay.DRAGONKING)
+    add_to_single_player(Character.id.CRASH,      name_texture.CRASH,      name_delay.CRASH)
+    add_to_single_player(Character.id.PEACH,      name_texture.PEACH,      name_delay.PEACH)
+    add_to_single_player(Character.id.ROY,        name_texture.ROY,        name_delay.ROY)
+    add_to_single_player(Character.id.DRL,        name_texture.DRL,        name_delay.DRL)
+    add_to_single_player(Character.id.LANKY,      name_texture.LANKY,      name_delay.LANKY)
 
     // REMIX POLYGONS    character id          name texture          name delay
-    add_to_single_player(Character.id.NWARIO,  name_texture.NWARIO,  name_delay.NWARIO)
-    add_to_single_player(Character.id.NLUCAS,  name_texture.NLUCAS,  name_delay.NLUCAS)
-    add_to_single_player(Character.id.NBOWSER, name_texture.NBOWSER, name_delay.NBOWSER)
-    add_to_single_player(Character.id.NWOLF,   name_texture.NWOLF,   name_delay.NWOLF)
-    add_to_single_player(Character.id.NDRM,    name_texture.NDRM,    name_delay.NDRM)
-    add_to_single_player(Character.id.NSONIC,  name_texture.NSONIC,  name_delay.NSONIC)
-    add_to_single_player(Character.id.NSHEIK,  name_texture.NSHEIK,  name_delay.NSHEIK)
-    add_to_single_player(Character.id.NMARINA, name_texture.NMARINA, name_delay.NMARINA)
-    add_to_single_player(Character.id.NFALCO,  name_texture.NFALCO,  name_delay.NFALCO)
-    add_to_single_player(Character.id.NGND,    name_texture.NGND,    name_delay.NGND)
-    add_to_single_player(Character.id.NDSAMUS, name_texture.NDSAMUS, name_delay.NDSAMUS)
-    add_to_single_player(Character.id.NMARTH,  name_texture.NMARTH,  name_delay.NMARTH)
-    add_to_single_player(Character.id.NMTWO,   name_texture.NMTWO,   name_delay.NMTWO)
-    add_to_single_player(Character.id.NDEDEDE, name_texture.NDEDEDE, name_delay.NDEDEDE)
-    add_to_single_player(Character.id.NYLINK,  name_texture.NYLINK,  name_delay.NYLINK)
-    add_to_single_player(Character.id.NCONKER, name_texture.NCONKER, name_delay.NCONKER)
-    add_to_single_player(Character.id.NGOEMON, name_texture.NGOEMON, name_delay.NGOEMON)
-    add_to_single_player(Character.id.NBANJO,  name_texture.NBANJO,  name_delay.NBANJO)
+    add_to_single_player(Character.id.NWARIO,  name_texture.NWARIO,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NLUCAS,  name_texture.NLUCAS,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NBOWSER, name_texture.NBOWSER, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NWOLF,   name_texture.NWOLF,   name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NDRM,    name_texture.NDRM,    name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NSONIC,  name_texture.NSONIC,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NSHEIK,  name_texture.NSHEIK,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NMARINA, name_texture.NMARINA, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NFALCO,  name_texture.NFALCO,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NGND,    name_texture.NGND,    name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NDSAMUS, name_texture.NDSAMUS, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NMARTH,  name_texture.NMARTH,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NMTWO,   name_texture.NMTWO,   name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NDEDEDE, name_texture.NDEDEDE, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NYLINK,  name_texture.NYLINK,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NCONKER, name_texture.NCONKER, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NGOEMON, name_texture.NGOEMON, name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NBANJO,  name_texture.NBANJO,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NPEACH,  name_texture.NPEACH,  name_delay.NFIGHTER)
+    add_to_single_player(Character.id.NCRASH,  name_texture.NCRASH,  name_delay.NFIGHTER)
 
     // J CHARS           character id          name texture          name delay
     add_to_single_player(Character.id.JSAMUS,  name_texture.JSAMUS,  name_delay.JSAMUS)

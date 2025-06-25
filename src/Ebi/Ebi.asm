@@ -62,14 +62,14 @@ scope Ebi {
             constant DIZZY(0xAC000007)
         }
     }
-    
+
     EBI_GROW: // victory 1
     Moveset.WAIT(15);
     dw 0xB1EC0000
     Moveset.WAIT(0x10);
     Moveset.VOICE(0x0525);
     dw 0
-    
+
     ENTRY:
     Moveset.WAIT(1);
     dw 0x5C000001;
@@ -175,7 +175,7 @@ scope Ebi {
     Moveset.HURTBOXES(1); // reset tangibility
     dw 0xB0080000
     Moveset.WAIT(33)
-    
+
     dw 0;            // end
 
     insert DSP_LANDING,"moveset/DOWN_SPECIAL_LANDING.bin" // recoil
@@ -190,12 +190,10 @@ scope Ebi {
     insert STUN, "moveset/STUN.bin"; Moveset.GO_TO(STUN)                            // loops
 
     CSS:
-    Moveset.WAIT(0x30); Moveset.VOICE(0x0563); dw 0;
+    dw MODEL.FACE.BLUSH; Moveset.WAIT(0x30); Moveset.VOICE(0x0563); dw 0;
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // @ Description
     // Ebi's extra actions
@@ -440,7 +438,7 @@ scope Ebi {
 
     // Set crowd chant FGM.
     Character.table_patch_start(crowd_chant_fgm, Character.id.EBI, 0x2)
-    dh  0x02B7              // generic cheering
+    dh  0x0434
     OS.patch_end()
 
     // Set Kirby hat_id
@@ -455,54 +453,14 @@ scope Ebi {
     // Shield colors for costume matching
     Character.set_costume_shield_colors(EBI, BLUE, GREEN, PINK, RED, WHITE, YELLOW, ORANGE, NA)
 
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  10,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  16,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  15,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  7,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  5,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  9,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  7,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  9,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  2,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  3,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  23,   0,  50, 275, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  23,   0,  50, 275, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  6,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  0,   0,  0, 0, 0, 0)   // never use up special to attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  0,   0,  0, 0, 0, 0)   // never use up special to attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  12,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  5,   0,  -1, -1, -1, -1)
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.EBI, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
     // Set action strings
     Character.table_patch_start(action_string, Character.id.EBI, 0x4)
     dw  Action.action_string_table
     OS.patch_end()
 
-    // Set Ebisumaru as variant
-    Character.table_patch_start(variants, Character.id.EBI, 0x4)
-    db      Character.id.GOEMON
-    OS.patch_end()
-
-    Character.table_patch_start(variant_original, Character.id.EBI, 0x4)
-    dw      Character.id.GOEMON
-    OS.patch_end()
-
     // Remove grounded script.
     Character.table_patch_start(grounded_script, Character.id.EBI, 0x4)
     dw grounded_script_
-    OS.patch_end()
-
-    // Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.EBI, 0x4)
-    dw      AI.LONG_RANGE.ROUTINE.NONE
     OS.patch_end()
 
     grounded_script_: {
@@ -524,4 +482,8 @@ scope Ebi {
         nop
     }
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.EBI, 0x2)
+    dh {MIDI.id.TRAVELING}
+    OS.patch_end()
 }

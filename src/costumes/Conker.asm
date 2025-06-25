@@ -11,17 +11,6 @@ scope conker_costumes {
     // Number of original costumes
     constant NUM_COSTUMES(6)
 
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
-
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
     // part 0x0 never has images, so we can store extra info here
@@ -79,7 +68,7 @@ scope conker_costumes {
         mouth:; insert "Conker/cos_6_4.bin"
         head:; insert "Conker/cos_6_5.bin"
         tail:; insert "Conker/cos_6_6.bin"
-		
+
         constant fur_color(0x484848FF)
         constant hand_color(0xFFFFFFFF)
         constant hoodie_color(0xe5a40000)

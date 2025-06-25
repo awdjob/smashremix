@@ -1,10 +1,12 @@
+// Coded by HaloFactory
+// Partial code borrowed from Fray
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(Item.spawn_custom_item_based_on_tomato_)
 constant SHOW_GFX_WHEN_SPAWNED(OS.FALSE)
 constant PICKUP_ITEM_MAIN(pickup_lightning_)
 constant PICKUP_ITEM_INIT(0)
-constant DROP_ITEM(0x801745FC) 		// same as Maxim Tomato
+constant DROP_ITEM(0x801745FC) 	    // same as Maxim Tomato
 constant THROW_ITEM(0)
 constant PLAYER_COLLISION(0)
 
@@ -97,9 +99,8 @@ scope clear_active_lightning_routine_: {
     sw      r0, 0x0008(t8)              // ~
     sw      r0, 0x000C(t8)              // ~
     li      t8, lightning_routine_      // t8 = shrink timer for lightning
-    sw      r0, 0x0000(t8)              // clear routine ptr
     jr      ra
-    nop
+    sw      r0, 0x0000(t8)              // clear routine ptr
 }
 
 // @ Description
@@ -211,9 +212,8 @@ scope aerial_main_: {
     _end:
     lw      s1, 0x0004(sp)          //
     lw      ra, 0x0014(sp)          // restore registers
-    addiu   sp, sp, 0x24            // deallocate sp
     jr      ra                      // return
-    nop                             // ~
+    addiu   sp, sp, 0x24            // deallocate sp
 }
 
 // @ Description
@@ -344,9 +344,9 @@ scope lightning_zap_players_: {
     addiu   sp, sp, 0x0020                      // deallocate stack space
 
     _apply_damage:
-    addiu   a0, t0, 0x0000                      // a0 = player getting struck
-    jal     0x800EA248                          // jump to damage application routine
-    addiu   a1, r0, 0x0001                      // set to 1 damage per drop
+    // addiu   a0, t0, 0x0000                      // a0 = player getting struck
+    // jal     0x800EA248                          // jump to damage application routine
+    // addiu   a1, r0, 0x0001                      // set to 1 damage per drop
     //jal     0x80141670
     //lw      a0, 0x0010(sp)                      // a0 = current player object
 
@@ -363,9 +363,8 @@ scope lightning_zap_players_: {
 
     lw      ra, 0x0004(sp)                      // restore registers
     lw      a1, 0x0014(sp)                      // ~
-    addiu   sp, sp, 0x0030                      // deallocate stack space
     jr      ra
-    nop
+    addiu   sp, sp, 0x0030                      // deallocate stack space
 }
 
     shrink_timer_table:
@@ -437,7 +436,6 @@ scope shrink_timer_: {
 
     _end:
     lw  ra, 0x001C(sp)
-    addiu   sp, sp, 0x0028
     jr      ra
-    nop
+    addiu   sp, sp, 0x0028
 }

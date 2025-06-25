@@ -1,3 +1,5 @@
+// Coded by HaloFactory
+// Based on code by Fray's Conker Grenade
 // @ Description
 // These constants must be defined for an item.
 // See Item.WaddleDee for the routines
@@ -8,6 +10,8 @@ constant PICKUP_ITEM_INIT(0)
 constant DROP_ITEM(0)
 constant THROW_ITEM(0)
 constant PLAYER_COLLISION(0)
+
+constant PROJECTILE_ID(0x100A)
 
 constant ITEM_INFO_ARRAY_ORIGIN(origin())
 item_info_array:
@@ -402,6 +406,43 @@ scope star_stage_setting: {
 
 }
 
+
+    // Prevents reverse hits with Waddle Doos projectile
+    scope beam_knockback_direction_fix: {
+        OS.patch_start(0x5FCEC, 0x800E44EC)
+        j       beam_knockback_direction_fix
+        nop
+        _return:
+        OS.patch_end()
+
+        // s4 = projectile struct
+        lw      t8, 0x000C(s4)          // t8 = projectile ID
+        addiu   at, r0, PROJECTILE_ID   // at = projectile ID
+
+        bne     at, t8, _normal         // normal logic if not Waddle Doo's Beam projectile ID
+        nop
+
+        // if here, waddle doo beam projectile.
+        lui     at, 0x3F00              // at = 0.5
+        mtc1    at, f6                  // f6 =. og line 2
+
+        sw      t7, 0x07F4(s5)          // og logic from 0x800E44F4
+        lw      t8, 0x000C(s1)          // ~
+        sw      t8, 0x07F8(s5)          // ~
+
+        lwc1    f0, 0x0018(s4)          // f0 = projectile direction
+        cvt.s.w f0, f0                  // convert to float
+
+        // jump to original logic
+        j       0x800E4508
+        nop
+
+        _normal:
+        lui     at, 0x40A0              // at = 5.0, og line 1
+        j       _return
+        mtc1    at, f6                  // f6 = 5.0. og line 2
+    }
+
 // @ Description
 // Creates waddle doo's beam. This spawns 3 star projectiles and places them at their initial angle
 // a0 = waddle doo
@@ -761,7 +802,7 @@ scope beam_main: {
 // currently a copy of star rod projectile @ 8018A1C4
 beam_info_array:
 dw 0x00000000        // ?
-dw 0x00000016        // projectile id
+dw PROJECTILE_ID     // projectile id
 dw 0x8018D040        // pointer to file 0xFB
 dw 0x000004D4        // offset in file
 dw 0x1C000000        // rendering routine index ?

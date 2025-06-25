@@ -853,7 +853,7 @@ scope PokemonAnnouncer {
 
         _pokemon:
         sw      a0, 0x0008(sp)
-        sw      a1, 0x000C(sp)
+        sw      a1, 0x001C(sp)
         sw      a2, 0x0010(sp)
         sw      a3, 0x0014(sp)
         sw      v1, 0x0018(sp)
@@ -871,7 +871,173 @@ scope PokemonAnnouncer {
         
         _end:
         lw      a0, 0x0008(sp)
-        lw      a1, 0x000C(sp)
+        lw      a1, 0x001C(sp)
+        lw      a2, 0x0010(sp)
+        lw      a3, 0x0014(sp)
+        lw      v1, 0x0018(sp)
+        
+        _normal:
+        lw      ra, 0x0004(sp)
+        lw      v0, 0x000C(sp)
+        addiu   sp, sp, 0x0020
+        jr      ra
+        nop
+    }
+    
+    // Announcer comment if Crash digs underground via DSP
+    scope burrow_announcement_: {
+        addiu   sp, sp, -0x0020
+        sw      ra, 0x0004(sp)
+        sw      v0, 0x000C(sp)
+        
+        jal     toggle_announcer_
+        nop
+
+        bnez    v0, _normal
+        nop
+
+        _pokemon:
+        sw      a0, 0x0008(sp)
+        sw      a1, 0x001C(sp)
+        sw      a2, 0x0010(sp)
+        sw      a3, 0x0014(sp)
+        sw      v1, 0x0018(sp)
+        
+        lw      a0, 0x0084(a0)          // load player struct from player object
+        lbu     a0, 0x000D(a0)          // load player port from player object
+        li      v1, dig_match_history   // load match history bitfield address
+        lbu     a1, 0x0000(v1)          // load match  history bitfield
+        addiu   a2, r0, 0x0001          // place 1 in a2, which will be used to mark usage by the port
+        sllv    a2, a2, a0              // shift binary 1 over by the amount of the port
+        bnezl   a2, _burrow_again       // branch if the move has already been used
+        addiu   a1, r0, 0x0003          // decimal 3 possible integers, including the burrow again calls
+        or      a1, a2, a1              // confirm that bitfield has that port marked
+        sb      a1, 0x0000(v1)          // update match history bitfield 
+        addiu   a1, r0, 0x0001          // decimal 1 possible integers
+        
+        _burrow_again:
+        li      a2, burrow_call
+        jal     announcer_main_
+        addiu   a0, r0, STANDARD
+        
+        bnez    v0, _end
+        nop
+        
+        jal     0x800269C0                  // play fgm
+        addu    a0, r0, v1                  // fgm number
+        
+        _end:
+        lw      a0, 0x0008(sp)
+        lw      a1, 0x001C(sp)
+        lw      a2, 0x0010(sp)
+        lw      a3, 0x0014(sp)
+        lw      v1, 0x0018(sp)
+        
+        _normal:
+        lw      ra, 0x0004(sp)
+        lw      v0, 0x000C(sp)
+        addiu   sp, sp, 0x0020
+        jr      ra
+        nop
+    }
+    
+    // @ Description
+    // Resets the burrow binary so things stay fresh!
+    // This routine runs whenever the Global.p_struct_head routines run
+    scope refresh_burrow_binary_: {
+        OS.patch_start(0x529F0, 0x800D71F0)
+        j       refresh_burrow_binary_
+        sw      v0, 0x0000(a3)              // original line 1
+        _return:
+        OS.patch_end()
+        
+        li      a1, dig_match_history       // load address
+        sb      r0, 0x0000(a1)              // clear
+
+        _end:
+        j       _return
+        lw       a1, 0x0024(sp)             // original line 2
+    }
+    
+    // Announcer comment after Crash intiates DSP_End
+    scope dig_announcement_: {
+        addiu   sp, sp, -0x0020
+        sw      ra, 0x0004(sp)
+        sw      v0, 0x000C(sp)
+        
+        jal     toggle_announcer_
+        nop
+
+        bnez    v0, _normal
+        nop
+
+        _pokemon:
+        sw      a0, 0x0008(sp)
+        sw      a1, 0x001C(sp)
+        sw      a2, 0x0010(sp)
+        sw      a3, 0x0014(sp)
+        sw      v1, 0x0018(sp)
+        
+        li      a2, dig_call
+        addiu   a0, r0, STANDARD
+        jal     announcer_main_
+        addiu   a1, r0, 0x0001          // decimal 1 possible integers
+        
+        bnez    v0, _end
+        nop
+        
+        jal     0x800269C0                  // play fgm
+        addu    a0, r0, v1                  // fgm number
+        
+        _end:
+        lw      a0, 0x0008(sp)
+        lw      a1, 0x001C(sp)
+        lw      a2, 0x0010(sp)
+        lw      a3, 0x0014(sp)
+        lw      v1, 0x0018(sp)
+        
+        _normal:
+        lw      ra, 0x0004(sp)
+        lw      v0, 0x000C(sp)
+        addiu   sp, sp, 0x0020
+        jr      ra
+        nop
+    }
+    
+    // Announcer comment if Crash uses USP
+    scope body_slam_announcement_: {
+        addiu   sp, sp, -0x0020
+        sw      ra, 0x0004(sp)
+        sw      v0, 0x000C(sp)
+        
+        jal     toggle_announcer_
+        nop
+
+        bnez    v0, _normal
+        nop
+
+        _pokemon:
+        sw      a0, 0x0008(sp)
+        sw      a1, 0x001C(sp)
+        sw      a2, 0x0010(sp)
+        sw      a3, 0x0014(sp)
+        sw      v1, 0x0018(sp)
+        
+        
+        addiu   a1, r0, 0x0001          // decimal 1 possible integers
+        li      a2, body_slam_call
+        jal     announcer_main_
+        addiu   a0, r0, STANDARD
+        
+        bnez    v0, _end
+        nop
+        
+        jal     0x800269C0                  // play fgm
+        addu    a0, r0, v1                  // fgm number
+        
+        _end:
+        lw      a0, 0x0008(sp)
+        lw      a1, 0x001C(sp)
         lw      a2, 0x0010(sp)
         lw      a3, 0x0014(sp)
         lw      v1, 0x0018(sp)
@@ -2093,7 +2259,7 @@ scope PokemonAnnouncer {
         li      t0, pokemon_calls       // beginning of announcer calls
         li      t2, announcer_fgm_count_address
         lw      t2, 0x0000(t2)          // load count
-        addiu   t2, t2, -0x0001         // subtract 1 to end at 0
+        //addiu   t2, t2, -0x0001         // subtract 1 to end at 0
         
         _loop:
         lw      t1, 0x0008(t0)          // load timer
@@ -2392,6 +2558,22 @@ scope PokemonAnnouncer {
     
     damage_early_call:
     add_announcement(0x4F, 0x494, 0x8708, 0x1)       // Major Blow from the Word Go
+    
+    burrow_call:
+    add_announcement(0x50, 0x5D1, 0x708, 0x1)       // It Burrowed Underground
+    
+    burrow_again_call:
+    add_announcement(0x51, 0x5D3, 0x708, 0x1)       // The Underground attack continues
+    add_announcement(0x51, 0x5D2, 0x708, 0x1)       // It Burrowed Underground Again
+    
+    dig_call:
+    add_announcement(0x51, 0x5D0, 0x708, 0x1)       // Dig This
+    
+    body_slam_call:
+    add_announcement(0x51, 0x5CF, 0x708, 0x1)       // Body Slam
+    
+    dig_match_history:
+    db 0x00
     
     OS.align(16)
     

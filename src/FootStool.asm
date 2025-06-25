@@ -1,4 +1,8 @@
 
+
+// @ Description
+// Adds the Brawl mechanic allowing players to footstool jump off eachother
+// by halofactory
 scope FootStool {
 
     // @ Description
@@ -9,16 +13,16 @@ scope FootStool {
         lwc1    f6, 0x0024(t8)      // og line 1
         _return:
         OS.patch_end()
-        
+
         lw      at, 0x9E4(a0)       // load current routine
         li      t0, footstool_air_collision_
         bne     at, t0, _normal     // branch if doing a normal jump
         nop
-        
+
         // if here, footstooling opponent
         j       _return
         nop
-        
+
         _normal:
         j       _return
         sb      t9, 0x0148(a0)      // og line 2 (reset num jumps)
@@ -58,11 +62,11 @@ scope FootStool {
         lw      a1, 0x0010(sp)
         jr      ra
         addiu   sp, sp, 0x0050              // deallocate stack space
-        
+
         _no_jump:
         j       0x80140324
         addiu   sp, sp, 0x0050
-        
+
     }
     // @ Description
     // if here, then character is performing a mid-air jump
@@ -189,7 +193,7 @@ scope FootStool {
         addiu   at, r0, 0x000C              // at = MASTER HAND
         beql    at, v0, _end                // branch if Master hand
         or      v0, r0, r0                  // return 0 (no footstool)
-        
+
         // ACTION CHECK
         lw      v0, 0x0024(v1)              // v0 = current action
         addiu   at, r0, Action.LandingHeavy // at = Action.LandingHeavy id
@@ -207,7 +211,7 @@ scope FootStool {
         lw      t9, 0x05B8(v1)              // v0 = super star counter
         beql    at, t9, _end                // branch if already in heavy land animation
         or      v0, r0, r0                  // return 0 (no footstool)
-        
+
         li      t9, footstooled_main        // t9 = footstooled interrupt routine
         lw      at, 0x09E4(v1)              // get interrupt routine
         beql    at, t9, _end                // branch if already footstooled
@@ -218,14 +222,14 @@ scope FootStool {
         addiu   t9, a1, 0x001C              // t9 = target x/y/z coordinates
 
         // check if the target is within x range
-        
+
         lw      at, 0x0084(a2)              // first get size multiplier
         lbu     at, 0x000D(at)              // at = player port
         li      v0, Size.multiplier_table
         sll     at, at, 2
         addu    at, v0, at
         lwc1    f14, 0x0000(at)             // f14 = entry in size multiplier table
-        
+
         mtc1    r0, f0                      // f0 = 0
         lwc1    f2, 0x0000(t8)              // f2 = player x coordinate
         lwc1    f4, 0x0000(t9)              // f4 = target x coordinate
@@ -281,7 +285,7 @@ scope FootStool {
         nop                                 // ~
         bc1fl   _end                        // end if Y_RANGE =< targets top y coord
         or      v0, r0, r0                  // return 0
-        
+
         // see if above EBC height / 5
         lui     at, 0x3E4C                  // at = 0.2
         mtc1    at, f6                      // f6 = 0.2
@@ -313,7 +317,7 @@ scope FootStool {
 
         // change player action to jumpsquat
         Action.change(Action.JumpSquat, -1)
-        
+
         // change air collision routine so player stays aerial
         lw      a0, 0x0028(sp)              // a0 = jumping player object
         lw      a0, 0x0084(a0)              // a0 = jumping player struct
@@ -336,10 +340,10 @@ scope FootStool {
         sw      r0, 0x0b24(v0)
         sb      t0, 0x0192(v0)
         sw      t7, 0x0b20(v0)
-        
+
         // play funny sfx
         FGM.play(0x04B0)                    // play footstool FGM
-        
+
         lw      ra, 0x0024(sp)
         lw      s0, 0x0020(sp)
         jr      ra
@@ -362,7 +366,7 @@ scope FootStool {
         lw      v1, 0x0024(s0)              // v1 = current action
         blt     v1, t9, _continue           // skip if current action > Action.LandingSpecial
         nop
-        
+
         // if here, then action id > Action.LandingSpecial
         _kirby_check:
         lw      v0, 0x0008(s0)              // v0 = character id
@@ -388,7 +392,7 @@ scope FootStool {
         // beq     v0, at, _kirby_puff_dedede_jump_check
         b       _end
         addiu   v0, r0, r0
-        
+
         _kirby_puff_dedede_jump_check:      // allows kirby to be footstooled when in their aerial jumping actions
         // v1 = current action
         slti    at, v1, Action.KIRBY.Jump2  // at = 0 if action id => Jump2
@@ -447,7 +451,7 @@ scope FootStool {
         jr      ra                          // return
         addiu   sp, sp, 0x0018              // deallocate stack space
     }
-    
+
     // @ Description
     // Subroutine which handles ground to air transition for footstool jumpsquat
     scope footstool_air_to_ground_: {
@@ -470,7 +474,7 @@ scope FootStool {
         jr      ra                          // return
         addiu   sp, sp, 0x0038              // deallocate stack space
     }
-    
+
     // @ Description
     // Aerial. based on 0x801435B0, no teching allowed!
     scope footstooled_main: {
@@ -513,7 +517,7 @@ scope FootStool {
         jr      ra
         addiu   sp, sp, 0x28
     }
-    
+
     constant FOOTSTOOLED_JUMP_DELAY(40)    // 40 frames until footstooled player can jump from tumble
 
     // @ Description
@@ -528,7 +532,7 @@ scope FootStool {
         slti    v1, v1, FOOTSTOOLED_JUMP_DELAY  // v1 = 0 if allowed to jump
         bnez    v1, _end
         nop
-        
+
         jal     0x80143560          // original routine
         nop
         _end:
@@ -536,7 +540,7 @@ scope FootStool {
         jr      ra
         addiu   sp, sp, 0x028
     }
-    
+
     scope kirby_jump_aerial_1_check: {
         OS.patch_start(0xBAC60, 0x80140220)
         jal     kirby_jump_aerial_1_check
@@ -563,9 +567,9 @@ scope FootStool {
         lw      ra, 0x0024(sp)
         jr      ra
         addiu   sp, sp, 0x028
-        
+
     }
-    
+
     scope kirby_jump_aerial_2_check: {
         OS.patch_start(0xBACCC, 0x8014028C)
         jal     kirby_jump_aerial_2_check
@@ -592,7 +596,7 @@ scope FootStool {
         lw      ra, 0x0024(sp)
         jr      ra
         addiu   sp, sp, 0x028
-        
+
     }
 
     scope puff_jump_aerial_2_check: {
@@ -622,5 +626,5 @@ scope FootStool {
         jr      ra
         addiu   sp, sp, 0x028
     }
-    
+
 }

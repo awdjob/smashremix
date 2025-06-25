@@ -91,6 +91,12 @@ scope Pause {
         jal     Render.toggle_group_display_
         lli     a0, 0x000E                  // a0 = group of HUD
 
+        jal     Render.toggle_group_display_
+        lli     a0, 0x000F                  // a0 = group of Pause Legend HUD
+
+        jal     Render.toggle_group_display_
+        lli     a0, 0x0010                  // a0 = group of Pause Legend HUD
+
         lw      ra, 0x0004(sp)              // restore registers
         addiu   sp, sp, 0x0010              // deallocate stack space
         jr      ra                          // return
@@ -115,6 +121,9 @@ scope Pause {
         jal     set_alternate_music_
         sw      at, 0x001C(sp)          // store at
 
+        jal     check_toggle_hud_press_
+        lw      a1, 0x000C(sp)          // restore a1
+
         jal     check_legend_toggle_press_
         lw      a1, 0x000C(sp)          // restore a1
 
@@ -128,6 +137,19 @@ scope Pause {
         addiu   sp, sp, 0x0020          // deallocate sp
 
         _camera_controls:
+        // in scene camera, this keeps the rotation between pausing
+        OS.read_word(Toggles.entry_camera_mode + 0x4, a2) // a2 = fixed cam boolean
+        addiu   t0, r0, Camera.type.SCENE  // t0 = camera type.scene
+        bne     a2, t0, _return         // skip if not scene
+        // yes, delay slot
+
+        lui     a2, 0x8013
+        lw      t0, 0x1468(a2)          // t0 = gGMCameraPauseCameraEyeX
+        sw      t0, 0x17E8(a2)          // set sIFCommonBattlePauseCameraEyeXOrigin = gGMCameraPauseCameraEyeX
+        lw      t0, 0x1464(a2)          // t0 = gGMCameraPauseCameraEyeY
+        sw      t0, 0x17EC(a2)          // set sIFCommonBattlePauseCameraEyeYOrigin = gGMCameraPauseCameraEyeY
+
+        _return:
         jr      ra                      // return
         lhu     a2, 0x0002(a1)          // original line 2
 
@@ -169,6 +191,46 @@ scope Pause {
     }
 
     // @ Description
+    // Checks if Dpad Left is pressed and toggles on/off the pause HUD
+    scope check_toggle_hud_press_: {
+        addiu   sp, sp,-0x0020              // allocate stack space
+        sw      ra, 0x00014(sp)             // ~
+
+        li      v0, Toggles.entry_disable_hud
+        lw      v0, 0x0004(v0)              // v0 = entry_disable_hud (0 if OFF, 1 if PAUSE, 2 if ALL)
+        bnez    v0, _end                    // skip if HUD is already disabled
+        nop
+
+        lh      t0, 0x0002(a1)              // t0 = players current input (pressed)
+        lli     v0, Joypad.DL               // v0 = Joypad.DL
+        bne     t0, v0, _end                // skip if not pressing Dpad Left
+        nop
+
+        li      t0, 0x80046728              // t0 = group 0xE head
+        lw      t0, 0x0000(t0)              // ~
+        lw      t0, 0x007C(t0)              // t0 = display state (0 = shown, 1 = hidden)
+        bnezl   t0, pc() + 12               // if pause HUD wasn't drawn, show
+        addiu   a1, r0, r0                  // a1 = 0 (show)
+        addiu   a1, r0, 1                   // a1 = 1 (hide)
+
+        jal     Render.toggle_group_display_
+        lli     a0, 0x000E                  // a0 = group of HUD
+
+        addiu   a1, r0, 1                   // a1 = 1 (hide)
+        jal     Render.toggle_group_display_
+        lli     a0, 0x000F                  // a0 = group of Pause Legend HUD
+
+        jal     Render.toggle_group_display_
+        lli     a0, 0x0010                  // a0 = group of Pause Legend HUD
+
+        _end:
+        lw      ra, 0x00014(sp)             // restore registers
+        addiu   sp, sp, 0x0020              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
     // Checks if R is pressed and toggles on/off the legend
     scope check_legend_toggle_press_: {
         OS.save_registers()
@@ -182,6 +244,12 @@ scope Pause {
         bne     v0, t0, _return             // if anything other than R is being held, return
         lh      t0, 0x0002(a1)              // t0 = players current input (pressed)
         bne     v0, t0, _return             // if not solo R press, return
+        nop
+
+        // Don't draw if HUD is disabled
+        OS.read_word(0x80046728, t1)        // t1 = group 0xE head
+        lw      t1, 0x007C(t1)              // t1 = display state (0 = shown, 1 = hidden)
+        bnezl   t1, _return                 // if pause HUD isn't drawn, skip
         nop
 
         // Don't draw during Gentlemen's Reset in 12CB mode
@@ -364,7 +432,7 @@ scope Pause {
     // Change to alternate music if paused and pressing dpad
     scope set_alternate_music_: {
         addiu   sp, sp,-0x0020              // allocate stack space
-        sw      ra, 0x00014(sp)              // ~
+        sw      ra, 0x00014(sp)             // ~
 
         li      v0, Toggles.entry_play_music
         lw      v0, 0x0004(v0)              // v0 = 0 if music is off
@@ -401,10 +469,10 @@ scope Pause {
         sw      a0, 0x0000(at)              // save updated timer
 
         // check which dpad button we are holding and branch accordingly
-        andi    v0, t0, 0x0100              // bitflag for dpad right
+        andi    v0, t0, Joypad.DR           // bitflag for dpad right
         bnez    v0, _stage_track            // stage's next song (if any) if dpad right pressed
         nop
-        andi    v0, t0, 0x0400              // bitflag for dpad down
+        andi    v0, t0, Joypad.DD           // bitflag for dpad down
         bnez    v0, _random_track           // random song if dpad down pressed
         nop
 
@@ -438,17 +506,21 @@ scope Pause {
         lw      t0, 0x0000(t0)              // load address of match info
         lbu     v0, 0x0001(t0)              // v0 = stage_id
         li      t0, Stages.alternate_music_table   // t0 = address of alternate music table
-        sll     v0, v0, 0x0002              // v0 = offset to stage's alt music
-        addu    t0, t0, v0                  // t0 = address of alt music options for stage (0x0 = Occasional, 0x2 = Rare)
+        sll     v0, v0, 0x0003              // v0 = offset to stage's alt music
+        addu    t0, t0, v0                  // t0 = address of alt music options for stage (0x0 = Occasional, 0x2 = Rare, 0x4 = Rare 2)
 
         bltzl   a0, _try_occasional_song    // branch if we are on default track
         addiu   a0, r0, 0x0000              // a0 = occasional music
 
         li      a0, BGM.current_track       // a0 = address of current_track
         lw      a0, 0x0000(a0)              // a0 = current_track
-        lh      v0, 0x0002(t0)              // v0 = bgm_id of rare (if it exists)
-        beq     a0, v0, _to_default         // branch if we are on rare track
+        lh      v0, 0x0004(t0)              // v0 = bgm_id of rare 2 (if it exists)
+        beq     a0, v0, _to_default         // branch if we are on rare 2 track
         nop
+
+        lh      v0, 0x0002(t0)              // v0 = bgm_id of rare (if it exists)
+        beql    a0, v0, _try_next_song      // branch if we are on rare track
+        addiu   a0, r0, 0x0004              // a0 = rare music
 
         lh      v0, 0x0000(t0)              // v0 = bgm_id of occasional (if it exists)
         beql    a0, v0, _try_next_song      // branch if we are on occasional track
@@ -487,6 +559,8 @@ scope Pause {
         sw      a1, 0x0000(t1)              // save as override track (vanilla)
         lw      at, 0x0004(t1)              // at = stage music (vanilla)
         sw      a1, 0x0004(t1)              // save as stage music (vanilla)
+        li      t1, Hazards.time_twister_bgm_change
+        sw      r0, 0x0000(t1)              // set time twister bgm change flag to FALSE since music was manually changed
         beql    at, a1, _update_timer       // don't change the music if it's the same track
         addiu   a0, r0, 2                   // a0 = 2 (reset dpad cycle initial delay)
         lui     a0, 0x8013

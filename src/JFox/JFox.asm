@@ -40,6 +40,20 @@ scope JFox {
     dw  Action.FOX.action_string_table
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JFOX, 0x2)
+    dh {MIDI.id.STARFOX_MEDLEY}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.JFOX, 0x4)
+    db      Character.id.FOX
+    db      Character.id.NONE
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
+}
+
     // @ Description
     // loads a different special struct when JFox uses his up special.
     scope get_laser_special_struct_: {

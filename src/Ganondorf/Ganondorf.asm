@@ -4,13 +4,32 @@
 
 scope Ganondorf {
 
-	scope FACE: {
-		constant NORMAL(0xAC000000)
-		constant SHOCK(0xAC000006)
-	}
+    scope FACE: {
+        constant NORMAL(0xAC000000)
+        constant BLINK(0xAC000001)
+        constant SLEEP(0xAC000002)
+        constant SHOCK(0xAC000006)
+        constant LAUGH(0xAC000007)
+    }
+    scope HAND_L: {
+        constant CLOSED(0xA0500000)
+        constant OPEN(0xA0500001)
+    }
+    scope HAND_R: {
+        constant CLOSED(0xA0800000)
+        constant TRIDENT(0xA0800001)
+        constant OPEN(0xA0800002)
+    }
 
     // Insert Moveset files
-    insert IDLE,"moveset/IDLE.bin"
+    insert BLINK,"moveset/BLINK.bin"; Moveset.GO_TO(BLINK)            // loops
+    IDLE:
+    dw 0xBC000003                               // set slope contour state
+    dw 0xD0013F33                               // set FSM without setting command execution speed
+    Moveset.SUBROUTINE(BLINK)                   // blink
+    dw 0x0400001E; Moveset.SUBROUTINE(BLINK)    // wait 30 frames then blink
+    dw 0x04000050; Moveset.SUBROUTINE(BLINK)    // wait 80 frames then blink
+    dw 0x04000032; Moveset.GO_TO(IDLE)          // loop
     insert RUN,"moveset/RUN.bin"; Moveset.GO_TO(RUN)            // loops
     insert JUMP2, "moveset/JUMP2.bin"
     insert TECHSTAND, "moveset/TECHSTAND.bin"
@@ -66,9 +85,7 @@ scope Ganondorf {
 	Moveset.GO_TO(Moveset.shared.DOWN_BOUNCE)
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(GND,   Action.Idle,            -1,                         IDLE,                       -1)
@@ -115,7 +132,7 @@ scope Ganondorf {
     Character.edit_action_parameters(GND,   0xE1,                   File.GND_ENTRY_1,           ENTRY_1,                    0x40000000)
     Character.edit_action_parameters(GND,   0xE2,                   File.GND_ENTRY_2_LEFT,      ENTRY_2,                    0x40000000)
     Character.edit_action_parameters(GND,   0xE3,                   File.GND_ENTRY_2_RIGHT,     ENTRY_2,                    0x40000000)
-	Character.edit_action_parameters(GND,   0xE4,                   -1,                         NSP_GROUND,                 -1)
+    Character.edit_action_parameters(GND,   0xE4,                   -1,                         NSP_GROUND,                 -1)
     Character.edit_action_parameters(GND,   0xE5,                   -1,                         NSP_AIR,                    -1)
     Character.edit_action_parameters(GND,   0xE6,                   -1,                         DSP_GROUND,                 -1)
     Character.edit_action_parameters(GND,   0xE7,                   -1,                         DSP_FLIP,                   -1)
@@ -152,7 +169,7 @@ scope Ganondorf {
     dw 0x8013DD68                           // skips entry script
     OS.patch_end()
 
-	// Set crowd chant FGM.
+    // Set crowd chant FGM.
     Character.table_patch_start(crowd_chant_fgm, Character.id.GND, 0x2)
     dh  0x02EA
     OS.patch_end()
@@ -173,32 +190,6 @@ scope Ganondorf {
     Character.table_patch_start(kirby_inhale_struct, 0x2, Character.id.GND, 0xC)
     dh 0x11
     OS.patch_end()
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.GND, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  14,   24,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  12,   31,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  16,   38,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  16,   35,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  8,    15,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  7,    19,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  24,   33,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  10,   16,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,    6,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  5,    8,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  7,    17,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  47,   52,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  47,   52,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  7,    17,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  16,   51,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  15,   55,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  19,   33,  -1, -1, -1, -1) // todo: coords
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  34,   40,  -1, -1, -1, -1) // todo: coords
 
     // @ Description
     // Ganondorf's extra actions
@@ -270,4 +261,10 @@ scope Ganondorf {
     Character.table_patch_start(action_string, Character.id.GND, 0x4)
     dw  Action.action_string_table
     OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.GND, 0x2)
+    dh {MIDI.id.GERUDO_VALLEY}
+    OS.patch_end()
+
 }

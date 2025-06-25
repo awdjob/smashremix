@@ -48,7 +48,7 @@ scope Stamina {
         addiu   at, r0, SinglePlayerModes.REMIX_1P_ID
         bnel    t6, at, _end                // if not Remix, proceed as normal
         addiu   at, r0, 0x000C          // original line 1
-        
+
         lbu     t6, 0x0024(a1)              // load team
         bnezl   t6, _end
         addiu   at, r0, Character.id.GBOWSER          // original line 1 replaced with Giga Bowser, instead of Master Hand
@@ -237,41 +237,42 @@ scope Stamina {
         lw          a1, 0x07F0(s5)              // original line 2
     }
 
+    // replaced by a function that accounts for tornadoes as well
+    // // @ Description
+    // // Set knockback percent for throws regardless of player damage
+    // scope stamina_knockback_throw_: {
+        // OS.patch_start(0xC5AA0, 0x8014B060)
+        // j       stamina_knockback_throw_
+        // nop
+        // _return:
+        // OS.patch_end()
+
+        // li          t1, Global.current_screen   // ~
+        // lbu         t1, 0x0000(t1)              // t0 = current screen
+        // addiu       a0, r0, 0x0016              // screen id
+        // bnel        t1, a0, _end
+        // lw          a0, 0x002C(s1)              // original line 1, loads player percent
+
+        // li          t1, VS_MODE
+        // lbu         t1, 0x0000(t1)              // load mode
+        // addiu       a0, r0, STAMINA_MODE        // stamina mode
+        // bnel        t1, a0, _end
+        // lw          a0, 0x002C(s1)              // original line 1, loads player percent
+
+        // _stamina:
+        // addiu       a0, r0, 0x0014              // knockback as if at 20% always
+
+        // _end:
+        // j           _return
+        // lw          t1, 0x000C(v1)              // original line 2, loads kbs
+
+    // }
+
     // @ Description
-    // Set knockback percent for throws regardless of player damage
+    // Set knockback percent for throws and hyrule's tornado regardless of percent and probably other stage effects
     scope stamina_knockback_throw_: {
-        OS.patch_start(0xC5AA0, 0x8014B060)
-        j       stamina_knockback_throw_
-        nop
-        _return:
-        OS.patch_end()
-
-        li          t1, Global.current_screen   // ~
-        lbu         t1, 0x0000(t1)              // t0 = current screen
-        addiu       a0, r0, 0x0016              // screen id
-        bnel        t1, a0, _end
-        lw          a0, 0x002C(s1)              // original line 1, loads player percent
-
-        li          t1, VS_MODE
-        lbu         t1, 0x0000(t1)              // load mode
-        addiu       a0, r0, STAMINA_MODE        // stamina mode
-        bnel        t1, a0, _end
-        lw          a0, 0x002C(s1)              // original line 1, loads player percent
-
-        _stamina:
-        addiu       a0, r0, 0x0014              // knockback as if at 20% always
-
-        _end:
-        j           _return
-        lw          t1, 0x000C(v1)              // original line 2, loads kbs
-
-    }
-
-    // @ Description
-    // Set knockback percent for tornado regardless of percent and probably other stage effects
-    scope stamina_knockback_tornado_: {
         OS.patch_start(0x65670, 0x800E9E70)
-        j       stamina_knockback_tornado_
+        j       stamina_knockback_throw_
         addiu       at, r0, 0x0016              // screen id
         _return:
         OS.patch_end()
@@ -586,9 +587,9 @@ scope Stamina {
         bne     t8, t7, _cliff
         nop
 
-        addiu   t8, r0, Action.CapturePulled
+        addiu   t8, r0, Action.Grab
 
-        // the checks below check though the "captured actions" to allow them to play out and ignore stamina death
+        // the checks below check though the "captured actions" and grabs to allow them to play out and ignore stamina death
         _captured:
         beq     t8, a1, _end
         addiu   t8, t8, 0x0001
@@ -596,6 +597,37 @@ scope Stamina {
         bne     t8, t7, _captured
         nop
 
+        lw      t7, 0x0008(s1)           // t7 = character ID
+        addiu   t8, r0, Character.id.DK  // DK ID
+        bne     t8, t7, _jdk
+        nop
+
+        _dk_start:
+        addiu   t8, r0, Action.DK.Cargo
+        _dk:
+        beq     t8, a1, _end
+        addiu   t8, t8, 0x0001
+        addiu   t7, r0, Action.DK.HeavyItemThrowF
+        bne     t8, t7, _dk
+        nop
+
+        _jdk:
+        addiu   t8, r0, Character.id.JDK  // DK ID
+        beq     t8, t7, _dk_start
+        nop
+
+        addiu   t8, r0, Character.id.MARINA  // MARINA ID
+        bne     t8, t7, _force_action
+        addiu   t8, r0, Marina.Action.Cargo
+
+        _marina:
+        beq     t8, a1, _end
+        addiu   t8, t8, 0x0001
+        addiu   t7, r0, 0xFC
+        bne     t8, t7, _marina
+        nop
+
+        _force_action:
         // if we reached this point the stamina death actions should be forced
         lw      t8, 0x014C(s1)                  // load kinetic state
         beqzl   t8, _corrections                // if grounded set action to DownBounceD
@@ -607,26 +639,26 @@ scope Stamina {
 
 
         lui     a3, 0x3F80                      // set anim speed to normal
-        
+
         beq     r0, r0, _end
         nop
-        
+
         _remix:
         li      t8, SinglePlayerModes.singleplayer_mode_flag  // at = singleplayer flag address
         lw      t8, 0x0000(t8)              // t8 = 4 if Remix
         addiu   t7, r0, SinglePlayerModes.REMIX_1P_ID
         bne     t8, t7, _end                // if not Remix, proceed as normal
         nop
-        
+
         lbu     t8, 0x0023(s1)              // load player type
         beqz    t8, _end
         nop
-        
+
         lw     t8, 0x0008(s1)              // load character id
         addiu   t7, r0, Character.id.GBOWSER          // original line 1 replaced with Giga Bowser, instead of Master Hand
         bne     t8, t7, _end
         nop
-        
+
         addiu   t8, r0, 0x012C          // load 300 hitpoints amount
         lw      t7, 0x002C(s1)          // load player percent
         slt     t8, t8, t7              // if total hitpoints are less than total percent set t8
@@ -970,7 +1002,7 @@ scope Stamina {
     }
 
     // @ Description
-    // Stamina Mode fix. If not fixed, players respawn indefinetly
+    // Stamina Mode fix. If not fixed, players respawn indefinitely
     scope stamina_fix_6: {
         OS.patch_start(0xB69E4, 0x8013BFA4)
         j           stamina_fix_6
@@ -990,7 +1022,7 @@ scope Stamina {
     }
 
     // @ Description
-    // Stamina Mode fix. If not fixed, players respawn indefinetly when star ko'd
+    // Stamina Mode fix. If not fixed, players respawn indefinitely when star ko'd
     scope stamina_fix_7: {
         OS.patch_start(0xB69F8, 0x8013BFB8)
         j           stamina_fix_7
@@ -1290,6 +1322,17 @@ scope Stamina {
         ori         t5, r0, Action.CaptureWait // problematic action for throws
         beq         a0, t5, _end
 
+        // Roy DSP check
+        addiu       t5, r0, Character.id.ROY    // ROY
+        lw          t6, 0x0008(s0)              // character id
+        bne         t6, t5, _continue           // skip character specific action checks if ROY
+        nop
+        addiu       t5, r0, Roy.Action.DSP_G_Strong_End
+        beq         t5, a0, _end
+        addiu       t5, r0, Roy.Action.DSP_A_Strong_End
+        beq         t5, a0, _end
+
+        _continue:
         ori         t5, r0, Action.FalconDivePulled // begining of problematic actions
         addiu       t6, r0, 0x0009
 
@@ -1453,6 +1496,55 @@ scope Stamina {
 
         _end:
         jr          ra
+        nop
+    }
+
+    // @ Description
+    // this routine prevents stocks from being KO'd twice in stamina, this is chiefly for top blast zone, but would protect in all cases
+    // "If you find yourself alone, riding in green fields with the sun on your face, do not be troubled,  for you are in Elysium, and you're already dead."
+    scope overkill_prevent: {
+        OS.patch_start(0x8F224, 0x80113A24)
+        j           overkill_prevent
+        nop
+        _return:
+        OS.patch_end()
+
+        addiu       sp, sp, -0x0010
+        sw          t0, 0x0004(sp)
+        sw          t1, 0x0008(sp)
+        sw          t2, 0x000C(sp)
+
+        li          t0, VS_MODE
+        lbu         t0, 0x0000(t0)          // load mode
+        addiu       t1, r0, STAMINA_MODE    // stamina mode
+        bnel        t1, t0, _normal         // not stamina mode, so behave normally
+        sw          t7, 0x0000(v1)          // original line 2, subtracts from total stock/team count
+
+        lbu         t0, 0x000D(s0)          // get port
+        li          t1, percent_port        // load address
+        sll         t0, t0, 0x0002          // get offset
+        addu        t1, t0, t1              // get address
+        lw          t0, 0x0000(t1)          // load already dead flag
+        beql        t0, r0, _normal         // the character has yet to be KO'd if the flag is still not set
+        sw          t7, 0x0000(v1)          // original line 2, subtracts from total stock/team count
+
+        // since we've determined the character is already dead, we skip original line 2 and fix t7
+        addiu       t7, t7, 0x0001
+        _normal:
+        lw          t0, 0x0004(sp)
+        lw          t1, 0x0008(sp)
+        lw          t2, 0x000C(sp)
+        addiu       sp, sp, 0x0010
+
+
+        bnez        t7, _0x80113A38     // original line 1 modified
+        nop
+
+        j           0x80113A2C          // original line 1 modified, this is for ending the match
+        nop
+
+        _0x80113A38:
+        j           0x80113A38          // original line 1 modified
         nop
     }
 

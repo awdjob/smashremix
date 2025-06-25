@@ -6,7 +6,7 @@ scope GoemonNSP {
     constant WALK_MULTIPLIER(0x3E80)        // float32 0.25
     constant WALK_TRACTION(0x41F0)          // float32 30
     constant AIR_SPEED(0x41E0)              // float32 28
-    constant CHARGE_TIME(12)
+    constant CHARGE_TIME(18)
     constant SFX_RYO_SHOOT_1(28)
     constant SFX_RYO_SHOOT_2(65)
     constant SFX_RYO_FIRE(27)
@@ -1897,6 +1897,8 @@ scope GoemonDSP {
     constant ATTACK_X_SPEED(0x4280)         // float32 64
     constant END_X_SPEED(0x41C0)            // float32 24
     constant END_Y_SPEED(0x4210)            // float32 36
+    constant MAX_WALL_DISTANCE(0x43C8)      // float32 400
+    constant LANDING_FSM(0x3EE0)            // float32 0.4375
     constant COLLISION_SFX(0x13)            // grab fgm
 
     // @ Description
@@ -2015,7 +2017,6 @@ scope GoemonDSP {
         sw      r0, 0x0184(a0)              // temp variable 3 = 0
         sw      r0, 0x0048(a0)              // x velocity = 0
         sw      r0, 0x004C(a0)              // y velocity = 0
-        swc1    f4, 0x0048(a0)              // store updated x velocity
         FGM.play(COLLISION_SFX)             // play collision sfx
         lw      ra, 0x001C(sp)              // load ra
         addiu   sp, sp, 0x0020              // deallocate stack space
@@ -2076,7 +2077,6 @@ scope GoemonDSP {
         sw      r0, 0x0184(a0)              // temp variable 3 = 0
         sw      r0, 0x0048(a0)              // x velocity = 0
         sw      r0, 0x004C(a0)              // y velocity = 0
-        swc1    f4, 0x0048(a0)              // store updated x velocity
         FGM.play(COLLISION_SFX)             // play collision sfx
         lw      ra, 0x001C(sp)              // load ra
         addiu   sp, sp, 0x0020              // deallocate stack space
@@ -2133,6 +2133,63 @@ scope GoemonDSP {
     }
 
     // @ Description
+    // Initial subroutine for DSPGBreak.
+    scope ground_break_initial_: {
+        addiu   sp, sp,-0x0020              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        lli     a1, Goemon.Action.DSPGBreak // a1(action id) = DSPGBreak
+        lwc1    f2, 0x0180(v1)              // ~
+        cvt.s.w f2, f2                      // ~
+        mfc1    a2, f2                      // a2(starting frame) = temp variable 2
+        lli     t6, 0x0002                  // ~
+        sw      t6, 0x0010(sp)              // argument 4 = 0x0002
+        jal     0x800E6F24                  // change action
+        lui     a3, 0x4000                  // a3(frame speed multiplier) = 2.0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        // FGM.play(COLLISION_SFX)             // play collision sfx
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0020              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
+    // Initial subroutine for DSPABreak.
+    scope air_break_initial_: {
+        addiu   sp, sp,-0x0020              // allocate stack space
+        sw      ra, 0x001C(sp)              // ~
+        sw      a0, 0x0020(sp)              // store a0, ra
+        lw      v1, 0x0084(a0)              // v1 = player struct
+        lli     a1, Goemon.Action.DSPABreak // a1(action id) = DSPABreak
+        lwc1    f2, 0x0180(v1)              // ~
+        cvt.s.w f2, f2                      // ~
+        mfc1    a2, f2                      // a2(starting frame) = temp variable 2
+        lli     t6, 0x0002                  // ~
+        sw      t6, 0x0010(sp)              // argument 4 = 0x0002
+        jal     0x800E6F24                  // change action
+        lui     a3, 0x4000                  // a3(frame speed multiplier) = 2.0
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a0, 0x0020(sp)              // ~
+        lw      a0, 0x0084(a0)              // a0 = player struct
+        lw      t6, 0x09C8(a0)              // t6 = attribute pointer
+        lw      t6, 0x0064(t6)              // t0 = max jumps
+        sb      t6, 0x0148(a0)              // jumps used = max jumps
+        // sw      r0, 0x0048(a0)              // x velocity = 0
+        // sw      r0, 0x004C(a0)              // y velocity = 0
+        // FGM.play(COLLISION_SFX)             // play collision sfx
+        lw      ra, 0x001C(sp)              // load ra
+        addiu   sp, sp, 0x0020              // deallocate stack space
+        jr      ra                          // return
+        nop
+    }
+
+    // @ Description
     // Initial subroutine for DSPEnd.
     scope end_initial_: {
         addiu   sp, sp,-0x0028              // allocate stack space
@@ -2161,6 +2218,8 @@ scope GoemonDSP {
         lui     at, END_Y_SPEED             // ~
         sw      at, 0x004C(a0)              // y velocity = END_Y_SPEED
         swc1    f2, 0x0048(a0)              // x velocity = END_X_SPEED * DIRECTION
+        lli     at, 1                       // ~
+        sw      at, 0x0180(a0)              // temp variable 2 = 10
         lw      ra, 0x0014(sp)              // load ra
         jr      ra                          // return
         addiu   sp, sp, 0x0028              // deallocate stack space
@@ -2258,6 +2317,36 @@ scope GoemonDSP {
         nop
     }
 
+    // // @ Description
+    // // Main function for DSPABreak
+    // scope air_break_main_: {
+        // addiu   sp, sp,-0x0030              // allocate stack space
+        // sw      ra, 0x0024(sp)              // store ra
+
+        // // checks the current animation frame to see if we've reached end of the animation
+        // mtc1    r0, f6                      // ~
+        // lwc1    f8, 0x0078(a0)              // ~
+        // c.le.s  f8, f6                      // ~
+        // nop
+        // bc1fl   _end                        // skip if animation end has not been reached
+        // nop
+
+        // // begin a special fall if the end of the animation has been reached
+        // lui     a1, 0x3F70                  // a1 (air speed multiplier) = 0.9375
+        // or      a2, r0, r0                  // a2 (unknown) = 0
+        // lli     a3, 0x0001                  // a3 (unknown) = 1
+        // sw      r0, 0x0010(sp)              // unknown argument = 0
+        // sw      r0, 0x0018(sp)              // interrupt flag = FALSE
+        // lui     t6, LANDING_FSM             // t6 = LANDING_FSM
+        // jal     0x801438F0                  // begin special fall
+        // sw      t6, 0x0014(sp)              // store LANDING_FSM
+
+        // _end:
+        // lw      ra, 0x0024(sp)              // load ra
+        // jr      ra                          // return
+        // addiu   sp, sp, 0x0030              // deallocate stack space
+    // }
+
     // @ Description
     // Collision subroutine for DSPGround.
     scope ground_collision_: {
@@ -2275,7 +2364,17 @@ scope GoemonDSP {
         beqz    v0, _check_collision        // branch if no collision detected
         lw      a0, 0x0018(sp)              // a0 = player object
 
+        lli     at, 0x0003                  // ~
+        bne     v0, at, _check_wall_collision // branch if not wall break
         lw      v1, 0x0084(a0)              // v1 = player struct
+
+        // if we're here then the chaain is colliding with a wall in an invalid position, so transition to DSPGBreak
+        jal     ground_break_initial_       // transition to DSPGBreak
+        lw      a0, 0x0018(sp)              // a0 = player object
+        b       _end                        // branch to end
+        nop
+
+        _check_wall_collision:
         lw      at, 0x0044(v1)              // at = DIRECTION
         bgezl   at, _wall_chain_collision   // branch if direction = right
         andi    v0, v0, 0x0001              // a1 = collision result & left wall mask
@@ -2320,7 +2419,17 @@ scope GoemonDSP {
         beqz    v0, _check_collision        // branch if no collision detected
         lw      a0, 0x0018(sp)              // a0 = player object
 
+        lli     at, 0x0003                  // ~
+        bne     v0, at, _check_wall_collision // branch if not wall break
         lw      v1, 0x0084(a0)              // v1 = player struct
+
+        // if we're here then the chaain is colliding with a wall in an invalid position, so transition to DSPABreak
+        jal     air_break_initial_          // transition to DSPABreak
+        lw      a0, 0x0018(sp)              // a0 = player object
+        b       _end                        // branch to end
+        nop
+
+        _check_wall_collision:
         lw      at, 0x0044(v1)              // at = DIRECTION
         bgezl   at, _wall_chain_collision   // branch if direction = right
         andi    v0, v0, 0x0001              // a1 = collision result & left wall mask
@@ -2359,7 +2468,7 @@ scope GoemonDSP {
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      a1, 0x0084(a0)              // ~
         lw      a1, 0x0024(a1)              // ~
-        addiu   a1, a1, 0x0004              // a1 = equivalent air action for current ground action (id + 4)
+        addiu   a1, a1, 0x0005              // a1 = equivalent air action for current ground action (id + 4)
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lli     t6, 0x0003                  // ~
         sw      t6, 0x0010(sp)              // argument 4 = 0x0003
@@ -2386,7 +2495,7 @@ scope GoemonDSP {
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      a1, 0x0084(a0)              // ~
         lw      a1, 0x0024(a1)              // ~
-        addiu   a1, a1,-0x0004              // a1 = equivalent air action for current ground action (id - 4)
+        addiu   a1, a1,-0x0005              // a1 = equivalent air action for current ground action (id - 4)
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lli     t6, 0x0003                  // ~
         sw      t6, 0x0010(sp)              // argument 4 = 0x0003
@@ -2441,7 +2550,7 @@ scope GoemonDSP {
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      a1, 0x0084(a0)              // ~
         lw      a1, 0x0024(a1)              // ~
-        addiu   a1, a1, 0x0004              // a1 = equivalent air action for current ground action (id + 4)
+        addiu   a1, a1, 0x0005              // a1 = equivalent air action for current ground action (id + 5)
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lli     t6, 0x0003                  // ~
         sw      t6, 0x0010(sp)              // argument 4 = 0x0003
@@ -2464,7 +2573,7 @@ scope GoemonDSP {
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      a1, 0x0084(a0)              // ~
         lw      a1, 0x0024(a1)              // ~
-        addiu   a1, a1,-0x0004              // a1 = equivalent air action for current ground action (id - 4)
+        addiu   a1, a1,-0x0005              // a1 = equivalent air action for current ground action (id - 5)
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lli     t6, 0x0003                  // ~
         sw      t6, 0x0010(sp)              // argument 4 = 0x0003
@@ -2477,11 +2586,25 @@ scope GoemonDSP {
     }
 
     // @ Description
+    // Collision subroutine for Goemons's down special ending.
+    // Copy of subroutine 0x80156358, which is the collision subroutine for Mario's up special.
+    // Loads the appropriate landing fsm value for Goemon.
+    scope end_collision_: {
+        // Copy the first 30 lines of subroutine 0x80156358
+        OS.copy_segment(0xD0D98, 0x78)
+        // Replace original line which loads the landing fsm
+        //lui     a2, 0x3E8F                // original line 1
+        lui     a2, LANDING_FSM             // a2 = LANDING_FSM
+        // Copy the last 17 lines of subroutine 0x80156358
+        OS.copy_segment(0xD0E14, 0x44)
+    }
+
+    // @ Description
     // Sets up an ECB for the chain pipe and detects collisions.
     // @ Arguments
     // a0 - player object
     // @ Returns
-    // v0 - 0 for no collision, 1 for left wall collision, 2 for right wall collision
+    // v0 - 0 for no collision, 1 for left wall collision, 2 for right wall collision, 3 for wall break
     scope chain_collision_: {
         addiu   sp, sp,-0x0110              // allocate stack space
         sw      ra, 0x0014(sp)              // store ra
@@ -2516,8 +2639,8 @@ scope GoemonDSP {
         lui     at, 0x40A0                  // ~
         sw      at, 0x003C(t1)              // chain ecb middle y = 5
         sw      r0, 0x0040(t1)              // chain ecb lower y = 0
-        lui     at, 0x4320                  // ~
-        sw      at, 0x0044(t1)              // chain ecb width = 160
+        lui     at, 0x4220                  // ~
+        sw      at, 0x0044(t1)              // chain ecb width = 40
         addiu   at, t1, 0x0038              // ~
         sw      at, 0x0048(t1)              // store ecb pointer
 
@@ -2539,57 +2662,101 @@ scope GoemonDSP {
     // a1 - player object
     // a2 - unknown(0)
     // @ Returns
-    // v0 - 0 for no collision, 1 for left wall collision, 2 for right wall collision, 3 for floor collision, 4 for ceiling
+    // v0 - 0 for no collision, 1 for left wall collision, 2 for right wall collision, 3 for wall braek
     scope chain_detect_collision_: {
         addiu   sp, sp,-0x0058              // allocate stack space
         sw      ra, 0x001C(sp)              // ~
         sw      s1, 0x0018(sp)              // ~
         sw      s0, 0x0014(sp)              // store ra, s0, s1
         sw      a1, 0x003C(sp)              // 0x003C(sp) = player object
-        sw      a2, 0x0040(sp)              // 0x0040(sp) = unknown
-        lw      s0, 0x0084(a1)              // s0 = player struct
+        or      s0, r0, r0                  // s0 = bool wall_break = FALSE
         or      s1, a0, r0                  // s1 = ecb info
-        lw      t0, 0x0044(s0)              // t0 = player direction
-        addiu   at, r0, 1                   // at = 1
-        bne     at, t0, _check_right_wall   // check right wall collision if facing left
-        nop
+        lw      at, 0x0000(s1)              // ~
+        lw      at, 0x0000(at)              // at = ecb_x_initial
+        sw      at, 0x0040(sp)              // 0x0040(sp) = ecb_x_initial
 
         _check_left_wall:
         jal     0x800DB838                  // detect left wall collision
         sw      r0, 0x0024(sp)              // 0x0024(sp) = 0
-        bnez    v0, _end                    // branch if left collision = true
+        beqz    v0, _check_right_wall       // skip if left collision = false
+        or      v0, r0, r0                  // v0 = 0 (no collision)
+
+        // if a left wall collision was detected
+        jal	    0x800DBF58                  // process left collision
+        or      a0, s1, r0                  // a0 = ecb info
+        lw      a0, 0x0000(s1)              // a0 = ecb x/y/z
+        jal     check_wall_distance_        // check_wall_distance_
+        lw      a1, 0x00040(sp)             // a1 = ecb_x_initial
+        or      s0, v0, r0                  // s0 = bool wall_break
+        beqz    s0, _end                    // end if wall_break = FALSE
         lli     v0, 0x0001                  // v0 = 0x1 (left collision)
-        b       _check_floor
-        nop
 
         _check_right_wall:
         jal     0x800DC3C8                  // detect right wall collision
         or      a0, s1, r0                  // a0 = ecb info
-        bnez    v0, _end                    // branch if right wall collision = true
+        beqz    v0, _end                    // skip if right collision = false
+        or      v0, r0, r0                  // v0 = 0 (no collision)
+
+        // if a right wall collision was detected
+        jal     0x800DCAE8                  // process right collision, this seems safe to do but it's only used to retrieve last_wall_x
+        or      a0, s1, r0                  // a0 = ecb info
+        lw      a0, 0x0000(s1)              // a0 = ecb x/y/z
+        jal     check_wall_distance_        // check_wall_distance_
+        lw      a1, 0x00040(sp)             // a1 = ecb_x_initial
+        or      s0, v0, r0                  // s0 = bool wall_break
         lli     v0, 0x0002                  // v0 = 0x2 (right collision)
 
-        _check_floor:
-        //jal     0x800DD578                  // detect floor collision
-        //or      a0, s1, r0                  // a0 = ecb info
+        // _check_floor:
+        // jal     0x800DD578                  // detect floor collision
+        // or      a0, s1, r0                  // a0 = ecb info
 
-        //bnez    v0, _end                    // branch if floor collision = true
-        //lli     v0, 0x0003                  // v0 = 0x3 (floor collision)
+        // bnez    v0, _end                    // branch if floor collision = true
+        // lli     v0, 0x0003                  // v0 = 0x3 (floor collision)
 
-        jal     0x800DCF58
-        or      a0, s1, r0                  // a0 = ecb info
+        // _check_ceiling:
+        // jal     0x800DCF58
+        // or      a0, s1, r0                  // a0 = ecb info
 
-        bnez    v0, _end                    // branch if ceiling collision = true
-        lli     v0, 0x0004                  // v0 = 0x4 (ceiling collision)
+        // bnez    v0, _end                    // branch if ceiling collision = true
+        // lli     v0, 0x0004                  // v0 = 0x4 (ceiling collision)
 
-        or      v0, r0, r0                  // if no wall collision detected, v0 = 0 (no collision)
+        // or      v0, r0, r0                  // if no collision detected, v0 = 0 (no collision)
 
         _end:
+        bnezl   s0, pc() + 8                // if wall_break = TRUE...
+        lli     v0, 0x0003                  // v0 = 0x3 (wall break)
         lw      ra, 0x001C(sp)              // ~
         lw      s1, 0x0018(sp)              // ~
         lw      s0, 0x0014(sp)              // load ra, s0, s1
 
         jr      ra                          // return
         addiu   sp, sp, 0x0058              // deallocate stack space
+    }
+
+    // @ Description
+    // Checks if the chain pipe is within valid range for grabbing a wall.
+    // @ Arguments
+    // a0 - ECB x/y/z
+    // a1 - ecb_x_initial
+    // @ Returns
+    // v0 - bool wall_break
+    scope check_wall_distance_: {
+        lwc1    f2, 0x0000(a0)              // f2 = ecb_x
+        mtc1    a1, f4                      // f4 = ecb_x_initial
+        sub.s   f4, f4, f2                  // f4 = ecb_x_initial - ecb_x
+        abs.s   f4, f4                      // f4 = WALL_DISTANCE (|ecb_x_initial - ecb_x|)
+        lui     at, MAX_WALL_DISTANCE       // ~
+        mtc1    at, f2                      // f2 = MAX_WALL_DISTANCE
+        c.le.s  f4, f2                      // ~
+        nop
+        bc1fl   _end                        // if MAX_WALL_DISTANCE < WALL_DISTANCE...
+        lli     v0, OS.TRUE                 // ...wall_break = TRUE
+
+        lli     v0, OS.FALSE                // if we're here, wall_break = FALSE
+
+        _end:
+        jr      ra
+        sw      a1, 0x0000(a0)              // ecb_x = ecb_x_initial
     }
 
     // @ Description

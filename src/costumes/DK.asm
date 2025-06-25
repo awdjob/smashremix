@@ -11,17 +11,6 @@ scope dk_costumes {
     // Number of original costumes
     constant NUM_COSTUMES(5)
 
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
-
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
     db NUM_EXTRA_COSTUMES       // 0x0 - number of extra costumes
@@ -99,7 +88,7 @@ scope dk_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(0, DK/cos_5_stock_icon.bin)
     }
-    
+
     // Costume 0x6
     scope costume_6 {
         palette_1:; insert "DK/cos_6.bin"
@@ -136,7 +125,7 @@ scope dk_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(1, DK/cos_6_stock_icon.bin)
     }
- 
+
     // Costume 0x7
     scope costume_7 {
       palette_1:; insert "DK/cos_7.bin"
@@ -170,7 +159,7 @@ scope dk_costumes {
       Costumes.set_palette_for_part(2, 16, 0, palette_1)
       Costumes.set_palette_for_part(2, 18, 0, palette_2)
       Costumes.set_palette_for_part(2, 18, 1, palette_2)
-  
+
       Costumes.set_stock_icon_palette_for_costume(2, DK/cos_7_stock_icon.bin)
     }
 }

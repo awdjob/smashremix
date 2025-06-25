@@ -11,17 +11,6 @@ scope polygon_dk_costumes {
     // Number of original costumes
     constant NUM_COSTUMES(6)
 
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
-
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
     db NUM_EXTRA_COSTUMES       // 0x0 - number of extra costumes

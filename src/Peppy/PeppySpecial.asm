@@ -542,8 +542,8 @@ scope PeppyNSP {
 
         _shoot:
         lw      v0, 0xAE0(a1)       // load charge amount
-        beqzl   v0, _branch         // branch if no ammo loaded
-        sw      a1, 0x001C(sp)
+        //beqzl   v0, _branch         // branch if no ammo loaded
+        //sw      a1, 0x001C(sp)
         jal     ground_shoot_initial_       // ground_shoot_initial_
         or      a0, a2, r0                  // original line
         beq     r0, r0, _end
@@ -597,8 +597,8 @@ scope PeppyNSP {
         lw      a1, 0x0084(a0)              // a1 = player struct
 
         // skip shoot check if no ammo loaded
-        lw      v0, 0xAE0(a1)               // load charge amount
-        beqzl   v0, _check_cancel           // branch if no ammo loaded
+        //lw      v0, 0xAE0(a1)               // load charge amount
+        //beqzl   v0, _check_cancel           // branch if no ammo loaded
         sw      a1, 0x001C(sp)
         // begin by checking for A or B presses
         lhu     v0, 0x01BE(a1)              // v0 = buttons_pressed
@@ -1236,7 +1236,7 @@ scope PeppyNSP {
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
-        sw      r0, 0x00010(sp)             // argument 4 = 0
+        sw      r0, 0x0010(sp)              // argument 4 = 0
         lw      ra, 0x001C(sp)              // load ra
         jr      ra                          // return
         addiu   sp, sp, 0x0038              // deallocate stack space

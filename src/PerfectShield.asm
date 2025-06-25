@@ -1,4 +1,7 @@
-
+// @ Description
+// Adds the Perfect Shield Melee mechanic.
+// Perfect shielding reduces shield stun and possible to reflect projectiles
+// By halofactory
 scope PerfectShield {
 
     constant REFLECT_MULTIPLIER(0x3F00) // 0.5

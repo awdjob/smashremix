@@ -115,6 +115,13 @@ scope SwordTrail {
     add_sword_trail(falco_trail, Character.id.FALCO, 0x0, AXIS_Y, 0x00FFFF00, 0x00FFFF00, -150, 250)
     add_sword_trail(falco_trail2, Character.id.FALCO, 0x1, AXIS_Y, 0x00FFFF00, 0x00FFFF00, -150, 250)
     add_sword_trail(kirby_falco_trail, Character.id.KIRBY, 0x0, AXIS_Y, 0x00FFFF00, 0x00FFFF00, -140, 240)
+    add_sword_trail(roy_default_trail, Character.id.ROY, 0xE, AXIS_Z, 0xFF440000, 0xFFFFFF00, 70, 370)
+    add_sword_trail(roy_nsp_red_trail, Character.id.ROY, 0xE, AXIS_Z, 0xFF000000, 0xFFFFFF00, 70, 370)
+    add_sword_trail(roy_nsp_blue_trail, Character.id.ROY, 0xE, AXIS_Z, 0x0050FF00, 0xFFFFFF00, 70, 370)
+    add_sword_trail(roy_nsp_green_trail, Character.id.ROY, 0xE, AXIS_Z, 0x00FF0000, 0xFFFFFF00, 70, 370)
+    add_sword_trail(roy_dsp_trail, Character.id.ROY, 0xE, AXIS_Z, 0xFF000000, 0xE06C0000, 50, 380)
+    add_sword_trail(dsamus_trail, Character.id.DSAMUS, 0x0, AXIS_Y, 0x40C0FF00, 0x80E0FF00, 0, 180)
+
     // write sword trails to ROM
     write_sword_trails()
 

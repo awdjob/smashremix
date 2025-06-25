@@ -322,28 +322,53 @@ scope Hazards {
         hazard_toggle(0x80109E84)
 
         _nba_jam:
+        li      a1, 0x44DDE000              // a1 = barrel y in vs (mid-way up)
+        li      t0, VsRemixMenu.vs_mode_flag
+        lw      t0, 0x0000(t0)              // t0 = vs_mode_flag
+        lli     t1, VsRemixMenu.mode.SMASHKETBALL
+        bne     t0, t1, _check_toggle       // if not SMASHKETBALL, need to check toggle
+        nop
+
+        lui     a1, 0x4538                  // a1 = barrel y in smashketball (near top)
+
+        // Move baskets down up in smashketball
+        OS.read_word(0x80046818, t0)        // t0 = geo with nets
+        lw      t0, 0x0074(t0)              // t0 = top joint
+        lw      t0, 0x0010(t0)              // t0 = court
+        lw      t0, 0x0008(t0)              // t0 = ceiling
+        lw      t0, 0x0008(t0)              // t0 = baskets
+        li      t1, 0x44A6E4C4              // t1 = baskets y in smashketball (about midway up) (1335.15)
+        sw      t1, 0x0020(t0)              // set baskets y
+        lli     t1, 0x0001                  // t1 = trigger redraw one time
+        sb      t1, 0x008D(t0)              // ensure y change is respected
+        sw      t1, 0x0084(t0)              // ensure clipping moves as well
+        li      t1, Smashketball.baskets
+        b       _add_barrels                // always add barrels
+        sw      t0, 0x0000(t1)              // save reference to baskets joint
+
+        _check_toggle:
         li      t0, Toggles.entry_hazard_mode
         lw      t0, 0x0004(t0)              // t0 = hazard_mode (hazards disabled when t0 = 1 or 3)
         andi    t0, t0, 0x0001              // t0 = 1 if hazard_mode is 1 or 3, 0 otherwise
         bnez    t0, _end                    // if hazard_mode enabled, skip adding barrels
         nop
 
+        _add_barrels:
         // Add 2 barrels - one on the left, one on the right - both pointing down
         addiu   sp, sp,-0x0010              // allocate stack space
         sw      ra, 0x0004(sp)              // save registers
+        sw      a1, 0x0008(sp)              // ~
 
         li      a0, 0xC5772000              // left of main plat
-        li      a1, 0x44DDE000              // slightly below 0
         li      a2, 0x41AFF000              // pointed down
-        lli     a3, 0x0000                  // no animation
         jal     add_barrel_
-        nop
+        lli     a3, 0x0000                  // no animation
+
         li      a0, 0x45772000              // right of main plat
-        li      a1, 0x44DDE000              // slightly below 0
+        lw      a1, 0x0008(sp)              // a1 = y
         li      a2, 0x41AFF000              // pointed down
-        lli     a3, 0x0000                  // no animation
         jal     add_barrel_
-        nop
+        lli     a3, 0x0000                  // no animation
 
         lw      ra, 0x0004(sp)              // restore registers
         addiu   sp, sp, 0x0010              // deallocate stack space
@@ -524,6 +549,9 @@ scope Hazards {
         beq     v1, t0, _pc_clone           // if stage Peach's Castle Dreamland, load the bumper if hazards not off
         nop
         lli     t0, Stages.id.PCASTLE_BETA  // t0 = Stages.id.PCASTLE_O
+        beq     v1, t0, _pc_clone           // if stage Peach's Castle Dreamland, load the bumper if hazards not off
+        nop
+        lli     t0, Stages.id.LMAO_CASTLE   // t0 = Stages.id.LMAO_CASTLE
         beq     v1, t0, _pc_clone           // if stage Peach's Castle Dreamland, load the bumper if hazards not off
         nop
 
@@ -1083,6 +1111,9 @@ scope Hazards {
         constant KOFFING(0x002A)
         constant CLEFAIRY(0x002B)
         constant MEW(0x002C)
+        // new pokemon
+        constant SHELLDER(0x0011)
+        constant STARYU(0x0006)
     }
 
     // @ Description
@@ -1242,8 +1273,10 @@ scope Hazards {
         beq     t3, t0, _classic_bumper     // check for Peach's Castle O
         addiu   t0, r0, Stages.id.PCASTLE_BETA
         beq     t3, t0, _classic_bumper     // check for Peach's Castle Beta
+        addiu   t0, r0, Stages.id.LMAO_CASTLE
+        beq     t3, t0, _classic_bumper     // check for Peach's Castle Beta
         addiu   t0, r0, Stages.id.CASINO
-        beq     t3, t0, _casino     // check for Peach's Castle Beta
+        beq     t3, t0, _casino     // check for Casino Night Zone
         nop
 
 
@@ -1794,6 +1827,10 @@ scope Hazards {
         lw      t6, 0x0000(t0)              // load item id
 
         lli     t8, Stages.id.BTP_MTWO      // t0 = Stages.id.BTP_MTWO
+        beql    t6, t8, _rolling_bombs      // if Marina's Break the Targets, branch
+        lw      t6, 0x0000(t0)              // load item id
+
+        lli     t8, Stages.id.BTP_CRASH     // t0 = Stages.id.BTP_CRASH
         bne     t6, t8, _klaptrap_check     // if current stage is not Mewtwo's Board the Platforms, then do klaptrap check
         lw      t6, 0x0000(t0)              // load item id
 
@@ -1801,7 +1838,6 @@ scope Hazards {
         lli     t8, stage.RTTF_BOMB         // load RTTF Bomb ID
         bne     t6, t8, _klaptrap_check     // if not RTTF Bomb, branch to klaptrap check
         nop
-
 
         li      t6, 0x8013141C              // load location of RTTF Ram address when in Mewtwo BTP
         j       _return
@@ -1836,12 +1872,14 @@ scope Hazards {
         sw      ra, 0x0014(sp)
         sw      a0, 0x0000(sp)
 
-        addiu   t1, r0, 0x0003            // establishes counter for loop
+
         // player structs loaded in
-        li      v1, Global.p_struct_head  // v1= pointer to player struct linked list
+        OS.read_word(0x800466FC, t1)      // t1 = first player obj
+        lw      v1, 0x0084(t1)            // v1 = p1 ptr
+        lw      t1, 0x0004(v1)            // t1 = first player obj
         _loop:
-        lw      v1, 0x0000(v1)            // v1 = 1p player struct address
         beqz    v1, _player_loop          // if player is not initialized skips
+        nop
         lw      t5, 0x0004(v1)            // load player object pointer
         beqz    t5, _player_loop          // check to see if player is loaded by checking to see if there's a pointer to the player object
         nop
@@ -1901,7 +1939,9 @@ scope Hazards {
         li      at, Toggles.entry_hazard_mode
         lw      at, 0x0004(at)
         bne     at, r0, _player_loop
-
+        lw      at, 0x0024(v1)            // at = current action
+        sltiu   at, at, Action.Idle       // at = 0 if a valid action
+        bnez    at, _player_loop          // skip if not in a valid action
         lui     at, 0x42b4                // water speed (90)
         mtc1    at, f4                    // water speed put into floating point
 
@@ -1920,14 +1960,18 @@ scope Hazards {
         // swc1    f0, 0x00a4(v1)            // new location data saved, this is what Dreamland does but a function wipes this area out and our routine doesn't time it right
 
         _player_loop:
-        bnel    t1, r0, _loop
-        addiu   t1, t1, -0x0001
+        lw      t1, 0x0004(t1)              // t1 = next player obj
+        beqz    t1, _end
+        nop
+        lw      v1, 0x0084(t1)              // v1 = player struct address
+        bnez    v1, _loop                   // do loop again
+        nop
 
+        _end:
         lw      ra, 0x0014(sp)
         lw      a0, 0x0000(sp)
-        addiu   sp, sp, 0x0020
         jr      ra
-        nop
+        addiu   sp, sp, 0x0020
     }
 
     under_water_table:
@@ -2286,15 +2330,15 @@ scope Hazards {
         li      t1, 0x8013139C          // load address of currently playing song
         lw      t2, 0x0000(t1)          // load currently playing song
         addiu   t3, r0, 0x002D
-        beq     t2, t3, _end
+        beq     t2, t3, _end            // skip if hammer
+        sw      a1, 0x0004(t1)          // save song to stage song (it will play after star or hammer ends)
         addiu   t3, r0, 0x002E
-        beq     t2, t3, _end
+        beq     t2, t3, _end            // skip if star
         nop
 
         addiu   a0, r0, r0              // needs to be 0 for some reason
-        sw      a1, 0x0000(t1)          // save song to stage song (it will play after star or
         jal     BGM.play_               // play music
-        sw      a1, 0x0004(t1)          // save song to stage song (it will play after star or hammer ends)
+        sw      a1, 0x0000(t1)          // save song to current song
 
         _end:
         lw      ra, 0x0014(sp)          // load ra
@@ -2308,11 +2352,11 @@ scope Hazards {
 
 
     // @ Description
-    // Adds rolling bombs to mewtwos board the platforms
-    scope mtwo_btp_setup: {
+    // Adds rolling bombs or barrels to board the platforms
+    scope btp_bomb_or_barrel_setup: {
         OS.patch_start(0x11228C, 0x8018DB4C)
-        jal     mtwo_btp_setup
-        lli     v1, Stages.id.BTP_BANJO     // t0 = Stages.id.BTP_MTWO
+        jal     btp_bomb_or_barrel_setup
+        lli     v1, Stages.id.BTP_BANJO     // v1 = Stages.id.BTP_MTWO
         return:
         OS.patch_end()
 
@@ -2320,11 +2364,16 @@ scope Hazards {
         lw      a1, 0x0000(a1)              // a1 = match info
         lbu     a1, 0x0001(a1)              // a1 = current stage ID
         beq     a1, v1, _banjo              // if current stage is Banjo's Board the Platforms, then do barrels
-        nop
-        lli     v1, Stages.id.BTP_MTWO      // t0 = Stages.id.BTP_MTWO
-        bne     a1, v1, _normal             // if current stage is not Mewtwo's Board the Platforms, then do normal functions
+        lli     v1, Stages.id.BTP_MTWO      // v1 = Stages.id.BTP_MTWO
+        beql    a1, v1, _add_bomb_spawner   // if Mewtwo's BTP, add bomb spawner
+        lli     t0, 0x0000                  // t0 = offset in bomb_spawn_coordinates for Mewtwo
+        lli     v1, Stages.id.BTP_CRASH     // v1 = Stages.id.BTP_CRASH
+        beql    a1, v1, _add_bomb_spawner   // if Crash's BTP, add bomb spawner
+        lli     t0, 0x0008                  // t0 = offset in bomb_spawn_coordinates for Crash
+        b       _normal                     // if current stage is not Mewtwo's or Crash's Board the Platforms, then do normal functions
         nop
 
+        _add_bomb_spawner:
         addiu   sp, sp, -0x0020
         sw      ra, 0x0014(sp)
         sw      t6, 0x0004(sp)
@@ -2332,29 +2381,38 @@ scope Hazards {
         // it establishes stage free space to work with bombs
         // needed to be moved to accomodate targets
         lui     v0, 0x8013
-        lw      v0, 0x1300(v0)             // load hardcoded stage pointer
+        lw      v0, 0x1300(v0)              // load hardcoded stage pointer
+        lui     v1, 0x8013
+        addiu   v1, v1, 0x13F0              // load to stage free space
+
+        li      t7, bomb_spawn_coordinates
+        addu    t7, t7, t0                  // t7 = bomb spawn coords
+
+        lw      t0, 0x0000(t7)              // t0 = floating point for bomb spawn point X
+        sw      t0, 0x0030(v1)              // save X address
+        lw      t0, 0x0004(t7)              // floating point for bomb spawn point Y (4200)
+        sw      t0, 0x0034(v1)              // save Y address
+
         lui     t7, 0x0000
         lui     t9, 0x0000
         lw      t6, 0x0080(v0)
-        lui     v1, 0x8013
         addiu   t7, t7, 0x0000
         addiu   t9, t9, 0x0000
-        addiu   v1, v1, 0x13F0              // load to stage free space
         subu    t0, v0, t9
         subu    t8, t6, t7
         sw      t8, 0x0028(v1)              // save RTF bomb relevant pointer
         sw      t0, 0x002C(v1)              // save RTF bomb relevant pointer
-        li      t0, 0x45960000              // floating point for bomb spawn point X (4800)
-        sw      t0, 0x0030(v1)              // save X address
-        li      t0, 0x45834000              // floating point for bomb spawn point Y (4200)
-        sw      t0, 0x0034(v1)              // save Y address
-        jal     0x8010B660                  // setups up bomb spawning object
+        jal     0x8010B660                  // sets up bomb spawning object
         sw      r0, 0x0038(v1)              // save Z address in the interest of caution
         lw      t6, 0x0004(sp)
         lw      ra, 0x0014(sp)
         addiu   sp, sp, 0x0020
         beq     r0, r0, _normal
         nop
+
+        bomb_spawn_coordinates:
+        dw 0x45960000, 0x45834000           // MTWO  (4800, 4200)
+        dw 0x4544E000, 0x45FD2000           // CRASH (3150, 8100)
 
         _banjo:
         addiu   sp, sp, -0x0030
@@ -2584,6 +2642,9 @@ scope Hazards {
         lbu     a1, 0x0001(a1)              // a1 = current stage ID
 
         beq     a0, a1, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
+        lli     a0, Stages.id.BTP_CRASH     // t0 = Stages.id.BTP_CRASH
+
+        beq     a0, a1, _special            // if current stage is Crash's Board the Platforms, then do special functions
         lli     a0, Stages.id.BTT_MARINA    // t0 = Stages.id.BTT_MARINA
 
         bnel    a1, a0, _normal             // if current stage is not Marina's Break the Targets, then do not do special functions
@@ -2612,9 +2673,10 @@ scope Hazards {
         lw      t7, 0x0000(t7)              // t7 = match info
         lbu     t7, 0x0001(t7)              // t7 = current stage ID
 
-        beql    t7, at, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
-        lui     at, 0xC1C0                  // original line 1
+        beq     t7, at, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
+        lli     at, Stages.id.BTP_CRASH     // t0 = Stages.id.BTP_CRASH
 
+        beq     t7, at, _special            // if current stage is Crash's Board the Platforms, then do special functions
         lli     at, Stages.id.BTT_MARINA    // t0 = Stages.id.BTT_MARINA
 
         bne     t7, at, _normal             // if current stage is not Marina's Break the Targets, then do normal functions
@@ -2623,7 +2685,7 @@ scope Hazards {
         _special:
         li      t7, 0x8013141C              // load in new address for pointer
         j       return
-        nop
+        lui     at, 0xC1C0                  // original line 1
 
         // targets use same spots as bombs for ram address, maybe modify code to use other address, it needs 0x0, 0x4, and 0x14
 
@@ -2645,21 +2707,24 @@ scope Hazards {
         lw      t9, 0x0000(t9)              // t7 = match info
         lbu     t9, 0x0001(t9)              // t7 = current stage ID
 
-        beql    t9, t8, _normal             // if current stage is Mewtwo's Board the Platforms, then do special functions
-        lui     t9, 0x0000                  // original line 2
+        beq     t9, t8, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
+        lli     t8, Stages.id.BTP_CRASH     // t0 = Stages.id.BTP_CRASH
 
+        beq     t9, t8, _special            // if current stage is Crash's Board the Platforms, then do special functions
         lli     t8, Stages.id.BTT_MARINA    // t0 = Stages.id.BTT_MARINA
+
         bne     t9, t8, _normal             // if current stage is not Marina's Break the Targets, then do normal functions
         lui     t9, 0x0000                  // original line 2
 
         _special:
         li      t7, 0x8013141C              // load in new address for pointer
         j       return
-        nop
+        lui     t9, 0x0000                  // original line 2
 
         // targets use same spots as bombs for ram address, maybe modify code to use other address, it needs 0x0, 0x4, and 0x14
 
         _normal:
+        lui     t9, 0x0000                  // original line 2
         j       return
         lw      t7, 0xB5A4(t7)              // original line 1
     }
@@ -2677,10 +2742,10 @@ scope Hazards {
         lw      t1, 0x0000(t1)              // t7 = match info
         lbu     t1, 0x0001(t1)              // t7 = current stage ID
 
-        beql    t1, a1, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
-        lui     t1, 0x0000                  // original line 2
+        beq     t1, a1, _special            // if current stage is Mewtwo's Board the Platforms, then do special functions
+        lli     a1, Stages.id.BTP_CRASH     // t0 = Stages.id.BTP_CRASH
 
-
+        beq     t1, a1, _special            // if current stage is Crash's Board the Platforms, then do special functions
         lli     a1, Stages.id.BTT_MARINA    // t0 = Stages.id.BTT_MARINA
 
         bne     t1, a1, _normal             // if current stage is not Marina's Break the Targets, then do normal functions
@@ -2689,7 +2754,7 @@ scope Hazards {
         _special:
         li      t9, 0x8013141C              // load in new address for pointer
         j       return
-        nop
+        lui     t1, 0x0000                  // original line 2
 
         // targets use same spots as bombs for ram address, maybe modify code to use other address, it needs 0x0, 0x4, and 0x14
 
@@ -6164,13 +6229,12 @@ scope Hazards {
         _return:
         OS.patch_end()
 
-        jal     0x800269C0                  // original line 1
-        addiu   s2, r0, 0x0006              // original line 2
-
-        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         li      t6, Global.match_info
         lw      t6, 0x0000(t6)              // t6 = match info
         lbu     t6, 0x0001(t6)              // t6 = current stage ID
+        addiu   v0, r0, Stages.id.BLUE
+        beq     v0, t6, _fzerox
+        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         beq     v0, t6, _mk64
         addiu   v0, r0, Stages.id.RAINBOWROAD
         bne     v0, t6, _end
@@ -6178,12 +6242,23 @@ scope Hazards {
 
         _mk64:
         jal     0x800269C0                  // original line 1
-        addiu   a0, r0, 0x0405              // original line 2
-
-
-        _end:
+        addiu   s2, r0, 0x0006              // original line 2
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x0405              // MK64 Noise
         j       _return
         nop
+
+        _end:
+        jal     0x800269C0                  // original line 1
+        addiu   s2, r0, 0x0006              // original line 2
+        j       _return
+        nop
+
+        _fzerox:
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x05CB              // F-Zero Noise
+        j       _return
+        addiu   s2, r0, 0x0006              // original line 2
     }
 
     // @ Description
@@ -6195,16 +6270,15 @@ scope Hazards {
         _return:
         OS.patch_end()
 
-        jal     0x800269C0                  // original line 1
-        addiu   s2, r0, 0x0007              // original line 2
-
         jal     PokemonAnnouncer.opening_comment
         nop
 
-        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         li      t6, Global.match_info
         lw      t6, 0x0000(t6)              // t6 = match info
         lbu     t6, 0x0001(t6)              // t6 = current stage ID
+        addiu   v0, r0, Stages.id.BLUE
+        beq     v0, t6, _fzerox
+        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         beq     v0, t6, _mk64
         addiu   v0, r0, Stages.id.RAINBOWROAD
         bne     v0, t6, _end
@@ -6212,12 +6286,23 @@ scope Hazards {
 
         _mk64:
         jal     0x800269C0                  // original line 1
-        addiu   a0, r0, 0x0405              // original line 2
-
-
-        _end:
+        addiu   s2, r0, 0x0007              // original line 2
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x0405              // MK64 Noise
         j       _return
         nop
+
+        _end:
+        jal     0x800269C0                  // original line 1
+        addiu   s2, r0, 0x0007              // original line 2
+        j       _return
+        nop
+
+        _fzerox:
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x05CC              // F-Zero Noise
+        j       _return
+        addiu   s2, r0, 0x0007              // original line 2
     }
 
     // @ Description
@@ -6229,13 +6314,12 @@ scope Hazards {
         _return:
         OS.patch_end()
 
-        jal     0x800269C0                  // original line 1
-        addiu   s2, r0, 0x0008              // original line 2
-
-        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         li      t6, Global.match_info
         lw      t6, 0x0000(t6)              // t6 = match info
         lbu     t6, 0x0001(t6)              // t6 = current stage ID
+        addiu   v0, r0, Stages.id.BLUE
+        beq     v0, t6, _fzerox
+        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         beq     v0, t6, _mk64
         addiu   v0, r0, Stages.id.RAINBOWROAD
         bne     v0, t6, _end
@@ -6243,12 +6327,23 @@ scope Hazards {
 
         _mk64:
         jal     0x800269C0                  // original line 1
-        addiu   a0, r0, 0x0405              // original line 2
-
-
-        _end:
+        addiu   s2, r0, 0x0008              // original line 2
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x0405              // MK64 Noise
         j       _return
         nop
+
+        _end:
+        jal     0x800269C0                  // original line 1
+        addiu   s2, r0, 0x0008              // original line 2
+        j       _return
+        nop
+
+        _fzerox:
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x05CD              // F-Zero Noise
+        j       _return
+        addiu   s2, r0, 0x0008              // original line 2
     }
 
     // @ Description
@@ -6260,13 +6355,12 @@ scope Hazards {
         _return:
         OS.patch_end()
 
-        jal     0x800269C0                  // original line 1
-        addiu   a0, r0, 0x01EA              // original line 2, GO FGM
-
-        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         li      t6, Global.match_info
         lw      t6, 0x0000(t6)              // t6 = match info
         lbu     t6, 0x0001(t6)              // t6 = current stage ID
+        addiu   v0, r0, Stages.id.BLUE
+        beq     v0, t6, _fzerox
+        addiu   v0, r0, Stages.id.TOADSTURNPIKE
         beq     v0, t6, _mk64
         addiu   v0, r0, Stages.id.RAINBOWROAD
         bne     v0, t6, _end
@@ -6276,8 +6370,15 @@ scope Hazards {
         jal     0x800269C0                  // play fgm
         addiu   a0, r0, 0x0406              // MK64 Noise
 
-
         _end:
+        jal     0x800269C0                  // original line 1
+        addiu   a0, r0, 0x01EA              // original line 2, GO FGM
+        j       _return
+        nop
+
+        _fzerox:
+        jal     0x800269C0                  // play sound
+        addiu   a0, r0, 0x05CE              // F-Zero Noise
         j       _return
         nop
     }
@@ -6447,7 +6548,6 @@ scope Hazards {
         // 0x34(a0) = state
         // 0x38(a0) = pointer to current entry
         // 0x3C(a0) = float
-        // 0x40(a0) = first player struct
 
         lw      t8, 0x0054(a0)                      // load timer
         addiu   t8, t8, 0x0001                      // increment timer
@@ -6491,8 +6591,9 @@ scope Hazards {
         lw      at, 0x0000(t6)                      // at = initial angle
         mtc1    at, f2                              // move to float 7
         sw      t1, 0x003C(a0)                      // save offset to handler
-        addiu   a0, a0, 0x0040                      // a0 = first player index in routine handler
-        lw      a1, 0x0000(a0)                      // a1 = first player struct
+
+        OS.read_word(0x800466FC, a0)                // a0 = first player obj
+        lw      a1, 0x0084(a0)                      // a1 = first player struct
 
         add.s   f10, f4, f2                         // f10 = all players initial light x rotation
         lui     at, 0xBF80                          // at = -1 in float
@@ -6523,8 +6624,10 @@ scope Hazards {
         sw     at, 0x0A78(a1)                       // save y angle
 
         _next:
-        addiu   a0, a0, 0x0004                      // a0 = next player index in routine handler
-        lw      a1, 0x0000(a0)                      // a1 = next entry
+        lw      a0, 0x0004(a0)                      // a0 = next player obj
+        beqz    a0, _end_loop                       // end loop if there is no other player
+        nop
+        lw      a1, 0x0084(a0)                      // a1 = next player struct
         bnez    a1, _loop                           // loop again if there is another player
         nop
 
@@ -6654,6 +6757,11 @@ scope Hazards {
         _spawn:
         addiu   at, r0, 0x0001
         sw      at, 0x010C(a2)          // enable hitbox
+        //disable clang
+        lh      t0, 0x0158(a2)          // t0 = clang bitfield
+        andi    t0, t0, 0x7FFF          // disable clang
+        sh      t0, 0x0158(a2)          // ~
+
         sw      at, 0x0038(s0)          // make car visible again
         sw      r0, 0x0008(t5)          // restart timer
         lui     t6, 0xc316
@@ -7186,7 +7294,23 @@ scope Hazards {
         nop
 
         _init_fade:
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      s1, 0x0008(sp)              // ~
+        sw      s2, 0x000C(sp)              // ~
+        sw      s3, 0x0010(sp)              // ~
+        sw      s4, 0x0014(sp)              // ~
+        sw      s5, 0x0018(sp)              // ~
+        sw      s6, 0x001C(sp)              // ~
+
         Render.draw_rectangle(0x0, 0xD, 10, 10, 300, 220, 0x00000000, OS.TRUE)
+
+        lw      s1, 0x0008(sp)              // ~
+        lw      s2, 0x000C(sp)              // ~
+        lw      s3, 0x0010(sp)              // ~
+        lw      s4, 0x0014(sp)              // ~
+        lw      s5, 0x0018(sp)              // ~
+        lw      s6, 0x001C(sp)              // restore registers
+        addiu   sp, sp, 0x0030              // deallocate stack space
 
         li      t0, scuttle_town_bg_fade_
         sw      t0, 0x0014(v0)              // set update routine
@@ -7272,7 +7396,7 @@ scope Hazards {
 
         // If here, we are waiting for the stage palette change to start
         lui     t0, 0x8004
-        lw      t0, 0x66F8(t0)              // t0 = grpup 0x2 head
+        lw      t0, 0x66F8(t0)              // t0 = group 0x2 head
         lw      t0, 0x0074(t0)              // t0 = top joint
         lw      t0, 0x0010(t0)              // t0 = 1st joint
         lw      t0, 0x0080(t0)              // t0 = part image struct
@@ -7605,8 +7729,350 @@ scope Hazards {
     }
 
     // @ Description
+    // The fade bg colors
+    time_twister_colors:
+    dw time_twister_setup_.COLOR_N_SANITY_BEACH
+    dw time_twister_setup_.COLOR_SNOW_GO
+    dw time_twister_setup_.COLOR_FUTURE_FRENZY
+    dw time_twister_setup_.COLOR_TIME_TWISTER
+
+    // @ Description
+    // The magnifying glass colors
+    time_twister_glass_colors:
+    dw time_twister_setup_.COLOR_N_SANITY_BEACH_GLASS
+    dw time_twister_setup_.COLOR_SNOW_GO_GLASS
+    dw time_twister_setup_.COLOR_FUTURE_FRENZY_GLASS
+    dw time_twister_setup_.COLOR_TIME_TWISTER_GLASS
+
+    // @ Description
+    // The bgms
+    time_twister_bgms:
+    dh {MIDI.id.NSANITYBEACH}
+    dh {MIDI.id.SNOWGO}
+    dh {MIDI.id.FUTUREFRENZY}
+    dh {MIDI.id.CRASH3}
+
+    // @ Description
+    // Whether or not to change track during transitions
+    time_twister_bgm_change:
+    dw -1
+
+    // @ Description
+    // Sets up transition effects for Time Twister
+    scope time_twister_setup_: {
+        constant COLOR_TIME_TWISTER(0x00005400)
+        constant COLOR_N_SANITY_BEACH(0x7AABD900)
+        constant COLOR_SNOW_GO(0x4C82BD00)
+        constant COLOR_FUTURE_FRENZY(0x5E729800)
+        constant COLOR_TIME_TWISTER_GLASS(0x00005400)
+        constant COLOR_N_SANITY_BEACH_GLASS(0x7AABD900)
+        constant COLOR_SNOW_GO_GLASS(0x4C82BD00)
+        constant COLOR_FUTURE_FRENZY_GLASS(0x5E729800)
+
+        addiu   sp, sp, -0x0068
+        sw      ra, 0x0014(sp)
+
+        OS.read_byte(Global.current_screen, t1) // t1 = screen_id
+        lli     t0, Global.screen.TRAINING_MODE
+        bne     t1, t0, _init_fade          // do fade when screen_id != training mode
+        nop
+        OS.read_word(Training.entry_bg + 0x4, t0) // t0 = 0 if normal training bg
+        beqz    t0, _end                    // if not showing the stage bg, skip fade
+        nop
+
+        _init_fade:
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      s1, 0x0008(sp)              // ~
+        sw      s2, 0x000C(sp)              // ~
+        sw      s3, 0x0010(sp)              // ~
+        sw      s4, 0x0014(sp)              // ~
+        sw      s5, 0x0018(sp)              // ~
+        sw      s6, 0x001C(sp)              // ~
+
+        Render.draw_rectangle(0x0, 0xD, 10, 10, 300, 220, 0x00000000, OS.TRUE)
+
+        lw      s1, 0x0008(sp)              // ~
+        lw      s2, 0x000C(sp)              // ~
+        lw      s3, 0x0010(sp)              // ~
+        lw      s4, 0x0014(sp)              // ~
+        lw      s5, 0x0018(sp)              // ~
+        lw      s6, 0x001C(sp)              // restore registers
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        li      t0, time_twister_bg_fade_
+        sw      t0, 0x0014(v0)              // set update routine
+        sw      r0, 0x004C(v0)              // set bg index to 0
+        sw      r0, 0x0050(v0)              // clear transition timer
+        // 0x0054(v0) is reserved for alpha delta
+        // 0x0058(v0) is reserved for bg address
+        lui     t0, 0x8013
+        lw      t0, 0x1300(t0)              // t0 = header struct
+        lw      t1, 0x0048(t0)              // t1 = time twister bg image header
+        lw      t2, 0x00CC(t0)              // t2 = n sanity beach bg image header
+        lw      t3, 0x00D0(t0)              // t3 = snow go bg image header
+        lw      t4, 0x00D4(t0)              // t4 = future frenzy bg image header
+        lw      t1, 0x0034(t1)              // t1 = time twister bg address
+        lw      t2, 0x0034(t2)              // t2 = n sanity beach bg address
+        lw      t3, 0x0034(t3)              // t3 = snow go bg address
+        lw      t4, 0x0034(t4)              // t4 = future frenzy bg address
+        sw      t2, 0x0060(v0)              // save n sanity beach bg address
+        sw      t3, 0x0064(v0)              // save snow go bg address
+        sw      t4, 0x0068(v0)              // save future frenzy bg address
+        sw      t1, 0x006C(v0)              // save time twister bg address
+        lui     t0, 0x8004
+        lw      t0, 0x6800(t0)              // t0 = bg image object
+        lw      t0, 0x0074(t0)              // t0 = bg image object position struct
+        sw      t0, 0x005C(v0)              // save bg image object position struct
+
+        li      t0, time_twister_bgm_change
+        addiu   t1, r0, -0x0001             // t1 = -1
+        sw      t1, 0x0000(t0)              // initialize the flag to -1 for not set
+
+        _end:
+        lw      ra, 0x0014(sp)
+        jr      ra
+        addiu   sp, sp, 0x0068
+    }
+
+    // @ Description
+    // Handles transition effects for Time Twister every frame
+    // @ Arguments
+    // a0 = bg fade rectangle object
+    scope time_twister_bg_fade_: {
+        constant BEGIN_FADE_FRAMES(180)
+        constant WARP_DISAPPEAR(BEGIN_FADE_FRAMES + 90)
+        constant START_NEW_BGM(WARP_DISAPPEAR + 30)
+
+        lw      t2, 0x0050(a0)              // t2 = transition timer
+        bnez    t2, _in_transition          // if in transition, skip to that logic
+        lui     t0, 0x8004
+
+        // If here, we are waiting for the warp ball to appear
+        lw      t0, 0x66F8(t0)              // t0 = group 0x2 head
+        lw      t0, 0x0074(t0)              // t0 = top joint
+        lw      t0, 0x0010(t0)              // t0 = 1st joint
+        lw      t0, 0x0008(t0)              // t0 = next sibling
+        lw      t0, 0x0008(t0)              // t0 = next sibling
+        lw      t0, 0x0008(t0)              // t0 = next sibling
+        lw      t0, 0x0008(t0)              // t0 = warp ball
+        lbu     t1, 0x0054(t0)              // t1 = 2 if not displayed
+        lli     t2, 0x0002                  // t2 = 2 = not displayed
+        beq     t1, t2, _finish             // if not displayed, still waiting
+        lw      t0, 0x0080(t0)              // t0 = part image struct
+        lhu     t0, 0x0080(t0)              // t0 = current image index = next stage bg index
+        sw      t0, 0x004C(a0)              // set bg index
+        sll     t1, t0, 0x0002              // t1 = offset to color
+
+        OS.read_word(time_twister_bgm_change, t0) // t0 = flag
+        slti    t0, t0, r0                  // t0 = 1 if not set
+        beqz    t0, _zoom_out               // if set, skip (only set once)
+        lli     t3, {MIDI.id.CRASH3}
+        OS.read_word(0x801313A0, t0)        // t0 = stage song
+        lli     t2, OS.TRUE                 // t2 = TRUE
+        bnel    t0, t3, pc() + 8            // if not default song, then don't do music transitions
+        lli     t2, OS.FALSE                // t2 = FALSE
+        li      t0, time_twister_bgm_change
+        sw      t2, 0x0000(t0)              // set flag
+
+        _zoom_out:
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+        sw      t1, 0x000C(sp)              // ~
+
+        // First, set to fixed camera
+        li      t0, 0x801314B0              // t0 = camera struct
+        lw      t1, 0x000C(t0)              // t1 = current camera routine
+        sw      t1, 0x0070(a0)              // save current camera routine
+        li      t1, 0x8010CC74              // fixed camera routine
+        sw      t1, 0x000C(t0)              // set camera
+
+        // then animate camera
+        jal     Camera.zoom_to_max_
+        nop
+
+        // play warp appear sound
+        jal     FGM.play_
+        lli     a0, 0x059D                  // a0 = warp fgm_id
+
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        lw      t1, 0x000C(sp)              // ~
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        // start transition
+        lli     t2, 1                       // t2 = initial frame
+        sw      t2, 0x0050(a0)              // start transition timer
+        lli     t0, 0x0004                  // t0 = alpha delta
+        sw      t0, 0x0054(a0)              // set alpha delta
+        li      t0, time_twister_colors     // t0 = color array
+        addu    t0, t0, t1                  // t0 = address of color
+        lw      t0, 0x0000(t0)              // t0 = transition color
+        sw      t0, 0x0040(a0)              // set prim color
+        li      t0, time_twister_glass_colors // t0 = magnifying glass color array
+        addu    t0, t0, t1                  // t0 = address of color
+        lw      t0, 0x0000(t0)              // t0 = magnifying glass color address
+        sw      t0, 0x0084(a0)              // set magnifying glass color
+        addiu   t0, a0, 0x0060              // t0 = bg address array
+        addu    t0, t0, t1                  // t0 = address of bg address
+        lw      t0, 0x0000(t0)              // t0 = bg address
+        sw      t0, 0x0058(a0)              // set bg address
+
+        _in_transition:
+        addiu   t0, t2, 0x0001              // t0 = timer incremented
+        lli     t1, BEGIN_FADE_FRAMES       // t1 = frame count at the beginning of the fade out
+        beq     t1, t2, _bg_fade_begin      // if first frame of fade out, play sound
+        sw      t0, 0x0050(a0)              // update timer
+        sltiu   t1, t2, BEGIN_FADE_FRAMES   // t1 = 1 if we haven't reached the beginning of the fade out
+        bnez    t1, _finish                 // if waiting for fade to begin, skip
+        lli     t1, WARP_DISAPPEAR          // t1 = frame count at start of the warp ball disappearing
+        beq     t2, t1, _warp_disappear     // if start of warp ball disappearing, play sound
+        lli     t1, START_NEW_BGM           // t1 = frame count for starting the next music track
+        bne     t2, t1, _bg_fade            // if not start of next music track, skip
+        nop
+
+        // play next music track
+        OS.read_word(time_twister_bgm_change, t1) // t1 = flag for changing music tracks
+        beqz    t1, _bg_fade                // if changing music tracks is disabled, skip
+        nop
+
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+
+        li      t0, time_twister_bgms
+        lw      t1, 0x004C(a0)              // t1 = bg index
+        sll     t1, t1, 0x0001              // t1 = offset to bgm_id
+        addu    t0, t0, t1                  // t0 = address of bgm_id
+        lhu     a1, 0x0000(t0)              // a1 = next bgm_id
+
+        li      t1, 0x8013139C              // t1 = address of currently playing song
+        lw      t2, 0x0000(t1)              // t2 = currently playing song
+        addiu   t3, r0, 0x002D              // t3 = hammer music
+        beq     t2, t3, _end_next_music_track // if hammer, skip playing
+        sw      a1, 0x0004(t1)              // save song to stage song (it will play after star or hammer ends)
+        addiu   t3, r0, 0x002E              // t4 = star music
+        beq     t2, t3, _end_next_music_track // if star, skip playing
+        nop
+
+        sw      a1, 0x0000(t1)              // save song to current song
+        jal     BGM.play_                   // play music
+        lli     a0, 0                       // a0 = 0
+
+        _end_next_music_track:
+        // reset the volume
+        addiu   sp, sp, -0x0020             // allocate stack space
+        lli     a0, 0                       // a0 = playerID
+        jal     0x80020B38                  // auSetBGMVolume(s32 playerID, u32 vol)
+        lli     a1, 30720                   // a1 = volume
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        b       _bg_fade
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        _warp_disappear:
+        // play warp disappear sound
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+
+        jal     FGM.play_
+        lli     a0, 0x059E                  // a0 = warp die fgm_id
+
+        // zoom in
+        li      t0, 0x801314B0              // t0 = camera struct
+        sw      r0, 0x0004(t0)              // reset camera status
+        lw      a0, 0x0008(sp)              // a0 = bg fade rectangle object
+        lw      t2, 0x0070(a0)              // t2 = original camera routine
+        li      t1, 0x8010CCC0              // t1 = camera routine if zoomed to max
+        lw      t3, 0x000C(t0)              // t3 = current camera routine
+        beql    t1, t3, pc() + 8            // if
+        sw      t2, 0x000C(t0)              // reset camera routine
+
+        lw      ra, 0x0004(sp)              // restore registers
+        b       _bg_fade
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        _bg_fade_begin:
+        // play warping sound
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+
+        jal     FGM.play_
+        lli     a0, 0x0094                  // a0 = warping fgm_id
+
+        // fade out music
+        OS.read_word(time_twister_bgm_change, t1) // t1 = flag for changing music tracks
+        beqz    t1, _end_bg_fade_begin      // if changing music tracks is disabled, skip
+        nop
+
+        li      t1, 0x8013139C              // t1 = address of currently playing song
+        lw      t2, 0x0000(t1)              // t2 = currently playing song
+        addiu   t3, r0, 0x002D              // t3 = hammer music
+        beq     t2, t3, _end_bg_fade_begin  // if hammer, skip fading
+        addiu   t3, r0, 0x002E              // t4 = star music
+        beq     t2, t3, _end_bg_fade_begin  // if star, skip fading
+        nop
+
+        lli     a0, 0                       // a0 = playerID
+        lli     a1, 0                       // a1 = volume
+        jal     0x80020BC0                  // auSetBGMVolumeSmooth(s32 playerID, u32 vol, u32 time)
+        lli     a2, 90                      // a2 = time
+
+        _end_bg_fade_begin:
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        _bg_fade:
+        lw      t1, 0x0054(a0)              // t1 = alpha delta
+        lbu     t0, 0x0043(a0)              // t0 = alpha
+        addu    t0, t0, t1                  // t0 = updated alpha
+
+        beqzl   t0, pc() + 8                // if just got back to 00, transition is done
+        sw      r0, 0x0050(a0)              // clear transition flag
+
+        lw      t2, 0x0040(a0)              // t2 = prim color
+        addiu   t1, r0, -0x0100             // t1 = 0xFFFFFF00
+        and     t2, t2, t1                  // t2 = prim color, no alpha
+
+        lli     t1, 0x0080                  // t1 = middle alpha
+        bne     t0, t1, _check_max          // if not at middle alpha, check max alpha
+        lw      t1, 0x0084(a0)              // t1 = magnifying glass color
+
+        // midway through the transition, change the magnifying glass color
+        lui     t3, 0x8013
+        lw      t3, 0x1300(t3)              // t3 = stage header
+        b       _set_color
+        sw      t1, 0x004C(t3)              // set magnifying glass color
+
+        _check_max:
+        lli     t1, 0x00FC                  // t1 = max alpha
+        bne     t0, t1, _set_color          // if not at max alpha, set alpha
+        addiu   t1, r0, -0x0004             // t1 = alpha delta
+
+        sw      t1, 0x0054(a0)              // set alpha delta
+
+        // here, need to change the bg image
+        lw      t1, 0x0058(a0)              // t1 = bg address
+        lw      t3, 0x005C(a0)              // t3 = bg image object position struct
+        sw      t1, 0x0044(t3)              // set bg image
+
+        _set_color:
+        or      t0, t2, t0                  // t2 = prim color
+        sw      t0, 0x0040(a0)              // set alpha
+
+        _finish:
+        jr      ra
+        nop
+    }
+
+    // @ Description
     // this routine sets up hazards for Peach's Castle II, primarily Banzai Bill
-        scope peach_castle_II_setup_: {
+    scope peach_castle_II_setup_: {
         addiu   sp, sp, -0x0068
         sw      ra, 0x0014(sp)
 
@@ -7995,8 +8461,8 @@ scope Hazards {
 
         Render.register_routine(spawned_fear_acid_main_)
         // v0 = routine handler
-        // we are going to save each player struct to the routine handler
 
+        _cacodemon_setup:
         li      t1, 0x80131300              // load the hardcoded address where header address (+14) is located
         lw      t1, 0x0000(t1)              // load aforemention address
 
@@ -8060,38 +8526,19 @@ scope Hazards {
         lh      t0, 0x0000(at)
 
         addiu   t1, t0, 1                           // to +=1
-        beqz    t0, _initial
         sh      t1, 0x0000(at)                      // overwrite timer used by poison
 
         // a0 = routine handler object
-        // 0x40(a0) = first player struct
-        li      a1, Global.p_struct_head            // t0= pointer to player struct linked list
-        lw      a1, 0x0000(a1)                      // a1 = first player struct
-
-        bnezl   a1, _continue
-        nop
-
-        _initial:
-        addiu   t1, a0, 0x0040                      // t1 = the spot we are writing override values for this player
-        sw      r0, 0x0000(t1)                      // clear spot used for player structs
-        sw      r0, 0x0004(t1)                      //
-        sw      r0, 0x0008(t1)                      //
-        sw      r0, 0x000C(t1)                      //
-
-        li      t3, Global.p_struct_head            // t0= pointer to player struct linked list
-        _initial_loop:
-        lw      t3, 0x0000(t3)                      // load players struct
-        sw      t3, 0x0000(t1)                      // save players struct to routine handler
-
-        _initial_next:
-        beqz    t3, _end_loop                       // end loop if no player
-        nop
-        b       _initial_loop
-        addiu   t1, t1, 0x0004                      // t1 = next spot for player struct
-
-        _continue:
+        OS.read_word(0x800466FC, t0)                // t0 = first player obj
+        b       _loop_initial
+        lw      a1, 0x0084(t0)                      // a1 = player struct
         _loop:
-        // first, check if grounded
+        // check if there is a player obj associated
+        lw      t0, 0x0004(a1)                      // t0 = associated player obj
+        _loop_initial:
+        beqz    t0, _next                           // branch if no player obj
+
+        // check if grounded
         lw      t0, 0x014C(a1)                      // get kinetic state
         bnez    t0, _next                           // branch if aerial
         // check if on doom acid surface
@@ -8135,7 +8582,11 @@ scope Hazards {
         sw      r0, 0x0008(t0)                      // set poison type (0 = doom acid)
 
         _next:
-        lw      a1, 0x0000(a1)                      // a1 = next entry
+        lw      a1, 0x0004(a1)                      // a1 = player obj
+        lw      a1, 0x0004(a1)                      // a1 = next player obj
+        beqz    a1, _end_loop
+        nop
+        lw      a1, 0x0084(a1)                      // a1 = next player struct
         bnez    a1, _loop                           // loop again if there is another player
         nop
 
@@ -8234,9 +8685,8 @@ scope Hazards {
 
         _end:
         lw  ra, 0x001C(sp)
-        addiu   sp, sp, 0x0060
         jr      ra
-        nop
+        addiu   sp, sp, 0x0060
     }
 
     // @ Description
@@ -8404,9 +8854,8 @@ scope Hazards {
 
         _end:
         lw  ra, 0x001C(sp)
-        addiu   sp, sp, 0x0028
         jr      ra
-        nop
+        addiu   sp, sp, 0x0028
     }
 
     // @ Description
@@ -8446,9 +8895,8 @@ scope Hazards {
 
         // normally saves  something to player struct in free space
         lw      ra, 0x0014(sp)      // load ra from stack
-        addiu   sp, sp, 0x0038
         jr      ra
-        nop
+        addiu   sp, sp, 0x0038
     }
 
     // @ Description
@@ -8598,9 +9046,8 @@ scope Hazards {
         lw      s1, 0x0004(sp)      // save s1
         lw      ra, 0x0014(sp)
         lw      s0, 0x0030(sp)      // load item object
-        addiu   sp, sp, 0x0050
         jr      ra
-        nop
+        addiu   sp, sp, 0x0050
     }
 
     // @ Description
@@ -8709,9 +9156,8 @@ scope Hazards {
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
 
@@ -8744,9 +9190,8 @@ scope Hazards {
 
         _end:
         lw      ra, 0x0014(sp)
-        addiu   sp, sp, 0x0018
         jr      ra
-        nop
+        addiu   sp, sp, 0x0018
     }
 
     // @ Description
@@ -8804,5 +9249,372 @@ scope Hazards {
 
     OS.align(16)
 
+    crash_btt_collected_one_up:
+    dw 0
+
+    crash_btp_collected_one_up:
+    dw 0
+
+    // @ Description
+    // This establishes bounce surface main routine
+    scope crash_btt_setup: {
+        addiu   sp, sp,-0x0060              // allocate stack space
+        sw      ra, 0x0024(sp)              // ~
+        sw      s0, 0x0028(sp)              // store ra, s0
+
+        li      s0, 0x801313F0              // load hardcoded space used by hazards, generally for pointers
+        sw      r0, 0x0060(s0)              // clear under_water flags and frenzy turns
+
+        sw      s0, 0x0020(sp)              // hardcoded space used by hazards, generally for pointers
+
+        li      a1, crash_btt_main    // water routine
+        addiu   a2, r0, 0x0001              // group
+        addiu   a0, r0, 0x03F2              // object id
+
+        jal     Render.CREATE_OBJECT_       // create object
+        lui     a3, 0x8000                  // unknown
+
+        sw      v0, 0x0050(sp)              // save object address
+        addiu   t6, r0, 0xFFFF
+        or      s0, v0, r0
+        sw      t6, 0x0010(sp)
+        or      a0, v0, r0
+        lw      a1, 0x0030(sp)
+        addiu   a2, r0, 0x0004
+
+        lui     t7, 0x8013
+        lw      t7, 0x13F0(t7)
+        lw      t8, 0x0028(sp)
+        or      a0, s0, r0
+        or      a2, r0, r0
+        addiu   a3, r0, 0x001C
+        sw      r0, 0x0010(sp)
+        sw      r0, 0x0014(sp)
+
+        // end
+        li      at, crash_btt_collected_one_up // reset one up easter egg variable
+        sw      r0, 0x0000(at)
+
+        lw      ra, 0x0024(sp)              // ~
+        lw      s0, 0x0028(sp)              // load ra, s0
+
+        // super jank. but since this only is present on Crash BTT we can deal with it
+        addiu   v0, r0, Stages.id.BTT_CRASH
+        j       0x80105700                  // jump to rest or routine to set up BTT targets
+        addiu   sp, sp, 0x0060              // deallocate stack space
+    }
+
+    // @ Description
+    // This establishes bounce surface main routine
+    scope crash_btp_setup: {
+        addiu   sp, sp,-0x0060              // allocate stack space
+        sw      ra, 0x0024(sp)              // ~
+        sw      s0, 0x0028(sp)              // store ra, s0
+
+        li      s0, 0x801313F0              // load hardcoded space used by hazards, generally for pointers
+        sw      r0, 0x0060(s0)              // clear under_water flags and frenzy turns
+
+        sw      s0, 0x0020(sp)              // hardcoded space used by hazards, generally for pointers
+
+        li      a1, crash_btp_main          // main routine
+        addiu   a2, r0, 0x0001              // group
+        addiu   a0, r0, 0x03F2              // object id
+
+        jal     Render.CREATE_OBJECT_       // create object
+        lui     a3, 0x8000                  // unknown
+
+        sw      v0, 0x0050(sp)              // save object address
+        addiu   t6, r0, 0xFFFF
+        or      s0, v0, r0
+        sw      t6, 0x0010(sp)
+        or      a0, v0, r0
+        lw      a1, 0x0030(sp)
+        addiu   a2, r0, 0x0004
+
+        lui     t7, 0x8013
+        lw      t7, 0x13F0(t7)
+        lw      t8, 0x0028(sp)
+        or      a0, s0, r0
+        or      a2, r0, r0
+        addiu   a3, r0, 0x001C
+        sw      r0, 0x0010(sp)
+        sw      r0, 0x0014(sp)
+
+        // end
+        li      at, crash_btp_collected_one_up // reset one up easter egg variable
+        sw      r0, 0x0000(at)
+
+        lw      ra, 0x0024(sp)              // ~
+        lw      s0, 0x0028(sp)              // load ra, s0
+
+        // super jank. but since this only is present on Crash BTP we can deal with it
+        addiu   v0, r0, Stages.id.BTP_CRASH
+        j       0x80105700                  // jump to rest or routine to set up BTT targets
+        addiu   sp, sp, 0x0060              // deallocate stack space
+    }
+
+    // @ Description
+    // Main function for Crash BTT.
+    scope crash_btt_main: {
+        addiu   sp, sp, -0x0050             // allocate stack space
+        sw      ra, 0x0024(sp)              // ~
+        sw      s0, 0x0028(sp)              // ~
+        sw      s1, 0x002C(sp)              // store ra, s0, s1
+
+        OS.read_word(crash_btt_collected_one_up, at) // at = thingy collected flag
+        bnez    at, _end                    // skip if one up collected
+
+        or      s0, r0, r0                  // current port = 0
+        lli     s1, 0x0003                  // final iteration = 0x3
+
+        _loop:
+        jal     Character.port_to_struct_   // v0 = player struct for current port
+        or      a0, s0, r0                  // a0 = current port
+        beqz    v0, _loop_end               // skip if no struct found for current port
+        nop
+
+        // if the player is present
+        sw      v0, 0x003C(sp)              // 0x003C(sp) = px struct
+        lw      t0, 0x00EC(v0)              // get clipping flag
+        addiu   at, r0, 9
+        bne     t0, at, _loop_end           // branch if player is not above the one up clipping
+        nop
+
+        // collect one up easter egg
+        _collect_one_up:
+        li      at, crash_btt_collected_one_up
+        addiu   t0, r0, 1
+        sw      t0, 0x0000(at)
+
+        OS.read_word(0x80131304, t1)    // t1 = stage objects
+        lw      t2, 0x0014(t1)          // t2 = crash one up object
+        // sw      r0, 0x007C(t2)          // make invisible (this didn't work :()
+
+        lui     at, 0x38D1              // at = float 0.001 (ish)
+
+        sw      at, 0x40(t2)            // make object very tiny
+        sw      at, 0x44(t2)            // ~
+        sw      at, 0x48(t2)            // ~
+        FGM.play(0x5C3)
+
+        addiu   a1, r0, {MIDI.id.CRASHBASH_LOADING}
+        li      at, BGM.vanilla_current_track
+        sw      a1, 0x0004(at)              // overwrite bgm
+        jal     BGM.play_                   // play music
+        addiu   a0, r0, 0x0000
+
+        b       _end
+        nop
+
+        _loop_end:
+        bne     s0, s1, _loop               // loop if final iteration has not been reached
+        addiu   s0, s0, 0x0001              // iterate current port
+
+        _end:
+        lw      ra, 0x0024(sp)              // ~
+        lw      s0, 0x0028(sp)              // ~
+        lw      s1, 0x002C(sp)              // load ra, s0, s1
+        jr      ra                          // return
+        addiu   sp, sp, 0x0050              // deallocate stack space
+    }
+
+    // @ Description
+    // Main function for Crash BTP.
+    scope crash_btp_main: {
+        addiu   sp, sp, -0x0050             // allocate stack space
+        sw      ra, 0x0024(sp)              // ~
+        sw      s0, 0x0028(sp)              // ~
+        sw      s1, 0x002C(sp)              // store ra, s0, s1
+
+        OS.read_word(crash_btp_collected_one_up, at) // at = thingy collected flag
+        bnez    at, _end                    // skip if one up collected
+
+        or      s0, r0, r0                  // current port = 0
+        lli     s1, 0x0003                  // final iteration = 0x3
+
+        _loop:
+        jal     Character.port_to_struct_   // v0 = player struct for current port
+        or      a0, s0, r0                  // a0 = current port
+        beqz    v0, _loop_end               // skip if no struct found for current port
+        nop
+
+        // if the player is present
+        sw      v0, 0x003C(sp)              // 0x003C(sp) = px struct
+        lw      t0, 0x00EC(v0)              // get clipping flag
+        addiu   at, r0, 0x16                // at = clipping id 0x16
+        bne     t0, at, _loop_end           // branch if player is not above the one up clipping
+        nop
+
+        // collect one up easter egg
+        _collect_one_up:
+        li      at, crash_btp_collected_one_up
+        addiu   t0, r0, 1
+        sw      t0, 0x0000(at)
+
+        OS.read_word(0x80131304, t1)    // t1 = stage objects
+        lw      t2, 0x003C(t1)          // t2 = crash one up object
+
+        lui     at, 0x38D1              // at = float 0.001 (ish)
+
+        sw      at, 0x40(t2)            // make object very tiny
+        sw      at, 0x44(t2)            // ~
+        sw      at, 0x48(t2)            // ~
+        FGM.play(0x5C3)
+
+        addiu   a1, r0, {MIDI.id.CRASHBASH_LOADING}
+        li      at, BGM.vanilla_current_track
+        sw      a1, 0x0004(at)              // overwrite bgm
+        jal     BGM.play_                   // play music
+        addiu   a0, r0, 0x0000
+
+        b       _end
+        nop
+
+        _loop_end:
+        bne     s0, s1, _loop               // loop if final iteration has not been reached
+        addiu   s0, s0, 0x0001              // iterate current port
+
+        _end:
+        lw      ra, 0x0024(sp)              // ~
+        lw      s0, 0x0028(sp)              // ~
+        lw      s1, 0x002C(sp)              // load ra, s0, s1
+        jr      ra                          // return
+        addiu   sp, sp, 0x0050              // deallocate stack space
+    }
+
+    // @ Description
+    // forces player to always exit through side pipe on Peach's Break the Targets
+    scope peach_btt_pipe_override: {
+        OS.patch_start(0xBCFA8, 0x80142568)
+        j       peach_btt_pipe_override
+        nop
+        _return:
+        OS.patch_end()
+
+        OS.read_word(Global.match_info, at) // at = match info
+        lbu     at, 0x0001(at)              // at = current stage ID
+        lli     t3, Stages.id.BTT_PEACH     // t0 = Stages.id.BTT_PEACH
+        bne     t3, at, _normal             // branch if not BTT_PEACH
+        nop
+
+        // peach btt
+        lui     at, 0x3F90                  // this should make it so side pipe always used
+        j       _return                     // use side pipe
+        mtc1    at, f4                      // og line 2
+
+        _normal:
+        lui     at, 0x3E80                  // og line 1
+        j       _return
+        mtc1    at, f4                      // og line 2
+
+    }
+
+    // fixes beach BTT crash on vanilla 1P by skipping the function that sets the piranha plant into the wait state
+    scope pipe_enter_skip_piranha_plant_check: {
+        OS.patch_start(0xBCC7C, 0x8014223C)
+        j       pipe_enter_skip_piranha_plant_check
+        nop
+        _return:
+       OS.patch_end()
+
+        OS.read_word(Global.match_info, at) // at = match info
+        lbu     at, 0x0001(at)              // at = current stage ID
+        lli     t0, Stages.id.BTT_PEACH     // t0 = Stages.id.BTT_PEACH
+        beq     t0, at, _skip               // branch if BTT_PEACH
+        nop
+
+        jal    0x8010972C           // og line 1, sets piranha plant in the wait state while character enters a pipe
+        nop
+
+        _skip:
+        j      _return
+        nop
+    }
+
+    // @ Description
+    // This prevents the game from crashing if a platform disappears while a player is hanging onto it.
+    scope platform_despawn_crash_fix: {
+        OS.patch_start(0xBF5AC, 0x80144B6C)
+        j       platform_despawn_crash_fix
+        lw      a0, 0x0140(v0)              // a0 = clipping ID
+        _return:
+        OS.patch_end()
+
+        OS.read_word(Global.stage_clipping.info, v1) // v1 = stage clipping info
+
+        // a0 = clipping id
+        // copied below from 0x800F4240
+        sll     t7, a0, 2
+        addu    t7, t7, a0
+        sll     t7, t7, 1
+        addu    t8, v1, t7                  // t8 = offset to clipping struct
+        lbu     t9, 0x0000(t8)
+        lui     t7, 0x8013
+        lw      t7, 0x1304(t7)
+        sll     v1, t9, 2
+        addu    t8, t7, v1
+        lw      t2, 0x0000(t8)
+        lui     v1, 0x8013
+        lw      t9, 0x0084(t2)              // get clipping status
+        slti    a2, t9, 0x0003              // if cliff >= 3, a2 = 0
+
+        bnez    a2, _original               // normal logic
+        nop
+
+        jal     0x8013F9E0                  // set aerial idle
+        lw      a0, 0x0004(v0)              // a0 = player obj
+
+        // if here, the platform disappeared
+        j       0x80144C0C                  // exit function
+        nop
+
+        _original:
+        lw      v1, 0x08E8(v0)              // original line 1
+        j       _return
+        lw      a2, 0x08EC(v0)              // original line 2
+    }
+
+    // prevents a crash while some characters are performing cliff attack quick 2
+    // hook in 0x801452B4
+    scope platform_despawn_crash_fix_2: {
+        OS.patch_start(0xBFD88, 0x80145348)
+        j       platform_despawn_crash_fix_2
+        lw      a0, 0x0B1C(s0)              // get clipping currently on top of
+        _return:
+        OS.patch_end()
+
+        OS.read_word(Global.stage_clipping.info, v1) // v1 = stage clipping info
+
+        // a0 = clipping id
+        // copied below from 0x800F4240
+        sll     t7, a0, 2
+        addu    t7, t7, a0
+        sll     t7, t7, 1
+        addu    t8, v1, t7                  // t8 = offset to clipping struct
+        lbu     t9, 0x0000(t8)
+        lui     t7, 0x8013
+        lw      t7, 0x1304(t7)
+        sll     v1, t9, 2
+        addu    t8, t7, v1
+        lw      t2, 0x0000(t8)
+        lui     v1, 0x8013
+        lw      t9, 0x0084(t2)              // get clipping status
+        slti    a2, t9, 0x0003              // if cliff >= 3, a2 = 0
+
+        bnez    a2, _normal                 // normal logic
+        nop
+
+        jal     0x8013F9E0                  // set aerial idle
+        lw      a0, 0x0004(s0)              // a0 = player obj
+
+        j       0x801453DC                  // exit function
+        nop
+
+        _normal:
+        jal     0x800FA7B8                  // og line 1
+        lw      a0, 0x0B1C(s0)              // og line 2
+        j       _return
+        nop
+    }
 
 } // __HAZARDS__

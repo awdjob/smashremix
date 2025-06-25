@@ -34,4 +34,17 @@ scope JSamus {
     Character.table_patch_start(action_string, Character.id.JSAMUS, 0x4)
     dw  Action.SAMUS.action_string_table
     OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JSAMUS, 0x2)
+    dh {MIDI.id.CRATERIA_MAIN}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.JSAMUS, 0x4)
+    db      Character.id.SAMUS
+    db      Character.id.ESAMUS
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
 }

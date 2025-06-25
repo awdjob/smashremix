@@ -18,7 +18,7 @@ scope DrMario {
     insert FSMASH_M_HI,"moveset/FORWARD_SMASH_MID_HIGH.bin"
     insert FSMASH,"moveset/FORWARD_SMASH.bin"
     insert FSMASH_M_LO,"moveset/FORWARD_SMASH_MID_LOW.bin"
-    insert FSMASH_LO,"moveset/FORWARD_SMASH_MID_LOW.bin"
+    insert FSMASH_LO,"moveset/FORWARD_SMASH_LOW.bin"
     insert USMASH,"moveset/UP_SMASH.bin"
     insert DSMASH,"moveset/DOWN_SMASH.bin"
     insert NAIR,"moveset/NEUTRAL_AERIAL.bin"
@@ -26,18 +26,18 @@ scope DrMario {
     insert BAIR,"moveset/BACK_AERIAL.bin"
     insert UAIR,"moveset/UP_AERIAL.bin"
     insert DAIR,"moveset/DOWN_AERIAL.bin"
-    insert NSP_GROUND, "moveset/NEUTRAL_SPECIAL_AIR.bin"
-    insert NSP_AIR, "moveset/NEUTRAL_SPECIAL_GROUND.bin"
+    insert NSP_GROUND, "moveset/NEUTRAL_SPECIAL_GROUND.bin"
+    insert NSP_AIR, "moveset/NEUTRAL_SPECIAL_AIR.bin"
     insert USP, "moveset/UP_SPECIAL.bin"
     insert DSP_GROUND, "moveset/DOWN_SPECIAL_GROUND.bin"
     insert DSP_AIR, "moveset/DOWN_SPECIAL_AIR.bin"
     BTHROW:; Moveset.THROW_DATA(BTHROWDATA); insert "moveset/BTHROW.bin"
     insert BTHROWDATA, "moveset/BTHROWDATA.bin"
+    insert VICTORY_1, "moveset/VICTORY_1.bin"
+    insert VICTORY_2, "moveset/VICTORY_2.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(DRM,   Action.Taunt,           File.DRM_TAUNT,             TAUNT,                      -1)
@@ -71,7 +71,8 @@ scope DrMario {
     Character.edit_action_parameters(DRM,   Action.ThrowB,          File.DRM_BTHROW,            BTHROW,                     0x50000000)
 
     // Modify Menu Action Parameters                // Action           // Animation                // Moveset Data             // Flags
-
+    Character.edit_menu_action_parameters(DRM,      0x2,                File.DRM_VICTORY_1,         VICTORY_1,                  0x10000000)
+    Character.edit_menu_action_parameters(DRM,      0x3,                File.DRM_VICTORY_2,         VICTORY_2,                  0x10000000)
     Character.edit_menu_action_parameters(DRM,      0xE,                File.DRM_1P_CPU_POSE,       0x80000000,                 -1)
 
      Character.table_patch_start(variants, Character.id.DRM, 0x4)
@@ -119,7 +120,7 @@ scope DrMario {
         //string_0x0DC:; String.insert("Jab3")
         //string_0x0DD:; String.insert("Appear1")
         //string_0x0DE:; String.insert("Appear2")
-        string_0x0DF:; String.insert("MegavitaminGround")
+        string_0x0DF:; String.insert("Megavitamin")
         string_0x0E0:; String.insert("MegavitaminAir")
         //string_0x0E1:; String.insert("SuperJumpPunch")
         //string_0x0E2:; String.insert("SuperJumpPunchAir")
@@ -143,103 +144,8 @@ scope DrMario {
     dw  Action.action_string_table
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.DRM, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.DRM, 0x2)
+    dh {MIDI.id.DR_MARIO}
     OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  8,  25,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  1,   44,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  1,   44,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  8,   29,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  5,   11,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  13,  18,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  17,  21,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,   18,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   6,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  2,   5,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  3,   36,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  2,   11,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  6,   20,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  6,   20,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  7,   15,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  5,   16,  -1, -1, -1, -1)
-
-    // Hardcoding for when Mario Clones use Pipes, ensures they face the correct way when entering
-    // TEMP LOCATION
-    scope pipe_turn_enter: {
-        OS.patch_start(0xBCC40, 0x80142200)
-        j       pipe_turn_enter
-        nop                                 // original line 2
-        _return:
-        OS.patch_end()
-
-        beq     v0, r0, _mario_turn         // modified original line 1, correct turn
-        addiu   at, r0, Character.id.NDRM   // Poly Dr. Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.NWARIO // Poly Wario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.JMARIO // J Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.JLUIGI // J Luigi ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.MLUIGI // Metal Luigi ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.WARIO  // Wario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.GOEMON // Goemon ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.EBI    // Ebisumaru ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.DRM    // Dr. Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        nop
-        j       _return                     // return
-        addiu   at, r0, 0x000D              // reinserting in the interest of caution
-
-        _mario_turn:
-        j       0x80142228                  // modified original line 1, routine having Mario properly turn during Pipe animation
-        addiu   at, r0, 0x000D              // reinserting in the interest of caution
-    }
-
-    // Hardcoding for when Mario Clones use Pipes, ensures they face the correct way when exiting
-    // TEMP LOCATION
-    scope pipe_turn_exit: {
-        OS.patch_start(0xBD19C, 0x8014275C)
-        j       pipe_turn_exit
-        sw      t5, 0x0B3C(s0)              // original line 2
-        _return:
-        OS.patch_end()
-
-        beq     v0, r0, _mario_turn         // modified original line 1, correct turn
-        addiu   at, r0, Character.id.NDRM   // Poly Dr. Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.NWARIO // Poly Wario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.JMARIO // J Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.JLUIGI // J Luigi ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.MLUIGI // Metal Luigi ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.WARIO  // Wario ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.GOEMON // Goemon ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.EBI    // Ebisumaru ID
-        beq     v0, at, _mario_turn         // correct turn
-        addiu   at, r0, Character.id.DRM    // Dr. Mario ID
-        beq     v0, at, _mario_turn         // correct turn
-        nop
-        j       _return                     // return
-        nop
-
-        _mario_turn:
-        j       0x801427AC                  // modified original line 1, routine having Mario properly turn during Pipe animation
-        nop
-    }
 }

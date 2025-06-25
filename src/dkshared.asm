@@ -145,7 +145,7 @@ scope DKShared {
         addiu   at, r0, 0x0010              // original line 2
 
         _item_jump_4:
-        j       0x800EA3CA
+        j       0x800EA3C4
         addiu   at, r0, 0x0010              // original line 2
     }
 
@@ -306,7 +306,7 @@ scope DKShared {
         _cpu_2:
         j       0x80138F90
         addiu   at, r0, 0x0010              // original line 2
-	
+
 		_marina:
         lw		v0, 0x0024(a2)				// v0 = current action id
 		lli		at, Marina.Action.Cargo
@@ -320,11 +320,11 @@ scope DKShared {
 		lli		at, Marina.Action.CargoTurn
 		beq		at, v0, _marina_cargo
 		nop
-		
+
 		// if here, no marina cargo
 		j		0x8013900C
 		addiu	v1, a2, 0x01CC				// v1 = ai struct
-		
+
 		_marina_cargo:
         j       0x801392B8					// goto 0x801392B8
         addiu	v0, r0, 0x0000				// return 0
@@ -339,14 +339,16 @@ scope DKShared {
         OS.patch_end()
 
         lw      t6, 0x0008(s0)              // load character ID
-        beq     t6, at, _sonic              // modified original line 1
+        beq     t6, at, _sonic              // branch if character = Sonic
+        lli     at, Character.id.LANKY      // at = id.LANKY
+        beq     t6, at, _lanky              // branch if character = Lanky
         addiu   at, r0, Character.id.SSONIC // SSONIC ID
         bnel    t6, at, _end
         addiu   a0, a0, 0xE654              // original line 2
 
         _ssonic:
         addiu   at, r0, 0x0001
-        lw      t6, 0x0044(s0)              // load character ID
+        lw      t6, 0x0044(s0)              // load direction
         bne     t6, at, _ssonic_left        // if facing left, use left
         sw      r0, 0x0044(s0)              // clears out player facing
         li      a0, ssonic_entry_struct_right
@@ -360,7 +362,7 @@ scope DKShared {
 
         _sonic:
         addiu   at, r0, 0x0001
-        lw      t6, 0x0044(s0)              // load character ID
+        lw      t6, 0x0044(s0)              // load direction
         bne     t6, at, _sonic_left                 // if facing left, use left
         sw      r0, 0x0044(s0)              // clears out player facing
         li      a0, sonic_entry_struct_right
@@ -371,6 +373,9 @@ scope DKShared {
         li      a0, sonic_entry_struct_left
         beq     r0, r0, _end
         nop
+
+        _lanky:
+        li      a0, lanky_entry_struct
 
         _end:
         jal     0x800FDAFC                  // original line 1
@@ -383,7 +388,7 @@ scope DKShared {
 
     sonic_entry_struct_right:
     // Entry Objects like the barrel have structs which are used to load them, similar to the Blue Falcon and others
-    // Needs UPDATED whenever Tails file updated due to offsets
+    // Needs UPDATED whenever Tails file updated due to offsets, original is at 0xA9E54
     dw  0x040A0000
     dw  Character.SONIC_file_8_ptr // pointer to pointer to Tails file
     dw  0x1C00001C
@@ -397,7 +402,7 @@ scope DKShared {
 
     sonic_entry_struct_left:
     // Entry Objects like the barrel have structs which are used to load them, similar to the Blue Falcon and others
-    // Needs UPDATED whenever Tails file updated due to offsets
+    // Needs UPDATED whenever Tails file updated due to offsets, original is at 0xA9E54
     dw  0x040A0000
     dw  Character.SONIC_file_8_ptr // pointer to pointer to Tails file
     dw  0x1C00001C
@@ -411,7 +416,7 @@ scope DKShared {
 
     ssonic_entry_struct_right:
     // Entry Objects like the barrel have structs which are used to load them, similar to the Blue Falcon and others
-    // Needs UPDATED whenever Tails file updated due to offsets
+    // Needs UPDATED whenever Tails file updated due to offsets, original is at 0xA9E54
     dw  0x040A0000
     dw  Character.SSONIC_file_8_ptr // pointer to pointer to Tails file
     dw  0x1C00001C
@@ -425,7 +430,7 @@ scope DKShared {
 
     ssonic_entry_struct_left:
     // Entry Objects like the barrel have structs which are used to load them, similar to the Blue Falcon and others
-    // Needs UPDATED whenever Tails file updated due to offsets
+    // Needs UPDATED whenever Tails file updated due to offsets, original is at 0xA9E54
     dw  0x040A0000
     dw  Character.SSONIC_file_8_ptr // pointer to pointer to Tails file
     dw  0x1C00001C
@@ -435,5 +440,19 @@ scope DKShared {
     dw  0x0000A5E8          // offset
     dw  0x00000000
     dw  0x000112AC          // offset
+    dw  0x00000000
+
+    lanky_entry_struct:
+    // Entry Objects like the barrel have structs which are used to load them, similar to the Blue Falcon and others
+    // Needs UPDATED whenever Tails file updated due to offsets, original is at 0xA9E54
+    dw  0x040A0000
+    dw  Character.LANKY_file_7_ptr // pointer to pointer to Tails file
+    dw  0x1C00001C
+    dw  0x00000000
+    dw  0x800FD568
+    dw  0x80014038
+    dw  0x00000F88          // offset
+    dw  0x00000000
+    dw  0x000014E4          // offset
     dw  0x00000000
 }

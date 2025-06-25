@@ -45,8 +45,8 @@ scope NDrMario {
     // Modify Menu Action Parameters                // Action           // Animation                // Moveset Data             // Flags
     Character.edit_menu_action_parameters(NDRM,     0xE,                File.DRM_1P_CPU_POSE,       0x80000000,                 -1)
     Character.edit_menu_action_parameters(NDRM,     0x4,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NDRM,     0x3,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NDRM,     0x2,                -1,                         0x80000000,                 -1)
+    Character.edit_menu_action_parameters(NDRM,     0x3,                File.DRM_VICTORY_2,         DrMario.VICTORY_2,          0x10000000)
+    Character.edit_menu_action_parameters(NDRM,     0x2,                File.DRM_VICTORY_1,         DrMario.VICTORY_1,          0x10000000)
     Character.edit_menu_action_parameters(NDRM,     0x1,                -1,                         0x80000000,                 -1)
 
     // Set action strings

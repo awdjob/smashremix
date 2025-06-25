@@ -144,9 +144,7 @@ scope Sonic {
     insert VICTORY1,"moveset/VICTORY1.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(SONIC, Action.Idle,            File.SONIC_IDLE,            IDLE,                       -1)
@@ -189,6 +187,7 @@ scope Sonic {
     Character.edit_action_parameters(SONIC, Action.CapturePulled,   -1,                         DMG_1,                      -1)
     Character.edit_action_parameters(SONIC, Action.Thrown1,         -1,                         DMG_1,                      -1)
     Character.edit_action_parameters(SONIC, Action.Thrown2,         -1,                         DMG_1,                      -1)
+    Character.edit_action_parameters(SONIC, Action.ThrownFoxB,      0x2C8,                      DMG_1,                      -1)
 
     Character.edit_action_parameters(SONIC, Action.Stun,            File.SONIC_STUN,            STUN,                       -1)
     Character.edit_action_parameters(SONIC, Action.Sleep,           File.SONIC_STUN,            ASLEEP,                     -1)
@@ -247,13 +246,16 @@ scope Sonic {
     Character.edit_action_parameters(SONIC, Action.EnterPipe,       File.SONIC_ENTER_PIPE,      -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.ExitPipe,        File.SONIC_EXIT_PIPE,       -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.DownStandU,      File.SONIC_DOWNSTANDU,      -1,                         -1)
+    Character.edit_action_parameters(SONIC, Action.StunLandU,       File.SONIC_DOWNBOUNCEU,      -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.StunStartU,      File.SONIC_DOWNSTANDU,      -1,                         -1)
-    Character.edit_action_parameters(SONIC, Action.Revive2,         File.SONIC_DOWNSTANDU,      -1,                         -1)
+    Character.edit_action_parameters(SONIC, Action.Revive1,         File.SONIC_DOWNBOUNCED,      -1,                         -1)
+    Character.edit_action_parameters(SONIC, Action.Revive2,         File.SONIC_DOWNSTANDD,      -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.DownStandD,      File.SONIC_DOWNSTANDD,      -1,                         -1)
+    Character.edit_action_parameters(SONIC, Action.StunLandD,       File.SONIC_DOWNBOUNCED,      -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.StunStartD,      File.SONIC_DOWNSTANDD,      -1,                         -1)
-    Character.edit_action_parameters(SONIC, Action.DownBounceU,     -1,                         DOWNBOUNCE,                 -1)
-    Character.edit_action_parameters(SONIC, Action.DownBounceD,     -1,                         DOWNBOUNCE,                 -1)
-    Character.edit_action_parameters(SONIC, Action.DownAttackU,     File.SONIC_DOWNATTACKU,     DOWNATTACKU,                         -1)
+    Character.edit_action_parameters(SONIC, Action.DownBounceU,     File.SONIC_DOWNBOUNCEU,     DOWNBOUNCE,                 -1)
+    Character.edit_action_parameters(SONIC, Action.DownBounceD,     File.SONIC_DOWNBOUNCED,     DOWNBOUNCE,                 -1)
+    Character.edit_action_parameters(SONIC, Action.DownAttackU,     File.SONIC_DOWNATTACKU,     DOWNATTACKU,                -1)
     Character.edit_action_parameters(SONIC, Action.DownBackU,       File.SONIC_DOWNBACKU,       -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.DownBackD,       File.SONIC_DOWNBACKD,       -1,                         -1)
     Character.edit_action_parameters(SONIC, Action.DownForwardD,    File.SONIC_DOWNFORWARDD,    -1,                         -1)
@@ -403,47 +405,6 @@ scope Sonic {
     dw 0x8013DCAC                         // routine typically used by DK to load Barrel, now used for Tails
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.SONIC, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.SONIC, 0x4)
-    dw      AI.PREVENT_ATTACK.ROUTINE.SONIC_DSP
-    OS.patch_end()
-
-	// Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.SONIC, 0x4)
-    dw    	AI.LONG_RANGE.ROUTINE.NONE
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  4,  41,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  18, 18+47, 50, 1500, -400, 200)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  18, 18+47, 50, 1500, -400, 200)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  8,  20,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  5,  10,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  7,  14,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  17, 22,    -1, 720.0, -1, -1) // less range than Fox
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  7,  12,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1, -1,    -1, -1, -1, -1)    // todo: check range
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  3,  7,     -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,  27,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  21, 21+21, -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  21, 21+21, -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  4,  14,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  6,  60,    -60, 60, -200, 40)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  0, 0,    0, 0, 0, 0)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  6,  21,    -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,  11,    -1, -1, -1, -1)
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(behavior_table_origin, attack_name, new_attack, start_hb_frame, end_hb_frame, min_x,   max_x,   min_y,   max_y)
-
-
-
     // @ Description
     // Sonic's extra actions
     scope Action {
@@ -539,6 +500,10 @@ scope Sonic {
     dh  0x0068
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.SONIC, 0x2)
+    dh {MIDI.id.GREEN_HILL_ZONE}
+    OS.patch_end()
 
     // @ Description
     // Patch which loads the current animation frame when swapping to/from Classic Sonic on the character select screen.
@@ -1167,13 +1132,23 @@ scope Sonic {
         _return:
         OS.patch_end()
 
-        addiu   at, r0, Character.id.SONIC  // SSONIC ID
+        // polygon check
         lw      t6, 0x0008(s0)              // load character ID
+        slti    at, t6, Character.id.NWARIO // at = 0 if remix polygon character
+        beqz    at, _end                    // don't change direction for polygon entry animation
+        slti    at, t6, Character.id.METAL + 1   // at = 1 if vanilla OG 12 character or Master Hand
+        bnezl   at, _end
+        sw      r0, 0x0044(s0)              // original line 2, clears out player facing
+        slti    at, t6, Character.id.GDONKEY// at = 1 if original Polygon character
+        bnez    at, _end                    // don't change direction for polygon entry animation
+
+        _sonic_check:
+        addiu   at, r0, Character.id.SONIC  // SSONIC ID
+
         beq     t6, at, _end                // modified original line 1
         addiu   at, r0, Character.id.SSONIC // SSONIC ID
         bnel    t6, at, _end
         sw      r0, 0x0044(s0)              // original line 2, clears out player facing
-
 
         _end:
         j       _return

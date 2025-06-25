@@ -7,7 +7,9 @@
 scope MarthUSP {
     // floating point constants for physics and fsm
     constant AIR_Y_SPEED(0x43C8)            // current setting - float32 400
+    constant AIR_Y_SPEED_ROY(0x42E8)        // current setting - float32 116
     constant GROUND_Y_SPEED(0x43D2)         // current setting - float32 420
+    constant GROUND_Y_SPEED_ROY(0x42F0)     // current setting - float32 120
     constant X_SPEED(0x4120)                // current setting - float32 10
     constant END_AIR_ACCELERATION(0x3C20)   // current setting - float32 0.00977
     constant END_AIR_SPEED(0x41C0)          // current setting - float32 24
@@ -49,9 +51,8 @@ scope MarthUSP {
         lw      v1, 0x0058(v1)              // v1 = gravity
         sw      v1, 0x004C(a0)              // y velocity = gravity
         lw      ra, 0x001C(sp)              // ~
-        addiu   sp, sp, 0x0020              // ~
         jr      ra                          // original return logic
-        nop
+        addiu   sp, sp, 0x0020              // ~
     }
 
     // @ Description
@@ -75,9 +76,8 @@ scope MarthUSP {
         ori     v1, r0, 0x0001              // ~
         sw      v1, 0x0184(a0)              // temp variable 3 = 0x1(BEGIN)
         lw      ra, 0x001C(sp)              // ~
-        addiu   sp, sp, 0x0020              // ~
         jr      ra                          // original return logic
-        nop
+        addiu   sp, sp, 0x0020              // ~
     }
 
     // @ Description
@@ -97,9 +97,8 @@ scope MarthUSP {
         lw      ra, 0x0024(sp)              // restore ra
 
         _end:
-        addiu   sp, sp, 0x0028              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0028              // deallocate stack space
     }
 
     // @ Description
@@ -125,9 +124,8 @@ scope MarthUSP {
         lw      t0, 0x0004(sp)              // ~
         lw      t1, 0x0008(sp)              // ~
         lw      ra, 0x000C(sp)              // load t0, t1, ra
-        addiu   sp, sp, 0x0010              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0010              // deallocate stack space
     }
 
     // @ Description
@@ -207,12 +205,23 @@ scope MarthUSP {
         bne     t0, t1, _check_end_move     // skip if temp variable 3 != BEGIN_MOVE
         nop
         // initialize x/y velocity
+        lw      t0, 0x0008(s0)              // t0 = character id
+        lli     t1, Character.id.ROY        // t1 = id.Roy
+        beq     t0, t1, _roy_speed          // branch if roy
         lw      t0, 0x0024(s0)              // t0 = current action
         lli     t1, Marth.Action.USPG       // t1 = Action.USPG
         beq     t0, t1, _calculate_velocity // branch if current action = USP_GROUND
         lui     t0, GROUND_Y_SPEED          // t0 = GROUND_Y_SPEED
         // if current action != USP_GROUND
+        b       _calculate_velocity         // branch
         lui     t0, AIR_Y_SPEED             // t0 = AIR_Y_SPEED
+
+        _roy_speed:
+        lli     t1, Marth.Action.USPG       // t1 = Action.USPG
+        beq     t0, t1, _calculate_velocity // branch if current action = USP_GROUND
+        lui     t0, GROUND_Y_SPEED_ROY      // t0 = GROUND_Y_SPEED_ROY
+        // if current action != USP_GROUND
+        lui     t0, AIR_Y_SPEED_ROY         // t0 = AIR_Y_SPEED_ROY
 
         _calculate_velocity:
         mtc1    t0, f4                      // f4 = Y_SPEED
@@ -231,6 +240,10 @@ scope MarthUSP {
 
         // update x velocity based on stick_x
         // f0 = stick_x (relative to direction)
+        lw      t0, 0x0008(s0)              // t0 = character id
+        lli     t1, Character.id.ROY        // t1 = id.Roy
+        beq     t0, t1, pc() + 12           // branch if Roy...
+        lui     t0, 0x3F40                  // ...and use 0.75 instead of 2
         lui     t0, 0x4000                  // ~
         mtc1    t0, f2                      // f2 = 2
         mul.s   f2, f0, f2                  // f2 = x velocity (stick_x * 2)
@@ -279,6 +292,10 @@ scope MarthUSP {
         swc1    f0, 0x0048(s0)              // x velocity = (x velocity * 0.125) + X_SPEED
         // slow y movement
         lwc1    f0, 0x004C(s0)              // f0 = current y velocity
+        lw      t0, 0x0008(s0)              // t0 = character id
+        lli     t1, Character.id.ROY        // t1 = id.Roy
+        beq     t0, t1, pc() + 12           // branch if Roy...
+        lui     t0, 0x3EC0                  // ...and use 0.375 instead of 0.09375
         lui     t0, 0x3DC0                  // ~
         mtc1    t0, f2                      // f2 = 0.09375
         mul.s   f0, f0, f2                  // f0 = y velocity * 0.09375
@@ -295,9 +312,8 @@ scope MarthUSP {
         lw      ra, 0x001C(sp)              // ~
         lw      s0, 0x0014(sp)              // ~
         lw      s1, 0x0018(sp)              // original load registers
-        addiu   sp, sp, 0x0038              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0038              // deallocate stack space
     }
 
     // @ Description
@@ -318,9 +334,8 @@ scope MarthUSP {
         lw      ra, 0x0014(sp)              // ~
         lw      t0, 0x0020(sp)              // ~
         lw      t1, 0x0024(sp)              // load ra, t0, t1
-        addiu   sp, sp, 0x0028              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0028              // deallocate stack space
     }
 
     // @ Description
@@ -356,6 +371,22 @@ scope MarthNSP {
         sw      a0, 0x0020(sp)              // store ra, a0
         sw      r0, 0x0010(sp)              // argument 4 = 0
         or      a2, r0, r0                  // a2 = float: 0.0
+
+        lw      v0, 0x0084(a0)              // v0 =  fighter struct
+        lw      t0, 0x0008(v0)              // t0 = character id
+        addiu   at, r0, Character.id.KIRBY
+        beq     at, t0, _kirby              // branch if KIRBY
+        addiu   at, r0, Character.id.JKIRBY
+        bne     at, t0, _change_action      // branch if not JKIRBY
+        nop
+
+        _kirby:
+        lb      t0, 0x0980(v1)              // t0 = current hat ID
+        addiu   at, r0, 0x2C                // at = Kirbys ROY hat ID
+        beql    at, t0, _change_action      // branch if ROY hat ID
+        addiu   a1, a1, 101                 // a1 += 101 (Equivalent Kirby Roy NSP action ID)
+        
+        _change_action:
         jal     0x800E6F24                  // change action
         lui     a3, 0x3F80                  // a3 = float: 1.0
         jal     0x800E0830                  // unknown common subroutine
@@ -366,9 +397,8 @@ scope MarthNSP {
         sw      r0, 0x0180(a0)              // temp variable 2 = 0
         sw      r0, 0x0184(a0)              // temp variable 3 = 0
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -392,9 +422,8 @@ scope MarthNSP {
         jal     ground_shared_initial_      // ground_shared_initial_
         nop
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -427,9 +456,8 @@ scope MarthNSP {
         jal     ground_shared_initial_      // ground_shared_initial_
         sw      at, 0x0B20(v1)              // set stage to 1(second stage)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -462,9 +490,8 @@ scope MarthNSP {
         jal     ground_shared_initial_      // ground_shared_initial_
         sw      at, 0x0B20(v1)              // set stage to 2(third stage)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -479,6 +506,22 @@ scope MarthNSP {
         sw      a1, 0x0024(sp)              // store ra, a0, a1
         sw      r0, 0x0010(sp)              // argument 4 = 0
         or      a2, r0, r0                  // a2 = float: 0.0
+
+        lw      v0, 0x0084(a0)              // v0 =  fighter struct
+        lw      t0, 0x0008(v0)              // t0 = character id
+        addiu   at, r0, Character.id.KIRBY
+        beq     at, t0, _kirby              // branch if KIRBY
+        addiu   at, r0, Character.id.JKIRBY
+        bne     at, t0, _change_action      // branch if not JKIRBY
+        nop
+
+        _kirby:
+        lb      t0, 0x0980(v1)              // t0 = current hat ID
+        addiu   at, r0, 0x2C                // at = Kirbys ROY hat ID
+        beql    at, t0, _change_action      // branch if ROY hat ID
+        addiu   a1, a1, 101                 // a1 += 101 (Equivalent Kirby Roy NSP action ID)
+        
+        _change_action:
         jal     0x800E6F24                  // change action
         lui     a3, 0x3F80                  // a3 = float: 1.0
         jal     0x800E0830                  // unknown common subroutine
@@ -539,9 +582,8 @@ scope MarthNSP {
         _end:
         sw      v1, 0x004C(a0)              // update y velocity
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -565,9 +607,8 @@ scope MarthNSP {
         jal     air_shared_initial_         // air_shared_initial_
         nop
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -600,9 +641,8 @@ scope MarthNSP {
         jal     air_shared_initial_         // air_shared_initial_
         sw      at, 0x0B20(v1)              // set stage to 1(second stage)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -635,9 +675,8 @@ scope MarthNSP {
         jal     air_shared_initial_         // air_shared_initial_
         sw      at, 0x0B20(v1)              // set stage to 2(third stage)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -693,9 +732,8 @@ scope MarthNSP {
 
         _end:
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -751,9 +789,8 @@ scope MarthNSP {
 
         _end:
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -765,9 +802,8 @@ scope MarthNSP {
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -779,9 +815,8 @@ scope MarthNSP {
         jal     0x800DDDDC                  // common ground collision subroutine (transition on no floor, slide-off)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -793,9 +828,8 @@ scope MarthNSP {
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -822,9 +856,8 @@ scope MarthNSP {
 
         _end:
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -847,9 +880,8 @@ scope MarthNSP {
 
         _end:
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 }
 
@@ -876,9 +908,8 @@ scope MarthDSP {
         sw      r0, 0x0184(a0)              // temp variable 3 = 0
         sw      r0, 0x0B18(a0)              // hit detection = FALSE
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -907,9 +938,8 @@ scope MarthDSP {
         mul.s   f4, f4, f6                  // f4 = x velocity * 0.5
         swc1    f4, 0x0048(a0)              // store updated x velocity
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -930,9 +960,8 @@ scope MarthDSP {
         jal     0x800E0830                  // unknown common subroutine
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -953,9 +982,8 @@ scope MarthDSP {
         jal     0x800E0830                  // unknown common subroutine
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -1019,9 +1047,8 @@ scope MarthDSP {
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0040              // deallocate stack space
         jr      ra
-        nop
+        addiu   sp, sp, 0x0040              // deallocate stack space
     }
 
     // @ Description
@@ -1043,9 +1070,8 @@ scope MarthDSP {
         swc1    f4, 0x004C(a0)              // store updated y velocity
 
         lw      ra, 0x0014(sp)
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description
@@ -1057,9 +1083,8 @@ scope MarthDSP {
         jal     0x800DDE84                  // common ground collision subroutine (transition on no floor, no slide-off)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -1071,9 +1096,8 @@ scope MarthDSP {
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
         nop
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0018              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -1097,9 +1121,8 @@ scope MarthDSP {
         jal     0x800D8EB8                  // momentum capture?
         lw      a0, 0x0034(sp)              // a0 = player struct
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0038              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0038              // deallocate stack space
     }
 
     // @ Description
@@ -1121,9 +1144,8 @@ scope MarthDSP {
         jal     0x800E6F24                  // change action
         sw      t6, 0x0010(sp)              // argument 4 = 0x2803 (continue: sword trails, 3C command FGM, gfx routines, hitboxes)
         lw      ra, 0x001C(sp)              // load ra
-        addiu   sp, sp, 0x0038              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0038              // deallocate stack space
     }
 
     // @ Description
@@ -1143,6 +1165,11 @@ scope MarthDSP {
         lw      t8, 0x0008(a0)              // t8 = character id
         lli     t9, Character.id.MARTH      // t9 = id.MARTH
         bne     t8, t9, _end                // skip if character != MARTH
+        // comment out the above and uncomment the below to give Roy a counter lmao
+        //beq     t8, t9, _check_action       // branch if MARTH
+        //nop
+        //lli     t9, Character.id.ROY        // t9 = id.ROY
+        //bne     t8, t9, _end                // skip if character != ROY
         nop
 
         _check_action:

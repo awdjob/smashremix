@@ -62,6 +62,8 @@ scope Shield {
 
         lw      t1, 0x0084(a0)              // t1 = shield object special struct
         lw      t0, 0x0004(t1)              // t0 = player object
+        beqz    t0, _normal                 // exit if there is no player object stored here
+        nop
         lw      t0, 0x0084(t0)              // t0 = player struct
         lw      t1, 0x0018(t1)              // t1 = port shielding
         sll     t2, t1, 0x0002              // t2 = port * 4
@@ -136,6 +138,11 @@ scope Shield {
         j       _color_fix_return           // return
         ori     t8, t8, 0x00C0              // set alpha channel
 
+        _normal:
+        b       _return
+        ori     t8, t6, 0x00C0              // original line 2
+
+        OS.align(4)
         table_ffa:
         dw (0xFFFFFF00 & Color.high.RED)    // p1
         dw (0xFFFFFF00 & Color.high.BLUE)   // p2
@@ -374,7 +381,7 @@ scope Shield {
         // s0 = captured player struct
 
         lw      t1, 0x0844(s0)              // t1 = player.entity_captured_by
-        sw      t1, 0x0028(sp)              // save into unused stack space
+        sw      t1, 0x07A0(s0)              // save into unused player struct space
         jr      ra
         sw      r0, 0x0844(s0)              // original line 1
 
@@ -400,10 +407,10 @@ scope Shield {
         addiu   sp, sp, -0x0030             // allocate stack space for MODEL_PART_IMAGE_INIT_
         addiu   sp, sp, 0x0030              // restore stack space
 
-        lw      a0, 0x0058(sp)              // a0 = capturer player object
+        lw      a0, 0x07A0(s0)              // a0 = capturer player object
         bnez    a0, _get_capturer_shield_color // branch if a player is actually capturing
-        nop
-        // if we're here, this is Cruel Z cancel 'EGG'; we match the costume color in this case       
+        sw      r0, 0x07A0(s0)              // set capturer to 0
+        // if we're here, this is Cruel Z cancel 'EGG'; we match the costume color in this case
         // s0 = player struct
         lw      t8, 0x0008(s0)              // t8 = char_id
         li      v1, Character.costume_shield_color.table

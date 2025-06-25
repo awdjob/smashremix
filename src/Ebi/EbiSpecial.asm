@@ -584,7 +584,7 @@ scope EbiNSP {
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         lli     t6, 0x0803                  // ~
         jal     0x800E6F24                  // change action
-        
+
         sw      t6, 0x0010(sp)              // argument 4 = 0x0802 (continue: 3C FGM, gfx routines)
         lw      ra, 0x001C(sp)              // load ra
         jr      ra                          // return
@@ -694,6 +694,18 @@ scope EbiNSP {
     float32 60                              // NSP_Ground_BWalk2
 
 }
+
+// @ Description
+// Refreshes USP flag when hit
+scope EbiUSPRefresh: {
+    sw  r0, 0x0ADC(a0)              // set up special bool to FALSE
+    jr  ra
+    nop
+}
+
+Character.table_patch_start(on_hit, Character.id.EBI, 0x4)
+dw EbiUSPRefresh;
+OS.patch_end()
 
 // @ Description
 // Subroutines for Up Special
@@ -1152,7 +1164,7 @@ scope EbiDSP {
         jr      ra                          // return
         addiu   sp, sp, 0x0018              // deallocate stack space
     }
-    
+
 
     // @ Description
     scope grounded_main_: {
@@ -1270,28 +1282,15 @@ scope EbiDSP {
 
         // If Wario is not in the ground pound motion, run a normal aerial collision subroutine
         // instead.
-        jal     0x800DE99C                  // aerial collision subroutine
+        jal     0x800DE978                  // aerial collision subroutine
         nop
         b       _end                        // branch to end
         nop
 
         _main_collision:
-        li      a1, begin_landing_           // a1 = begin_landing_
-        jal     0x800DE6E4                  // general air collision?
+        li      a1, begin_landing_          // a1 = begin_landing_
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
         lw      a0, 0x0010(sp)              // load a0
-        lw      a0, 0x0010(sp)              // load a0
-        jal     0x800DE87C                  // check ledge/floor collision?
-        nop
-        beq     v0, r0, _end                // skip if !collision
-        nop
-        lw      a0, 0x0010(sp)              // load a0
-        lw      a1, 0x0084(a0)              // a1 = player struct
-        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
-        andi    a2, a2, 0x3000              // bitmask
-        beq     a2, r0, _end                // skip if !ledge_collision
-        nop
-        jal     0x80144C24                  // ledge grab subroutine
-        nop
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
@@ -1371,8 +1370,8 @@ scope EbiDSP {
         addiu   sp, sp, 0x0020              // ~
     }
 
-    // 
-    // 
+    //
+    //
     scope recoil_main_: {
         OS.routine_begin(0x20)
         lw      v1, 0x0084(a0)

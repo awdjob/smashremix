@@ -1,6 +1,7 @@
 
     // @ Description
-    // Subroutines used by AirDodge.
+    // Allows players to jump while hanging from ledge
+    // by halofactory
     scope LedgeJump {
     
         // @ Description

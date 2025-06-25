@@ -17,14 +17,13 @@ scope Transitions {
 
     // @ Description
     // Number of transitions, original + restored + new
-    constant NUM_TRANSITIONS(11 + 2 + 1)
-    constant NUM_TRANSITIONS_FLOATING_POINT(0x41500000)
+    constant NUM_TRANSITIONS(11 + 2 + 2)
+    constant NUM_TRANSITIONS_FLOATING_POINT(0x41600000) // 0-based
 
     pushvar origin, base
 
     // Shrink the original table to use halfwords so we can fit the restored transitions in the same space.
-    // Then we squeeze in some pointers for the debug menu.
-    // The strings make us use >100% of the original space, so we have to move them to expansion RAM.
+    // The pointers and strings make us use >100% of the original space, so we have to move them to expansion RAM.
     origin TRANSITONS_TABLE_ORIGIN
     base TRANSITONS_TABLE
     // original
@@ -44,24 +43,27 @@ scope Transitions {
     dh 0x002F, 0x0F98, 0x101C, 0x0000 // file 2F's vertical flip
     // new
     dh File.TRANSITION_SMASH_LOGO, 0x3C80, 0x4138, 0x0000 // smash logo
+    dh File.TRANSITION_REMIX_LOGO, 0xAB60, 0xAF40, 0x0000 // remix logo
+    end_of_table:
+    pullvar base, origin
 
     debug_menu_label_array:
     OS.copy_segment(0x11B5DC, 0x2C) // original array
     dw string_shapes
     dw string_flip
     dw string_smash_logo
-
-    pullvar base, origin
+    dw string_remix_logo
 
     string_shapes:; db "Falling Shapes", 0
     string_flip:; db "Flip", 0
     string_smash_logo:; db "Smash Logo", 0
+    string_remix_logo:; db "Remix Logo", 0
     OS.align(4)
 
     // @ Description
     // Fix end of table during max size loop
     OS.patch_start(0x4FE04, 0x800D4424)
-    addiu   s2, s2, debug_menu_label_array & 0x0000FFFF
+    addiu   s2, s2, end_of_table & 0x0000FFFF
     OS.patch_end()
 
     // @ Description

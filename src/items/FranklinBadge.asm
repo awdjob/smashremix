@@ -2,7 +2,7 @@
 // These constants must be defined for an item.
 constant SPAWN_ITEM(Item.spawn_custom_item_based_on_tomato_)
 constant SHOW_GFX_WHEN_SPAWNED(OS.TRUE)
-constant PICKUP_ITEM_MAIN(pickup_franklin_badge) 
+constant PICKUP_ITEM_MAIN(pickup_franklin_badge)
 constant PICKUP_ITEM_INIT(0)
 constant DROP_ITEM(0x801745FC)
 constant THROW_ITEM(0)
@@ -73,6 +73,8 @@ scope pickup_franklin_badge: {
     addu    t2, at, t2                  // get address of player entry in gfx override table
     addiu   t7, r0, GFX_ROUTINE
     sw      t7, 0x0000(t2)              // save f badge gfx routine in override table
+
+    li      at, GFXRoutine.FRANKLIN
     sw      at, 0x0A28(a0)              // save gfx routine to player struct (todo: this is a typo but it works?)
     Render.register_routine(handle_active_franklin_badge_)    // register routine that handles the countdown
     // v0 = routine handler
@@ -111,7 +113,7 @@ scope pickup_franklin_badge: {
 // @ Description
 // handles an active franklin badge. No Franklin Badge item exists at this point.
 scope handle_active_franklin_badge_: {
-    addiu   sp, sp, -0x24           // allocate sp    
+    addiu   sp, sp, -0x24           // allocate sp
     sw      ra, 0x0014(sp)          // store registers
     sw      a0, 0x0020(sp)          // save routine handler
     sw      s1, 0x0004(sp)
@@ -285,7 +287,7 @@ scope keep_on_action_change_: {
     lbu     t7, 0x000D(s1)              // t7 = port
     _return:
     OS.patch_end()
-    
+
     // Check if this player has a franklin badge
     li      t5, players_with_franklin_badge
     sll     t7, t7, 0x0002              // t7 = offset to player entry
@@ -305,7 +307,7 @@ scope keep_on_action_change_: {
     _normal:
     j       _return
     andi    t7, t6, 0xFF7F              // original line 2
-    
+
 }
 
 // @ Description
@@ -327,19 +329,19 @@ scope grant_projectile_immunity_: {
     nop
     _return:
     OS.patch_end()
-    
+
     // t6 = projectile damage enabled
     // s7 = player struct
-    
+
     bnez    t6, _check_franklin_badge   // based on og line 1
     lbu     t2, 0x000D(s7)              // t2 = port
-    
+
     // if here, immune
     or      s1, s7, r0                  // og line 2
     _projectile_immune:
     j       0x800E558C                  // skip collision check (player immune)
     lw      v0, 0x0050(t1)
-    
+
     _check_franklin_badge:
     li      at, players_with_franklin_badge
     sll     t2, t2, 0x0002              // t2 = offset to player entry
@@ -347,11 +349,11 @@ scope grant_projectile_immunity_: {
     lw      t2, 0x0000(at)              // t2 = current badge ptr
     bnez    t2, _projectile_immune      // grant immunity if wearing a Franklin Badge
     or      s1, s7, r0                  // og line 2
-    
+
     _check_collision:
     j       0x800E5504 + 0x4
     lw      t2, 0x05BC(s1)              // original branch line 1
-    
+
 }
 
 // @ Description
@@ -362,20 +364,20 @@ scope grant_item_immunity_: {
     nop
     _return:
     OS.patch_end()
-    
+
     // 0xB4(sp) = item object
     // t9 = projectile damage enabled
     // s7 = player struct
-    
+
     bnez    t9, _check_item_based_on_star// based on og line 1
     lbu     t7, 0x000D(s7)              // t7 = port
-    
+
     // if here, immune
     or      s1, s7, r0                  // og line 2
     _item_immune:
     j       0x800E5BE0                  // skip collision check (player immune)
     lw      v0, 0x0054(t8)
-    
+
     _check_item_based_on_star:
     lw      at, 0x00B4(sp)              // at = item object
     lw      at, 0x0084(at)              // at = item struct
@@ -395,7 +397,7 @@ scope grant_item_immunity_: {
     lw      t7, 0x0000(at)              // t7 = current badge ptr
     beqzl   t7, _check_collision        // no immunity if not wearing a Franklin Badge
     or      s1, s7, r0                  // og line 2
-    
+
     // if here, wearing a Franklin badge
     // s1 = item id
     addiu   at, r0, Hazards.stage.PIRANHA_PLANT
@@ -412,8 +414,8 @@ scope grant_item_immunity_: {
     _check_collision:
     j       0x800E5B58 + 0x4
     lw      t7, 0x05BC(s1)              // original branch line 1
-    
-    
+
+
 }
 
 // @ Description

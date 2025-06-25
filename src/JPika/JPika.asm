@@ -34,6 +34,19 @@ scope JPika {
     dw  Action.PIKACHU.action_string_table
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JPIKA, 0x2)
+    dh {MIDI.id.POKEFLOATS}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.JPIKA, 0x4)
+    db      Character.id.PIKACHU
+    db      Character.id.EPIKA
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
+
     // Changes the duration of Thunder Jolt to match that of the Japanese Version
     scope thunderjolt_duration: {
         OS.patch_start(0xE405C, 0x8016961C)

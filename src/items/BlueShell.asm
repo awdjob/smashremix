@@ -1,5 +1,6 @@
 // @ Description
 // These constants must be defined for an item.
+// Coded by HaloFactory
 constant SPAWN_ITEM(spawn_custom_item_based_on_red_shell_)
 constant SHOW_GFX_WHEN_SPAWNED(OS.TRUE)
 constant PICKUP_ITEM_MAIN(0)
@@ -31,7 +32,7 @@ constant ITEM_INFO_ARRAY_ORIGIN(origin())
 dw 0x0                                          // 0x00 - item ID(updated by Item.add_item)
 dw 0x8018D040                                   // 0x04 - hard-coded pointer to file 0xFB
 dw FILE_OFFSET                                  // 0x08 - offset to item footer in file 0xFB
-dw 0                                            // 0x0C - ? 
+dw 0                                            // 0x0C - ?
 dw 0                                            // 0x10 - ?
 dw aerial_main_                                 // 0x14 - spawn behavior
 dw idle_ground_collision_                       // 0x18 - ground collision
@@ -52,7 +53,7 @@ dw idle_hurtbox_collision_                      // 0x50
 dw aerial_main_                                 // 0x54
 dw idle_ground_collision_                       // 0x58 - ground collision
 dw 0                                            // 0x5C
-dw 0, 0, 0, 0                                   // 0x60 - 0x6C 
+dw 0, 0, 0, 0                                   // 0x60 - 0x6C
 dw 0                                            // 0x70
 
 // STATE 2 - PICKUP
@@ -70,9 +71,9 @@ dw idle_hurtbox_collision_                      // 0xB0
 
 // STATE 4
 dw aerial_main_                                 // 0xB4 - main
-dw air_to_ground_check_                         // 0xB8 - collision check main 
+dw air_to_ground_check_                         // 0xB8 - collision check main
 dw collide_with_player_                         // 0xBC - collision main
-dw 0x8017B2F8                                   // 0xC0 - collide with shield 
+dw 0x8017B2F8                                   // 0xC0 - collide with shield
 dw 0x801733E4                                   // 0xC4 - aerial glance with shield(using r.shell)
 dw 0x8017B2F8                                   // 0xC8
 dw 0x8017B31C                                   // 0xCC - aerial collide with reflector(using r.shell)
@@ -88,7 +89,7 @@ dw 0                                            // 0xE8 -
 dw 0x8017B31C                                   // 0xEC - collide with reflector(using r.shell)
 dw grounded_collide_with_hurtbox_               // 0xF0 - collide with hitbox
 
-// STATE 6 - AIR-TO-GROUND 
+// STATE 6 - AIR-TO-GROUND
 dw aerial_main_                                 // 0xF4 - main
 dw air_to_ground_check_                         // 0xF8 - aerial collision check main(using r.shell)
 dw collide_with_player_                         // 0xFC - collision main collide with hurtbox
@@ -134,7 +135,7 @@ scope spawn_custom_item_based_on_red_shell_: {
     sw      v0, 0x013C(a0)               // save knockback angle
     sw      r0, 0x0180(a0)               // set 0x180 to 0
     addiu   v0, r0, BlueShell.DEATH_TIMER // v0 = death timer(16 seconds) while active(default = 8 seconds)
-    sw      v0, 0x02C0(a0)               // save death timer	
+    sw      v0, 0x02C0(a0)               // save death timer
     lli     at, BASE_KNOCKBACK           // at = base knockback
     sw      at, 0x0148(a0)               // overwrite bkb
     lli     at, KNOCKBACK_GROWTH         // at = knockback growth
@@ -160,9 +161,8 @@ scope resting_main_: {
 
     lw      ra,     0x0014(sp)
     addiu   sp, sp, 0x18
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 }
 
 // @ Description
@@ -177,9 +177,8 @@ scope prepickup_main_: {
     jal     0x80172ec8                  // change state
     swc1    f4, 0x0034 (t6)
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -190,7 +189,7 @@ scope grounded_check_collision_: {
     sw      s0, 0x0018(sp)                // ~
     lw      s0, 0x0084(a0)
 
-    // lui     a1, 0x8018                // original code, a1 = a red  
+    // lui     a1, 0x8018                // original code, a1 = a red
     // addiu   a1, a1,0xb1a4            // shells "set_aerial" routine
     li      a1, set_aerial                // a1 = set_aerial routine
 
@@ -240,9 +239,8 @@ scope ground_to_air_: {
     jal     0x80172ec8                  // change item state
     addiu   a2, r0, 0x0001
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -266,9 +264,8 @@ scope ground_to_air_2: {
 
     _end:
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp,0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -310,9 +307,8 @@ scope idle_grounded_initial_: {
     jal     idle_grounded_initial_2_
     nop
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 
@@ -413,6 +409,7 @@ scope throw_initial_: {
     addiu   sp, sp, -0x18
     sw      ra, 0x0014(sp)
     sw      a0, 0x0018(sp)
+    sw      s0, 0x0010(sp)
     lw      a0, 0x0084(a0)
     addiu   v0, r0, 0x0001
     addiu   t7, r0, 0x0010
@@ -439,9 +436,9 @@ scope throw_initial_: {
     jal     0x80172ec8              // change item state
     addiu   a2, r0, 0x0003          // state = 3(thrown)
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
+    lw      s0, 0x0010(sp)
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -465,7 +462,7 @@ scope air_to_ground_check_: {
     addiu          t6, r0, 0xffff
     addiu          t7, r0, 0x0001
     c.lt.s         f4, f6
-    nop            
+    nop
     bc1fl          _continue
     sw             t7, 0x0024(v1)
 
@@ -493,9 +490,8 @@ scope air_to_ground_check_: {
     _end:
     lw             ra, 0x0014(sp)
     addiu          sp, sp, 0x20
-    or             v0, r0, r0
     jr             ra
-    nop
+    or             v0, r0, r0
 }
 
 // @ Description
@@ -553,16 +549,15 @@ scope aerial_stage_clipping_check_: {
     _no_ground_collide:
     lw             ra, 0x001c(sp)
     lw             s0, 0x0018(sp)
-    addiu          sp, sp, 0x30
     jr             ra
-    nop
+    addiu          sp, sp, 0x30
 
 }
 
 // @ Description
 // based on redshell aerial physics routine @ 0x8017A74C
 scope aerial_main_: {
-    addiu   sp, sp, -0x20           // allocate sp    
+    addiu   sp, sp, -0x20           // allocate sp
     sw      ra, 0x0014(sp)          // store registers
     sw      a0, 0x0020(sp)          // ~
 
@@ -578,7 +573,7 @@ scope aerial_main_: {
     lbu     v0, 0x0350(a3)          // v0 = throw timer
 
     bnezl   v0, _continue           // branch if throw timer != 0
-    addiu   at, r0, 0xffff          // 
+    addiu   at, r0, 0xffff          //
 
     // if here, make projectile damage the user
     jal     0x8017279c              // subroutine that marks projectiles as dangerous to the user
@@ -597,9 +592,8 @@ scope aerial_main_: {
     _end:
     lw      ra, 0x0014(sp)          // restore registers
     addiu   sp, sp, 0x20            // deallocate sp
-    or      v0, r0, r0              // ~
     jr      ra                      // return
-    nop                             // ~
+    or      v0, r0, r0              // ~
 }
 
 // @ Description
@@ -614,7 +608,7 @@ scope collide_with_player_: {
     addiu   a0, r0, 0x0004
     addiu   t7, t6, 0xffff
     andi    t8, t7, 0x00ff
-    
+
     // check if hit player was in first
     // lw      t9, 0x180(v1)           // t9 = player in first
     // lw      t3, 0x224(v1)           // t3 = hit object ptr 1
@@ -643,7 +637,7 @@ scope collide_with_player_: {
     addiu   a0, r0, 0x0001          // a0 = explosion FGM
     b       _end                    // if here, branch to end
     addiu   v0, r0, 0x0001          // v0 = 1,(destroy object = TRUE)
-        
+
     _continue:
     addiu   t3, r0, 0x0000          // restore t3
     addiu   t9, r0, 0x0001          // restore t9
@@ -675,7 +669,7 @@ scope collide_with_player_: {
     lw      a1, 0x0020(sp)
     lw      t1, 0x0108(v1)
     beqz    t1, _grounded           // branch if kinetic state == grounded
-    nop       
+    nop
     jal     set_idle_aerial_        // change state back to idle and adds bounce back
     or      a0, a1, r0
     b       _end                    // branch to end
@@ -688,9 +682,8 @@ scope collide_with_player_: {
 
     _end:
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x20
     jr      ra
-    nop
+    addiu   sp, sp, 0x20
 }
 
 
@@ -706,22 +699,22 @@ scope collide_with_shield_: {
     addiu   a0, r0, 0x0004
     addiu   t7, t6, 0xffff
     andi    t8, t7, 0x00ff
-    
+
     jal        FGM.play_            // play fgm
     addiu   a0, r0, 0x0038          // a0 = shell FGM
-    
+
     // check if shells timer is out
     bnez    t8,  _continue          // branch if shell still alive
     //sb      t7, 0x0355(v1)        //
-    
+
     _destroy_shell:
-    //jal        hit_gfx_    
+    //jal        hit_gfx_
     //sw      v1, 0x001c(sp)
     //jal        FGM.play_          // play fgm
     //addiu   a0, r0, 0x0001        // a0 = explosion FGM
     //b       _end                  // if here, branch to end
     //addiu   v0, r0, 0x0001        // v0 = 1,(destroy object = TRUE)
-        
+
     _continue:
     addiu   t3, r0, 0x0000          // restore t3
     addiu   t9, r0, 0x0001          // restore t9
@@ -765,9 +758,8 @@ scope collide_with_shield_: {
 
     _end:
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x20
     jr      ra
-    nop
+    addiu   sp, sp, 0x20
 }
 
 // @ Description
@@ -784,9 +776,8 @@ scope set_grounded: {
     addiu   a2, r0, 0x0005        // state = 5,(active_grounded)
 
     lw      ra, 0x0014(sp)        // restore registers
-    addiu   sp, sp, 0x18          // deallocate stackspace
     jr      ra                    // return
-    nop
+    addiu   sp, sp, 0x18          // deallocate stackspace
 }
 
 // @ Description
@@ -804,9 +795,8 @@ scope set_aerial: {
     addiu   a2, r0, 0x0006         // state = 6,(active_aerial)
 
     lw      ra, 0x0014(sp)         // restore registers
-    addiu   sp, sp, 0x18           // deallocate stackspace
     jr      ra                     // return
-    nop
+    addiu   sp, sp, 0x18           // deallocate stackspace
 }
 
 
@@ -846,9 +836,8 @@ scope set_idle_aerial_: {
     lw      a0, 0x0020 (sp)
     lw      ra, 0x0014 (sp)
     addiu   sp, sp, 0x20
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 }
 // @ Description
 // based on 0x80178930
@@ -868,9 +857,8 @@ scope set_idle_aerial_2: {
     jal     0x80172ec8             // change item state
     addiu   a2, r0, 0x0001         // state = 1
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 
@@ -886,15 +874,15 @@ scope grounded_active_: {
     sw      t6, 0x001c(sp)
     jal     target_player_               // subroutine determines what direction shell goes. default is 0x8017A534
     lw      a0, 0x0020(sp)
-    
-    lw      a0, 0x0020(sp)				// a0 = item object
-    lw      v1, 0x0084(a0)				// v1 = item struct
+
+    lw      a0, 0x0020(sp)              // a0 = item object
+    lw      v1, 0x0084(a0)              // v1 = item struct
     lw      v0, 0x02C0(v1)               // check death flag
 
     //li    a0, 0x00F0
     //blt   v0, a0, _edge_detect_skip    // skip edge detect function if shell has a few seconds left
     //nop
-    
+
     jal     0x8017ac84                   // edge detect function
     _edge_detect_skip:
     lw      a0, 0x0020(sp)
@@ -913,11 +901,10 @@ scope grounded_active_: {
 
     _end:
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x20
     jr      ra
-    nop
-	}
-			
+    addiu   sp, sp, 0x20
+    }
+
 // @ Description
 // based on red shells grounded gfx routine 0x8017a610, calls smoke gfx @ 0x800FF048
 scope grounded_gfx_: {
@@ -929,9 +916,9 @@ scope grounded_gfx_: {
     bnezl   v1, _end                 // branch if timer != 0
     addiu   t1, v1, 0xffff
 
-	// every 8 frames, create smoke and remove owner  
-	sw      r0, 0x0008(v0)			// remove owner	
-	lw      t7, 0x001c(a3)
+    // every 8 frames, create smoke and remove owner
+    sw      r0, 0x0008(v0)          // remove owner
+    lw      t7, 0x001c(a3)
     addiu   a0, sp, 0x001c
     lui     a2, 0x4f80
     sw      t7, 0x0000(a0)
@@ -943,7 +930,7 @@ scope grounded_gfx_: {
     lwc1    f4, 0x0020(sp)
     lh      t9, 0x002e(t8)
     mtc1    t9, f6
-    nop     
+    nop
     cvt.s.w f8, f6
     add.s   f10, f4, f8             // changes y offset of graphic
     swc1    f10, 0x0020(sp)
@@ -955,13 +942,12 @@ scope grounded_gfx_: {
     andi    v1, t0, 0x00ff
     sb      t0, 0x0351(v0)
     addiu   t1, v1, 0xffff
-    
+
     _end:
     sb     t1, 0x0351(v0)
     lw     ra, 0x0014(sp)
-    addiu  sp, sp, 0x30
     jr     ra
-    nop
+    addiu  sp, sp, 0x30
 }
 
 // @ Description
@@ -972,7 +958,7 @@ scope custom_smoke_: {
     sw             s0, 0x0018(sp)        // ~
     sw             a0, 0x0038(sp)        // ~
     sw             a1, 0x003c(sp)        // ~
-    
+
     jal            0x800fd4b8            // common subroutine, returns address with variables related to smoke life
     sw             a2, 0x0040(sp)
     bnez           v0, _unknown_skip
@@ -982,7 +968,7 @@ scope custom_smoke_: {
     b              _end
     or             v0, r0, r0
     // ?
-    
+
     _unknown_skip:
     addiu          a0, r0, 0x03f3
     or             a1, r0, r0
@@ -1003,9 +989,9 @@ scope custom_smoke_: {
     lwc1           f4, 0x0040(sp)
     lui            a0, 0x8013
     c.eq.s         f4, f6
-    nop            
+    nop
     bc1f           branch1
-    nop            
+    nop
 
     // ? this section was skipped
     lui            a0, 0x8013
@@ -1090,7 +1076,7 @@ scope custom_smoke_: {
     swc1    f18, 0x0018(s0)
     lw      t2, 0x003c(sp)
     bne     t2, at, branch5
-    nop     
+    nop
     lwc1    f4, 0x0018(s0)
     neg.s   f6, f4
     swc1    f6, 0x0018(s0)
@@ -1131,9 +1117,8 @@ scope custom_smoke_: {
     _end:
     lw      ra, 0x001c(sp)
     lw      s0, 0x0018(sp)
-    addiu   sp, sp, 0x38
     jr      ra
-    nop
+    addiu   sp, sp, 0x38
 }
 
 // @ Description
@@ -1163,7 +1148,7 @@ scope hit_gfx_: {
     add.s        f10, f4, f8
     swc1         f10, 0x0020(sp)
     lw           a1, 0x0024(v0)
-    jal          0x80101790                // big white spark gfx routine 
+    jal          0x80101790                // big white spark gfx routine
     sw           v0, 0x002c(sp)
     lw           v0, 0x002c(sp)
     addiu        t0, r0, 0x0008
@@ -1189,7 +1174,7 @@ scope grounded_collide_with_hurtbox_: {
     lbu            t6, 0x0355(v0)
     addiu          t7, t6, 0xffff
     andi           t8, t7, 0x00ff
-    
+
     bnez           t8, _continue
     sb             t7, 0x0355(v0)
 
@@ -1233,7 +1218,7 @@ scope grounded_collide_with_hurtbox_: {
     b              _grounded
     neg.s          f0, f2
     mov.s          f0, f2
-    
+
     _grounded:
     c.lt.s         f6, f0
     nop
@@ -1246,7 +1231,7 @@ scope grounded_collide_with_hurtbox_: {
     lw             a0, 0x0018(sp)
     jal            set_grounded              // set grounded
     lw             a0, 0x0018(sp)
-    b              _end        
+    b              _end
     or             v0, r0, r0
     sw             r0, 0x010c(v0)
 
@@ -1261,7 +1246,7 @@ scope grounded_collide_with_hurtbox_: {
 
 // @ Description
 // runs if shell hits another shell based on @ 0x8017A9D0
-// a0 = item object, a1 = 
+// a0 = item object, a1 =
 scope idle_hurtbox_collision_: {
     addiu   sp, sp, -0x20
     sw      ra, 0x0014(sp)
@@ -1270,7 +1255,7 @@ scope idle_hurtbox_collision_: {
     lui     at, 0x4120
     mtc1    at, f8
     lw      t6, 0x0298(v0)
-	
+
     lw      t7, 0x02a4(v0)
     mtc1    r0, f2
     mtc1    t6, f4
@@ -1335,16 +1320,16 @@ scope idle_hurtbox_collision_: {
     lw      ra, 0x0014(sp)
 
     _end2:
-    lw      a0, 0x0020(sp)			// restore item object
-	lw      a0, 0x0084(a0)			// a0 = item struct
-	
-	// update player owner
-	lw      at, 0x02A8(a0)			// at = player who hit the shell
-	sw      at, 0x0008(a0)			// write player owner
-	
-	// set gfx counter to 0x10
-	lli     at, 0x10				// 16 frames until it can damage owner
-	sb      at, 0x0351(a0)			// overwrite gfx counter (is normally 8)
+    lw      a0, 0x0020(sp)          // restore item object
+    lw      a0, 0x0084(a0)          // a0 = item struct
+
+    // update player owner
+    lw      at, 0x02A8(a0)          // at = player who hit the shell
+    sw      at, 0x0008(a0)          // write player owner
+
+    // set gfx counter to 0x10
+    lli     at, 0x10                // 16 frames until it can damage owner
+    sb      at, 0x0351(a0)          // overwrite gfx counter (is normally 8)
 
     // now that shell is active, check and see who is in first place
     lui     s0, 0x8004
@@ -1359,7 +1344,7 @@ scope idle_hurtbox_collision_: {
     or      v0, r0, r0
 }
 
-// @ Description    
+// @ Description
 // based on 0x8017A534(red shell target player)
 scope target_player_: {
     addiu   sp, sp, -0x68               // allocate stackspace
@@ -1370,13 +1355,13 @@ scope target_player_: {
     sw      s3, 0x0028(sp)              // store registers
     sw      s2, 0x0024(sp)              // ~
     sw      s1, 0x0020(sp)              // ~
-    sw      r0, 0x005c(sp)				// clear this space
+    sw      r0, 0x005c(sp)              // clear this space
 
     beqz    s0, _apply_speed            // skip if no valid player
     or      s1, r0, r0                  // s1(i) = 0
-	
-	lw      v0, 0x0084(a0)				// v0 = item struct
-	lb      v1, 0x0351(v0)				// v1 = shell gfx timer
+
+    lw      v0, 0x0084(a0)              // v0 = item struct
+    lb      v1, 0x0351(v0)              // v1 = shell gfx timer
     addiu   at, r0, 0x0007              // at = 7
     bnel    at, v1, _end_target_loop    // run check only 1/8 frames
     lw      s0, 0x180(v0)               // s0 = last known player ptr
@@ -1426,13 +1411,13 @@ scope target_player_: {
     swc1    f20, 0x0048(sp)
 
     _apply_speed:
-	lw      a1, 0x005c(sp)
-	beqz    a1, _end					// skip adding speed if no player is found
-	nop
+    lw      a1, 0x005c(sp)
+    beqz    a1, _end                    // skip adding speed if no player is found
+    nop
     jal     0x8017a3a0                 // apply speed
     lw      a0, 0x0068(sp)
 
-	_end:
+    _end:
     lw      ra, 0x002c(sp)
     ldc1    f20, 0x0010(sp)
     lw      s0, 0x001c(sp)
@@ -1471,11 +1456,11 @@ scope get_player_in_first_: {
     addiu   at, r0, 0x0001              // at = timed game mode
     beql    a1, at, _loop_initial       // branch if timed game mode
     addiu   a1, v0, 0x0014              // a1 = offset to KO count
-    
+
     // stamina mode
     addiu   at, r0, 0x0005              // at = stamina game mode
     beql    a1, at, _loop_initial       // branch if stamina game mode
-    addiu   a1, v0, 0x004C              // a1 = offset to HP value    
+    addiu   a1, v0, 0x004C              // a1 = offset to HP value
 
     // stock game mode
     addiu   a1, v0, 0x000B              // a1 = offset to stock count (byte)
@@ -1499,7 +1484,7 @@ scope get_player_in_first_: {
     lw      s3, 0x0000(a1)              // if not stamina or stock mode
     b       _check_if_less
     nop
-    
+
     _check_if_greater:
     beqz    s1, _apply                  // apply if this is the first iteration of the loop
     nop
@@ -1531,7 +1516,7 @@ scope get_player_in_first_: {
     nop
 
     _apply:
-    // if here, we have a new 
+    // if here, we have a new
     addiu   s2, s1, r0                  // s2 = player index with a higher score
     addiu   v0, s3, r0                  // v0 = current highest score
     lw      s5, 0x004C(t1)              // s5 = player percent (for dealing with ties)
@@ -1558,7 +1543,7 @@ scope get_player_in_first_: {
     lb      a1, 0x000C(a1)              // a1 = player port
     beql    a1, s2, _end_target_loop    // end loop if we found the player in first
     nop
-    
+
     lw      s1, 0x0004(s0)              // s1 = next player ptr
     beqz    s1, _end_target_loop        // end loop if player is invalid
     nop

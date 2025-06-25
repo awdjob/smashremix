@@ -10,11 +10,12 @@ print "included Item.asm\n"
 scope Item {
     // @ Description
     // Number of custom items
-    constant NUM_ITEMS(26)
+    constant NUM_ITEMS(31)
 
     // @ Description
     // Number of standard custom items
-    constant NUM_STANDARD_ITEMS(11)
+    constant NUM_STANDARD_ITEMS(13)
+    constant MAX_NUM_STANDARD_ITEMS(12)     // max number of custom items before vanilla bitmask janks out
 
     // @ Description
     // Offsets to custom tables added to file 0xFE.
@@ -92,6 +93,8 @@ scope Item {
         evaluate item_id(current_item + 0x2D)
 
         constant {item}.id({item_id})
+
+        print " - Added Item 0x"; OS.print_hex({item_id}); print ": {item}\n";
 
         pushvar origin, base
 
@@ -416,73 +419,73 @@ scope Item {
         addiu   at, r0, 0x0004                  // original line 1
     }
 
-    // @ Description
-    // Hook into routine that determines next action after any item pickup
-    // This allows us to change the players action to up-throw upon picking up a custom "usable" item
-    // To set an item to this type, set the pickup type to 0x1C in 0xFB. (local offset is 0x3E from beginning of item entry)
-    scope extend_item_pickup_check_: {
-        OS.patch_start(0xC08C4, 0x80145E84)
-        j       extend_item_pickup_check_
-        nop
-        _return:
-        OS.patch_end()
+    // // @ Description
+    // // Hook into routine that determines next action after any item pickup
+    // // This allows us to change the players action to up-throw upon picking up a custom "usable" item
+    // // To set an item to this type, set the pickup type to 0x1C in 0xFB. (local offset is 0x3E from beginning of item entry)
+    // scope extend_item_pickup_check_: {
+        // OS.patch_start(0xC08C4, 0x80145E84)
+        // j       extend_item_pickup_check_
+        // nop
+        // _return:
+        // OS.patch_end()
 
-        // at = item type 5 (tomato)
-        beq     t0, at, _edible
-        nop
+        // // at = item type 5 (tomato)
+        // beq     t0, at, _edible
+        // nop
 
-        addiu   at, r0, 0x0007
-        beq     t0, at, _usable
-        nop
+        // addiu   at, r0, 0x0007
+        // beq     t0, at, _usable
+        // nop
 
-        // if here, assign item as normal
-        _hold:
-        j       0x80145EC0
-        nop
+        // // if here, assign item as normal
+        // _hold:
+        // j       0x80145EC0
+        // nop
 
-        _usable:
-        // a0 = player object
+        // _usable:
+        // // a0 = player object
 
-        addiu   sp, sp, -0x28
-        sw      ra, 0x0004(sp)
+        // addiu   sp, sp, -0x28
+        // sw      ra, 0x0004(sp)
 
-        li      a1, Action.ItemThrowU         // a1 = action id to transition to
-        addiu   a2, r0, 0x0000                // a2(starting frame) = 0
-        sw      r0, 0x0010(sp)                // ?
-        lui     a3, 0x3F40                    // a3(frame speed multiplier) =
+        // li      a1, Action.ItemThrowU         // a1 = action id to transition to
+        // addiu   a2, r0, 0x0000                // a2(starting frame) = 0
+        // sw      r0, 0x0010(sp)                // ?
+        // lui     a3, 0x3F40                    // a3(frame speed multiplier) =
 
-        sw      v0, 0x0024(sp)
+        // sw      v0, 0x0024(sp)
 
-        jal     0x800E6F24                    // change action
-        addiu   v0, r0, 0x0001                // argument needs to be set to 1
+        // jal     0x800E6F24                    // change action
+        // addiu   v0, r0, 0x0001                // argument needs to be set to 1
 
-        lw      v0, 0x0024(sp)
+        // lw      v0, 0x0024(sp)
 
-        lw      ra, 0x0014(sp)
+        // lw      ra, 0x0014(sp)
 
-        lw      a0, 0x0000(sp)                // restore a0
-        jal     0x800E0830                    // unknown, common
-        sw      a2, 0x001C(sp)                // save a2
-        lw      a2, 0x001C(sp)                // restore a2
+        // lw      a0, 0x0000(sp)                // restore a0
+        // jal     0x800E0830                    // unknown, common
+        // sw      a2, 0x001C(sp)                // save a2
+        // lw      a2, 0x001C(sp)                // restore a2
 
-        jal     0x80146670                    // idk, related to throw or crash
-        lw      a0, 0x0084(a0)                // a0 = player
+        // jal     0x80146670                    // idk, related to throw or crash
+        // lw      a0, 0x0084(a0)                // a0 = player
 
-        lw      a0, 0x0000(sp)                // restore a0
-        lw      a2, 0x001C(sp)                // restore a2
-        lw      v0, 0x0024(sp)                // restore v0
+        // lw      a0, 0x0000(sp)                // restore a0
+        // lw      a2, 0x001C(sp)                // restore a2
+        // lw      v0, 0x0024(sp)                // restore v0
 
-        lw      ra, 0x0004(sp)
-        addiu   sp, sp, 0x28
+        // lw      ra, 0x0004(sp)
+        // addiu   sp, sp, 0x28
 
-        j       0x80145EC8                    // jump to normal end of this routine
-        nop
+        // j       0x80145EC8                    // jump to normal end of this routine
+        // nop
 
-        // jump back to routine as normal
-        _edible:
-        j        _return
-        nop
-    }
+        // // jump back to routine as normal
+        // _edible:
+        // j        _return
+        // nop
+    // }
 
     // @ Description
     // Hook into routine that checks if tomato or heart was picked up.
@@ -547,6 +550,28 @@ scope Item {
     // @ Description
     // Extends VS item spawning to include custom items.
     scope extend_vs_item_spawning_: {
+        // extend item spawn - rate non-zero check
+        scope nonzero_check_: {
+            OS.patch_start(0xE969C, 0x8016EC5C)
+            jal     extend_vs_item_spawning_.nonzero_check_
+            lw      a2, 0x000C(v0)                  // original line 1
+            beqzl   at, 0x8016EF30                  // original line 3, modified to use at instead of a2
+            OS.patch_end()
+
+            li      at, Global.match_info           // ~ 0x800A50E8
+            lw      at, 0x0000(at)                  // at = match_info
+            lb      at, 0x0000(at)                  // at = match type
+            ori     t7, r0, 0x0007                  // t2 = training id
+            beql    at, t7, _end                    // don't load extended bit mask if in training mode
+            or      at, a2, r0                      // at = a2
+
+            OS.read_word(EXTENDED_ENABLED_BITMASK, t7) // t7 = extended bit mask
+            or      at, a2, t7                      // at = a2 | extended bit mask
+
+            _end:
+            jr      ra
+            lui     t7, 0x8013                      // original line 2
+        }
         // extend item spawn - rate sum
         scope rate_sum_: {
             OS.patch_start(0xE96E4, 0x8016ECA4)
@@ -556,10 +581,16 @@ scope Item {
 
             // at = 0 if custom item, 1 if vanilla item
             bnez    at, _loop_vanilla               // if vanilla item, loop normally
-            sltiu   at, v1, 0x14 + NUM_ITEMS        // at = 1 if custom item, 0 if none left
-            beqz    at, _exit_loop                  // if custom item, exit loop
+            sltiu   at, v1, 0x14 + NUM_STANDARD_ITEMS // at = 1 if custom item, 0 if none left
+            beqz    at, _exit_loop                  // if no custom item left, exit loop
+            sltiu   at, v1, 0x14 + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
             nop
 
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, v0) // v0 = extended bit mask
+
+            _continue:
             li      a0, Stages.custom_item_spawn_rate_table
             li      at, Global.match_info
             lw      at, 0x0000(at)                  // at = match info
@@ -588,10 +619,16 @@ scope Item {
 
             // at = 0 if custom item, 1 if vanilla item
             bnez    at, _loop_vanilla               // if vanilla item, loop normally
-            sltiu   at, v1, 0x14 + NUM_ITEMS        // at = 1 if custom item, 0 if none left
-            beqz    at, _exit_loop                  // if custom item, exit loop
+            sltiu   at, v1, 0x14 + NUM_STANDARD_ITEMS // at = 1 if custom item, 0 if none left
+            beqz    at, _exit_loop                  // if no custom item left, exit loop
+            sltiu   at, v1, 0x14 + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
             nop
 
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, a0) // a0 = extended bit mask
+
+            _continue:
             li      a3, Stages.custom_item_spawn_rate_table
             li      at, Global.match_info
             lw      at, 0x0000(at)                  // at = match info
@@ -621,7 +658,7 @@ scope Item {
             bne     v1, t1, _loop_vanilla           // if valid item, loop normally
             lli     at, 0x0014                      // at = 0x0014, the original t1
             bne     at, t1, _exit_loop              // if v1 = at and at != 0x0014, then we are done with custom item looping so exit loop
-            lli     t1, 0x002D + NUM_ITEMS          // update t1 so loop continues for custom items
+            lli     t1, 0x002D + NUM_STANDARD_ITEMS // update t1 so loop continues for custom items
 
             li      a3, Stages.custom_item_spawn_rate_table
             li      at, Global.match_info
@@ -636,6 +673,14 @@ scope Item {
             lli     v1, 0x002D                      // v1 = first custom item ID
 
             _loop_vanilla:
+            sltiu   at, v1, 0x2D + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
+            nop
+
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, a0) // a0 = extended bit mask
+
+            _continue:
             j       0x8016EED0                      // original line 1, modified to be a jump
             nop
 
@@ -653,10 +698,16 @@ scope Item {
 
             // at = 0 if custom item, 1 if vanilla item
             bnez    at, _loop_vanilla               // if vanilla item, loop normally
-            sltiu   at, v1, 0x14 + NUM_ITEMS        // at = 1 if custom item, 0 if none left
-            beqz    at, _exit_loop                  // if custom item, exit loop
+            sltiu   at, v1, 0x14 + NUM_STANDARD_ITEMS // at = 1 if custom item, 0 if none left
+            beqz    at, _exit_loop                  // if none left, exit loop
+            sltiu   at, v1, 0x14 + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
             nop
 
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, v0) // v0 = extended bit mask
+
+            _continue:
             li      a1, Stages.custom_item_spawn_rate_table
             li      at, Global.match_info
             lw      at, 0x0000(at)                  // at = match info
@@ -685,10 +736,16 @@ scope Item {
 
             // at = 0 if custom item, 1 if vanilla item
             bnez    at, _loop_vanilla               // if vanilla item, loop normally
-            sltiu   at, v1, 0x14 + NUM_ITEMS        // at = 1 if custom item, 0 if none left
+            sltiu   at, v1, 0x14 + NUM_STANDARD_ITEMS // at = 1 if custom item, 0 if none left
             beqz    at, _exit_loop                  // if custom item, exit loop
+            sltiu   at, v1, 0x14 + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
             nop
 
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, a0) // a0 = extended bit mask
+
+            _continue:
             li      t1, Stages.custom_item_spawn_rate_table
             li      at, Global.match_info
             lw      at, 0x0000(at)                  // at = match info
@@ -734,6 +791,14 @@ scope Item {
             lli     v1, 0x002D                      // v1 = first custom item ID
 
             _loop:
+            sltiu   at, v1, 0x2D + MAX_NUM_STANDARD_ITEMS // at = 1 if still using original bit mask, 0 if we need to switch to extended one
+            bnez    at, _continue                   // if still using original bit mask, skip
+            nop
+
+            // switch to extended bitmask here
+            OS.read_word(EXTENDED_ENABLED_BITMASK, a0) // a0 = extended bit mask
+
+            _continue:
             // first check if item is on
             andi    t8, a0, 0x0001                  // t8 = 1 if item is on
             beqz    t8, _next                       // skip if item is off
@@ -756,7 +821,7 @@ scope Item {
 
             _next:
             addiu   v1, v1, 0x0001                  // v1++
-            sltiu   t2, v1, 0x002D + NUM_ITEMS      // t2 = 1 if more items to loop over
+            sltiu   t2, v1, 0x002D + NUM_STANDARD_ITEMS // t2 = 1 if more items to loop over
             bnez    t2, _loop                       // if still more custom items to loop over, continue looping
             srl     a0, a0, 1                       // a0 = shifted bit mask for items on/off
 
@@ -793,8 +858,8 @@ scope Item {
             // at = 0 if custom item (maybe), 1 if vanilla item
             bnez    at, _valid_item                 // if vanilla item, continue normally
             sltiu   at, v0, 0x002D                  // at = 1 = not a custom item (probably means a dud), 0 = custom item
-            beqz    at, _valid_item                 // if custom item, treat as valid
-            nop
+            beqzl   at, _valid_item                 // if custom item, treat as valid
+            lli     v0, 0x0000                      // and set item_id = 0 to avoid out of bounds in Y velocity array
 
             j       0x8017316C
             nop
@@ -826,13 +891,19 @@ scope Item {
         beqz    t6, _end                               // if Remix 1P, allow custom items
         nop                                            // otherwise, ensure vanilla 1P does not spawn custom items
 
+        li      t6, EXTENDED_ENABLED_BITMASK           // t6 = extended bit mask
+        sw      r0, 0x0000(t6)                         // zero out extended bit mask
         li      t6, 0x000FFFFF                         // t6 = bitmask that keeps vanilla items but 0s out custom items
         beq     r0, r0, _end
         and     t4, t4, t6                             // t4 = item bitmask with custom items zeroed out
 
         _allstar:
-        addiu   t6, r0, -0x0031                        // t6 = 0xFFFFFFCF = bitmask that keeps healing items out
+        li      t6, EXTENDED_ENABLED_BITMASK           // t6 = extended bit mask
+        li      t7, EXTENDED_ENABLED_BITMASK_DEFAULT   // t7 = bitmask that keeps healing items out (currently there are none)
+        sw      t7, 0x0000(t6)                         // zero out healing items in extended bitmask
+        li      t6, 0xDFFFFFCF                         // t6 = bitmask that keeps healing items out
         and     t4, t4, t6                             // t4 = item bitmask with healing items zeroed out
+        lw      t7, 0x0000(s6)                         // original line 2
 
         _end:
         j       _return
@@ -891,6 +962,13 @@ scope Item {
         nop
     }
 
+    constant ENABLED_BITMASK(0x800A4D14)
+    constant EXTENDED_ENABLED_BITMASK_DEFAULT(0x00000001) // default value for extended bitmask, only item 0 is enabled <- Update when more items added
+    EXTENDED_ENABLED_BITMASK:
+    dw EXTENDED_ENABLED_BITMASK_DEFAULT // 0x00: in match
+    dw EXTENDED_ENABLED_BITMASK_DEFAULT // 0x04: saved
+
+
     // @ Description
     // Extends the item switch bitmask code to use custom items.
     scope extend_item_switch_bitmask_: {
@@ -919,8 +997,24 @@ scope Item {
             sw      v0, 0x0000(a1)                      // save value
             addiu   a1, a1, 0x0004                      // a1++
             addiu   t4, t4, 0x0001                      // t4++
-            sltiu   at, t4, NUM_STANDARD_ITEMS + 0x14            // at = 0 if done looping
+            sltiu   at, t4, MAX_NUM_STANDARD_ITEMS + 0x14 // at = 0 if done looping
             bnez    at, _loop
+            nop
+
+            // if here, then use extended bitmask
+            // todo: confirm this is working
+            OS.read_word(EXTENDED_ENABLED_BITMASK, a0)          // a0 = extended bitmask
+            extended_loop:
+            sllv    t7, t1, t4                          // t7 = bitmask for checking if current item is on
+            and     t6, t7, a0                          // t6 = 0 if off, otherwise it's on
+            lli     v0, 0x0001                          // v0 = 1 (on)
+            beqzl   t6, pc() + 8                        // if item should be off, set v0 to 0
+            lli     v0, 0x0000                          // v0 = 0 (off)
+            sw      v0, 0x0000(a1)                      // save value
+            addiu   a1, a1, 0x0004                      // a1++
+            addiu   t4, t4, 0x0001                      // t4++
+            sltiu   at, t4, NUM_STANDARD_ITEMS + 0x14   // at = 0 if done looping
+            bnez    at, extended_loop
             nop
 
             jr      ra
@@ -957,17 +1051,48 @@ scope Item {
             _next:
             addiu   a1, a1, 0x0004                      // a1++
             addiu   t4, t4, 0x0001                      // t4++
-            sltiu   at, t4, NUM_STANDARD_ITEMS + 0x14   // at = 0 if done looping
+            sltiu   at, t4, MAX_NUM_STANDARD_ITEMS + 0x14 // at = 0 if done looping
             bnez    at, _loop
             sw      a0, 0x000C(v0)                      // save mask
 
             lui     at, 0x8013                          // at = item frequency
             lw      at, 0x3420(at)                      // ~
-            beqz    a0, _return                         // if 0, skip saving the frequency and adding containers
+            beqz    a0, _extended                       // if 0, skip saving the frequency and adding containers
             nop
             sb      at, 0x001C(v0)                      // save frequency
             ori     a0, a0, 0x000F                      // enable barrels, capsules, etc.
             sw      a0, 0x000C(v0)                      // save mask
+
+            _extended:
+            // loop over custom item on/off values and update bitmask
+            li      t6, EXTENDED_ENABLED_BITMASK        //
+            lw      a0, 0x0000(t6)                      //
+            lli     t1, 0x0001                          // t1 = 1
+
+            _extended_loop:
+            sllv    t7, t1, t4                          // t7 = bitmask if current item is on
+            lw      t8, 0x0000(a1)                      // t8 = 1 if should be on, 0 if should be off
+            beqz    t8, _extended_off                   // if should be off, jump to _off
+            nop                                         // otherwise, we just or it in
+
+            // if here, then item is on
+            sb      at, 0x001C(v0)                      // save frequency
+            lw      t8, 0x000C(v0)                      // t8 = vanilla item bitmask
+            ori     t8, t8, 0x000F                      // enable crates, barrels etc
+            sw      t8, 0x000C(v0)                      // ~
+
+            b       _extended_next
+            or      a0, a0, t7                          // a0 = new bitmask
+            _extended_off:
+            nor     t8, t7, r0                          // t8 = flipped mask
+            and     a0, a0, t8                          // a0 = new bitmask
+            _extended_next:
+            addiu   a1, a1, 0x0004                      // a1++
+            addiu   t4, t4, 0x0001                      // t4++
+            sltiu   at, t4, NUM_STANDARD_ITEMS + 0x14   // at = 0 if done looping
+            sw      a0, 0x0000(t6)                      // save mask for match
+            bnez    at, _extended_loop
+            sw      a0, 0x0004(t6)                      // save mask for restoring
 
             _return:
             jr      ra                                  // original line 3
@@ -1344,6 +1469,28 @@ scope Item {
         include "items/Pwing.asm"
     }
 
+    scope Psyduck {
+        include "items/Pokemon/Psyduck.asm"
+    }
+
+    scope Turnip {
+        include "items/Turnip.asm"
+    }
+
+    scope MrSaturn {
+        include "items/MrSaturn.asm"
+    }
+
+    scope Stopwatch {
+        include "items/Stopwatch.asm"
+    }
+
+    scope Basketball {
+        include "items/Basketball.asm"
+    }
+
+    print "================================== ITEMS =================================\n"
+
     // Add items:
     // Standard Items
     add_item(CloakingDevice)       // 0x2D
@@ -1357,6 +1504,8 @@ scope Item {
     add_item(GoldenGun)            // 0x35
     add_item(Dango)                // 0x36
     add_item(Pwing)                // 0x37
+    add_item(MrSaturn)             // 0x38
+    add_item(Stopwatch)            // 0x39
     // Stage Items
     add_item(KlapTrap)             // 1
     add_item(RobotBee)             // 2
@@ -1364,7 +1513,9 @@ scope Item {
     add_item(BulletBill)           // 4
     add_item(ScuttleMinion)        // 5
     add_item(Cacodemon)            // 6
+    add_item(Basketball)           // 7
     // Pokemon
+    add_item(Psyduck)
     // Character Items
     add_item(Gem)                  // 1
     add_item(Shuriken)             // 2
@@ -1375,6 +1526,9 @@ scope Item {
     add_item(Gordo)                // 7
     add_item(Cloud)                // 8
     add_item(Flashbang)            // 9
+    add_item(Turnip)               // 10
+
+    print "========================================================================== \n"
 
     // @ Description
     // Active item clean up.
@@ -1396,6 +1550,9 @@ scope Item {
         nop
 
         jal     Pwing.clear_active_pwings_
+        nop
+
+        jal     Stopwatch.clear_active_stopwatch_
         nop
 
         jal     Poison.clear_poison_
@@ -1446,10 +1603,13 @@ scope Item {
         jal     skip_item_spawn_gfx_
         lw      a0, 0x0028(sp)             // original line 2
         OS.patch_end()
+        OS.patch_start(0xED7F8, 0x80172DB8)
+        jal     skip_item_spawn_gfx_._pickup
+        addiu   a0, sp, 0x0034             // original line 2
+        OS.patch_end()
 
-        li     t1, flag
-        lw     t1, 0x0000(t1)              // t1 = 0 if don't skip
-        bnez   t1, _end                    // if flag is set, skip
+        OS.read_word(flag, t1)             // t1 = 0 if don't skip
+        bnez    t1, _end                   // if flag is set, skip
         nop
 
         addiu   sp, sp, -0x0030            // allocate stack space
@@ -1464,6 +1624,21 @@ scope Item {
         _end:
         jr     ra
         nop
+
+        _pickup:
+        OS.read_word(flag, t1)             // t1 = 0 if don't skip
+        bnez    t1, _end                   // if flag is set, skip
+        nop
+
+        addiu   sp, sp, -0x0030            // allocate stack space
+        sw      ra, 0x0004(sp)             // save registers
+
+        jal     0x80104458                 // original line 1 - create pickup gfx
+        nop
+
+        lw      ra, 0x0004(sp)             // restore ra
+        b       _end
+        addiu   sp, sp, 0x0030             // deallocate stack space
 
         // flag to control skipping
         flag:
@@ -1520,9 +1695,10 @@ scope Item {
     dw Item.DekuNut.id                              // 0x0F = DEKU_NUT(0x0032)
     dw Item.Pitfall.id                              // 0x10 = PIT_FALL(0x0033)
     dw Item.GoldenGun.id                            // 0x11 = GOLDENGUN
-    dw 0x0000FFFF                                   // 0x12 = random item, insert new entries above.
+    dw Item.MrSaturn.id                             // 0x12 = MR SATURN
+    dw 0x0000FFFF                                   // 0x13 = random item, insert new entries above.
 
-    constant start_with_random_entry(0x12)          // must update to same entry as random if adding new entries.
+    constant start_with_random_entry(0x13)          // must update to same entry as random if adding new entries.
 
     start_with_item:
     dw 0, 0, 0, 0
@@ -1731,9 +1907,10 @@ scope Item {
     dw Item.DekuNut.id                              // 0x0F = DEKU_NUT(0x0032)
     dw Item.Pitfall.id                              // 0x10 = PIT_FALL(0x0033)
     dw Item.GoldenGun.id                            // 0x11 = GOLDENGUN
-    dw 0x0000FFFF                                   // 0x12 = random item
+    dw Item.MrSaturn.id                             // 0x12 = MR SATURN
+    dw 0x0000FFFF                                   // 0x13 = random item
 
-    constant taunt_item_random_entry(0x12)
+    constant taunt_item_random_entry(0x13)
 
     taunt_spawn_item:
     dw 0, 0, 0, 0
@@ -2081,6 +2258,7 @@ scope Item {
     // Pokemon item menu gate
     // Handles Pokeball selecting Pokemon type (respecting ON/OFF values)
     scope whos_that_pokemon: {
+        // Pokemon selection logic
         OS.patch_start(0xEDCA0, 0x80173260)
         jal     whos_that_pokemon
         nop
@@ -2096,7 +2274,7 @@ scope Item {
             lw      t1, 0x0004(t1)              // t1 = Toggle value (0 if OFF, 1 if ON)
             addiu   a0, a0, 1                   // a0++
             add     t9, t9, t1                  // t9 = t9 + t1
-            sltiu   t1, a0, POKEMON_COUNT - 1   // t1 = 1 if a0 < 12
+            sltiu   t1, a0, POKEMON_COUNT       // t1 = 1 if a0 < 12
             bnez    t1, sanity_check
             nop
 
@@ -2108,10 +2286,16 @@ scope Item {
             nop
             // if we're here, no other pokemon is ON; check for MEW and branch if he's the only one
             bnezl   a0, _mew_selected              // skip if MEW is not ON
-            lli     a1, Hazards.pokemon.MEW        // a1 = 0x2C (MEW)
-            // othewise we return an empty Pokeball
-            b       _return
-            lli     v0, 0x0000                     // v0 = 0 (no pokemon object)
+            lli     a1, MEW_ID_ADJ                 // a1 = 0x2C (MEW)
+            // otherwise we return an empty Pokeball
+            // lli     v0, 0x0000                     // v0 = 0 (no pokemon object)
+            // b       _return
+            // ...ACTUALLY we can return a Missingno
+            // b       _mew_selected
+            // lli     a1, Hazards.standard.EGG       // a1 = placeholder (easter egg, geddit?) :D
+            // Pokeball recursion whynot
+            b       _mew_selected
+            lli     a1, Hazards.standard.POKEBALL     // a1 = pokeholder
 
             random_mew:
             beqz    a0, no_mew            // skip if MEW is not ON
@@ -2122,18 +2306,18 @@ scope Item {
             bnez    v0, no_mew            // branch (likely)
             lw      t2, 0x0054(sp)
             li      t0, POKEMON_SLOTS     // t0 = POKEMON_SLOTS address
-            lbu     v1, 0x0000(t0)        // v1 = last pokemon value
-            addiu   t1, r0, Hazards.pokemon.MEW
+            lbu     v1, 0x0000(t0)        // v1 = last selected pokemon
+            addiu   t1, r0, MEW_ID_ADJ
             beq     t1, v1, no_mew        // branch if last pokemon was MEW
             nop
             lbu     t9, 0x0001(t0)        // branch if second to last pokemon was MEW
             beq     t1, t9, no_mew        // if we don't take either branch here, we get MEW
             nop
             b       _mew_selected         // branch with MEW
-            or      a1, t1, r0            // a1 = Hazards.pokemon.MEW
+            addiu   a1, r0, MEW_ID_ADJ    // a1 = Hazards.pokemon.MEW
             no_mew:
             li      t0, POKEMON_SLOTS     // t0 = POKEMON_SLOTS address
-            addiu   t1, r0, 0x0020 + POKEMON_COUNT - 1 // t1 = max value for pokemon, excluding Mew (0x20 to 0x2B)
+            addiu   t1, r0, 0x0020 + POKEMON_COUNT // t1 = max value for pokemon, excluding Mew (0x20 to 0x2B)
             addiu   v1, r0, 0x0020        // v1 = 0x20
             addiu   v0, r0, 0x0020        // v0 = 0x20
             lbu     t3, 0x0000(t0)        // t3 = last selected pokemon
@@ -2171,7 +2355,7 @@ scope Item {
             try_again:
             bnel    v0, t1, loop_to_get_poke // branch until we get to 0x2C (max value of pokemon)
             lbu     t3, 0x0000(t0)       // t3 = last selected pokemon
-            lbu     a0, 0x002E(t0)       // a0 = total number of pokemon (starts at 0x0C)
+            lbu     a0, 0x0014(t0)       // a0 = total number of pokemon (starts at 0x0C)
             get_pokemon_random_offset:
             jal     Global.get_random_int_   // v0 = (0, N-1)
             sw      t2, 0x0054(sp)
@@ -2183,21 +2367,21 @@ scope Item {
             lw      a2, 0x0000(a2)       // load value of how pokemon are ON
             slti    a2, a2, 3            // a2 = 1 if total number of Pokemon is 1 or 2
             bnezl   a2, pc() + 12        // based on the number of enabled Pokemon, use full or normal range
-            lli     a0, 0x0C             // set a0 to allow for max range (since 'recent' pokemon check is being ignored)
-            lbu     a0, 0x002E(t0)       // a0 = total number of pokemon in range (starts at 0x0C)
+            lli     a0, POKEMON_COUNT    // set a0 to allow for max range (since 'recent' pokemon check is being ignored)
+            lbu     a0, 0x0014(t0)       // a0 = total number of pokemon in range (starts at 0x0C)
             beqzl   a1, get_pokemon_random_offset // loop until we get a non-zero
             nop
 
-            lbu     v1, 0x0000(t0)        // v1 = last pokemon value
+            lbu     v1, 0x0000(t0)        // v1 = last selected pokemon
             lw      t2, 0x0054(sp)
             _mew_selected:
-            lbu     v0, 0x002E(t0)        // v0 = total number of pokemon (starts at 0x0C)
-            addiu   at, r0, 0x000A        // at = 10
+            lbu     v0, 0x0014(t0)        // v0 = total number of pokemon (starts at 0x0C)
+            addiu   at, r0, POKEMON_COUNT - 2 // at = 10
             addiu   a3, sp, 0x0030
             beq     v0, at, done_lowering_slot_count // branch if v0 = 10 (can't go lower than that)
             lui     t9, 0x8000
             addiu   t7, v0, 0xFFFF        // t7 = v0 - 1
-            sb      t7, 0x002E(t0)        // store total number of pokemon slots to update
+            sb      t7, 0x0014(t0)        // store total number of pokemon slots to update
             done_lowering_slot_count:
             lw      a0, 0x0058(sp)
             li      a2, pokem_on          // a2 = address of pokem_on
@@ -2211,19 +2395,61 @@ scope Item {
             ori     t9, t9, 0x0003
             sw      t9, 0x0010(sp)
             sw      t2, 0x0054(sp)
+
+            // Correct New Pokemon and Mew's offset ID
+            _correct_number:
+            lli     t6, MEW_ID_ADJ          // restore Mew's item ID
+            beql    t6, a1, spawn_pokemon   // ~
+            lli     a1, Hazards.pokemon.MEW // ~
+            sltiu   t6, a1, 0x2C            // t6 = 1 if not a New Pokemon...
+            bnez    t6, spawn_pokemon       // ...in which case we can skip checks
+            lli     t6, MEW_ID_ADJ - 3
+            beql    t6, a1, spawn_pokemon
+            lli     a1, Item.Psyduck.id
+            lli     t6, MEW_ID_ADJ - 2
+            beql    t6, a1, spawn_pokemon
+            lli     a1, Hazards.pokemon.SHELLDER
+            lli     t6, MEW_ID_ADJ - 1
+            beql    t6, a1, spawn_pokemon
+            lli     a1, Hazards.pokemon.STARYU
+            lw      t6, 0x0010(sp)        // restore register
+
+            spawn_pokemon:
             jal     0x8016F238            // a1 = pokemon number to spawn
             addiu   a2, a2, 0x001C
 
             _return:
             j        0x80173348          // jump to end of routine
             nop
-        }
+    }
 
         // This is where the game keeps track of Pokemon to pick from (and the two most recent)
-        constant POKEMON_SLOTS(0x8018D060)
+        // The range is from ONIX (0x20) to CLEFAIRY (0x2B)
+        //////// Note to self: Pokemon function(?) at offset 0x34??? e.g. '8025F040'
+        constant POKEMON_SLOTS_VANILLA(0x8018D060)
+
+        // Modified Pokemon table, giving us space to pick Custom ones as well
+        // Note: New Pokemon values in table aren't their actual item ID (this is just so they are sequential)
+        POKEMON_SLOTS:
+        db 0                            // recent Pokemon 1
+        db 0                            // recent Pokemon 2
+        db 0,0,0,0,0,0,0,0,0,0,0,0      // vanilla Pokemon (0x20 to 0x2B)
+        db 0                            // Luvdisc (0x2C)
+        db 0                            // Shellder
+        db 0                            // Staryu
+        // add new Pokemon slots as needed
+        OS.align(20)
+        db 1                            // Initial Pokemon Count (offset is 0x0014, instead of Vanilla 0x002E)
+        OS.align(4)
 
         // Total number of Pokemon Types
-        constant POKEMON_COUNT(13)
+        // Update this when we add Pokemon
+        constant VANILLA_POKE(13)
+        constant NEW_POKE(0)
+        constant POKEMON_COUNT(VANILLA_POKE - 1 + NEW_POKE)
+
+        // We use an adjusted ID for last Pokemon Mew
+        constant MEW_ID_ADJ(0x002C + NEW_POKE) // Hazards.pokemon.MEW + NEW
 
         // Counter of how many Pokemon are ON
         pokem_on:
@@ -2243,8 +2469,48 @@ scope Item {
         dw Toggles.entry_pokemon_hitmonlee
         dw Toggles.entry_pokemon_koffing
         dw Toggles.entry_pokemon_clefairy
+        // dw Toggles.entry_pokemon_psyduck
+        // dw Toggles.entry_pokemon_shellder
+        // dw Toggles.entry_pokemon_staryu
+        // add new Pokemon slots above this line
         dw Toggles.entry_pokemon_mew
         OS.align(4)
+
+        // @ Description
+        // Set the total number of Pokemon to pick
+        scope whos_that_pokemon_setup: {
+            OS.patch_start(0xE9C58, 0x8016F218)
+            j       whos_that_pokemon_setup.clean_table
+            nop
+            nop
+            nop
+            nop
+            nop
+            nop
+            nop
+            OS.patch_end()
+
+            clean_table:
+            // Set up our Modified Pokemon table
+            li      v0, POKEMON_SLOTS       // v0 = Modified Pokemon table
+            addiu   t7, r0, 0x00FF
+            lli     t8, POKEMON_COUNT       // t8 = number of pokemon (excluding mew)
+            sb      t7, 0x0001(v0)          // clear recent Pokemon slots 1 and 2
+            sb      t7, 0x0000(v0)          // ~
+            jr      ra                      // return
+            sb      t8, 0x0014(v0)          // store number of pokemon
+
+            // Vanilla table (not being used)
+            ////lui     v0, 0x8019              // v0 = POKEMON_SLOTS_VANILLA
+            ////addiu   v0, v0, 0xD060          // ~
+            ////addiu   t7, r0, 0x00FF          // t7 = -1
+            ////addiu   t8, r0, 0x000C          // t8 = number of pokemon (excluding mew)
+            ////sb      t7, 0x0001(v0)          // clear recent Pokemon slots 1 and 2
+            ////sb      t7, 0x0000(v0)          // ~
+            ////jr      ra                      // return
+            ////sb      t8, 0x002E(v0)          // store number of pokemon
+        }
+
 
     // @ Description
     // Handles Pokemon regional variant Japanese Voices
@@ -2371,6 +2637,7 @@ scope Item {
         j       item_containers_spawn_toggle
         lw      a2, 0x000C(t2)              // original line 1
         _return:
+        beqzl   at, 0x8016F208              // original line 3, modified to use at (instead of a2) which includes extended bitmask
         OS.patch_end()
 
         // a2 = item mask, t2 is nearby address of item mask, v0 is safe
@@ -2378,8 +2645,6 @@ scope Item {
         lbu     a3, 0x0000(a3)              // a3 = current screen
         addiu   a3, a3, -Global.screen.VS_BATTLE // a3 = 0 if vs mode
         bnezl   a3, _end                    // skip if screen_id != vs mode
-        nop
-        beqzl   a2, _end                    // safety branch if vs item mask is empty (shouldn't happen)
         nop
 
         li      t3, Toggles.entry_item_containers
@@ -2418,9 +2683,11 @@ scope Item {
         sh      t3, 0x000E(t2)              // save updated mask
 
         _end:
-        lui     t3, 0x8013                  // original line 2
-        j       _return                     // return
         lw      a2, 0x000C(t2)              // original line 1
+        OS.read_word(EXTENDED_ENABLED_BITMASK, at) // at = extended bit mask
+        or      at, a2, at                  // at = original bit mask | extended bitmask (for non-zero check)
+        j       _return                     // return
+        lui     t3, 0x8013                  // original line 2
     }
 
     // @ Description
@@ -2570,6 +2837,73 @@ scope Item {
         _check_return:
         jr      ra                          // return
         nop
+    }
+
+    // item drop toggle for dropping items while aerial
+    scope item_drop: {
+        OS.patch_start(0xCB5EC, 0x80150BAC)
+        j       item_drop
+        nop
+        _return:
+        OS.patch_end()
+
+        OS.read_word(Toggles.entry_item_dropping + 0x4, t0)
+        bnez    t0, _drop_item
+        nop
+
+        _normal:
+        lw      t0, 0x0084(t9)  // t0 = item struct, og line 1
+        j       _return         // check if item drop as normal
+        lw      t1, 0x0010(t0)  // og line 2
+
+        _drop_item:
+        // s0 = fighter struct
+        lb      t0, 0x01BF(s0)  // t0 = buttons pressed
+        andi    t0, t0, Joypad.R
+        beqz    t0, _normal + 0x4   // skip if R is not pressed
+        lw      t0, 0x0084(t9)  // t0 = item struct, og line 1
+        j       _return         // check if item drop as normal
+        addiu   t1, r0, 2       // t1 = 3 (item can drop)
+
+
+    }
+
+    // @ Description
+    // Patch which prevents Marina's items from being destroyed when landing on floors.
+    scope prevent_item_despawn_: {
+        OS.patch_start(0xEE644, 0x80173C04)
+        j       prevent_item_despawn_
+        nop
+        _return:
+        OS.patch_end()
+
+        // s0 = item struct
+        lw      t0, 0x000C(s0)              // t0 = item_id
+        lli     t1, Item.Turnip.id          // t1 = turnip id
+        beq     t1, t0, _j_0x80173C28       // skip if item = boomerang
+        lli     t1, Item.Gem.id             // t1 = gem/bomb id
+        beq     t1, t0, _j_0x80173C28       // skip if item = gem/bomb
+        lli     t1, Item.Shuriken.id        // t1 = shuriken id
+        beq     t1, t0, _j_0x80173C28       // skip if item = shuriken
+        lli     t1, Item.Boomerang.id       // t1 = boomerang id
+        beq     t1, t0, _j_0x80173C28       // skip if item = boomerang
+        lli     t1, Item.ClanBomb.id        // t1 = clanbomb id
+        beq     t1, t0, _j_0x80173C28       // skip if item = clanbomb
+        nop
+
+        beq     v1, at, _j_0x80173C1C       // original line 1 (destroys item if it has landed 4 times)
+        nop
+
+        j       _return                     // return
+        nop
+
+        _j_0x80173C1C:
+        j       0x80173C1C                  // jump to original branch location
+        nop
+
+        _j_0x80173C28:
+        j       0x80173C28                  // skips random despawning
+        lw      t0, 0x02CC(s0)              // original line 2
     }
 
 }

@@ -86,12 +86,14 @@ scope Camera {
         beq     at, v0, mkingdom_camera
         addiu   at, r0, Stages.id.GYM_LEADER_CASTLE
         beq     at, v0, mkingdom_camera
+        addiu   at, r0, Stages.id.N64_REMIX
+        beq     at, v0, mkingdom_camera
         addiu   at, r0, Stages.id.TOADSTURNPIKE
         bnel    at, v0, _end
-		addiu   t0, r0, 0                           // if here, use default camera index (0)
+        addiu   t0, r0, 0                           // if here, use default camera index (0)
 
-		mkingdom_camera:
-		ori     t0, r0, 3                           // t0 = MKingdom camera routine
+        mkingdom_camera:
+        ori     t0, r0, 3                           // t0 = MKingdom camera routine
 
         _end:
         j       0x8010DAC0                          // original line 1
@@ -141,6 +143,12 @@ scope Camera {
 
         // if here, apply scene camera
         _scene_cam:
+        OS.read_word(Global.match_info, t0)          // t0 = Global.match_info
+        lbu      t0, 0x0001(t0)                      // t0 = stage id
+        // HRC check, skip if so
+        ori      t2, r0, Stages.id.HRC               // t2 = id.HRC
+        beq      t0, t2, _end                        // dont use custom/fixed camera if stage == HRC
+
         li       t9, 0x8012EBB4                      // t9 = ptr to default camera routines (safe to overwrite)
         lw       t0, 0x0008(t9)                      // t0 = cinematic camera
         sw       t0, 0x0000(t9)                      // overwrite default vs camera routine
@@ -163,8 +171,7 @@ scope Camera {
 
         _fixed_cam:
         // initial
-        li      t0, Global.match_info               // ~ 0x800A50E8
-        lw      t0, 0x0000(t0)                      // t0 = match_info
+        OS.read_word(Global.match_info, t0)          // t0 = Global.match_info
         lbu     t0, 0x0001(t0)                      // t0 = stage id
 
         // HRC check, skip if so
@@ -278,9 +285,6 @@ scope Camera {
         beq     t0, t2, _set_fixed_camera_values    // fix fixed camera if stage = ~
         nop
         ori     t2, r0, Stages.id.BLUE              // t2 = id.BLUE (BIG BLUE)
-        beq     t0, t2, _set_fixed_camera_values    // fix fixed camera if stage = ~
-        nop
-        ori     t2, r0, Stages.id.CORNERIACITY      // t2 = id.CORNERIACITY
         beq     t0, t2, _set_fixed_camera_values    // fix fixed camera if stage = ~
         nop
         ori     t2, r0, Stages.id.WINDY             // t2 = id.WINDY
@@ -506,28 +510,74 @@ scope Camera {
     }
 
     // @ Description
-    // adds a patch-fix/hook into the pause routine that will force the pause camera to use the fixed camera
-    scope fixed_camera_bonus_pause_fix_: {
-        OS.patch_start(0x88814, 0x8010D014)
-        j       fixed_camera_bonus_pause_fix_
-        nop
-        nop
+    // Don't allow camera to be changed with the fixed camera
+    // Modifies cmManagerSetCameraStatusID()
+    scope fixed_camera_always_: {
+        OS.patch_start(0x88710, 0x8010CF10)
+        j       fixed_camera_always_
+        sw      t6, 0x0008(v0)                  // original line 1
         _return:
         OS.patch_end()
 
         // check fixed camera toggle
-        OS.read_word(Toggles.entry_camera_mode + 0x4, a0) // a0 = Cam type toggle value
-        addiu   at, r0, type.FIXED              // at = camera type.fixed
-        beq     a0, at, _end                    // branch to end if fixed camera mode is on
+        OS.read_word(Toggles.entry_camera_mode + 0x4, t6) // t6 = Cam type toggle value
+        addiu   t7, r0, type.FIXED              // t7 = camera type.fixed
+        beq     t6, t7, _frozen                 // use frozen camera if fixed camera mode is on
+        nop
+
+        // otherwise check stage
+        OS.read_word(Global.match_info, t6)     // t6 = match_info
+        lbu     t6, 0x0001(t6)                  // t6 = stage id
+
+        // always use frozen for these
+        ori     t7, r0, Stages.id.WORLD1        // t7 = id.WORLD1
+        beq     t6, t7, _frozen                 // use frozen camera if stage = WORLD1
+        ori     t7, r0, Stages.id.HRC           // t7 = id.HRC
+        beq     t6, t7, _frozen                 // use frozen camera if stage = HRC
+        ori     t7, r0, Stages.id.POKEFLOATS    // t7 = id.POKEFLOATS
+        beq     t6, t7, _frozen                 // use frozen camera if stage = GB_LAND
+        nop
+
+        // if hazards are disabled
+        OS.read_word(Toggles.entry_hazard_mode + 0x4, t7) // t7 = 1 if hazard_mode is 1 or 3, 0 otherwise
+        andi    t7, t7, 0x0001                  // t7 = 1 if hazard_mode is 1 or 3, 0 otherwise
+        bnez    t7, _normal                     // if hazard_mode disabled, skip frozen camera for flat zones
+        ori     t7, r0, Stages.id.GB_LAND       // t7 = id.GB_LAND
+        beq     t6, t7, _frozen                 // use frozen camera if stage = GB_LAND
+        ori     t7, r0, Stages.id.FLAT_ZONE_2   // t7 = id.FLAT_ZONE_2
+        beq     t6, t7, _frozen                 // use frozen camera if stage = FLAT_ZONE_2
+        ori     t7, r0, Stages.id.FLAT_ZONE     // t7 = id.FLAT_ZONE
+        beq     t6, t7, _frozen                 // use frozen camera if stage = FLAT_ZONE
         nop
 
         _normal:
-        lui     a0, 0x8013                      // original line 1
-        jal     0x8010CEF4                      // original line 2
-        lw      a0, 0x14B8(a0)
-
-        _end:
+        // if we reach this point, update camera as normal
         j       _return
+        lw      t8, 0xEBB4(t8)                  // original line 2
+
+        _frozen:
+        jr      ra                              // skip setting camera and exit cmManagerSetCameraStatusID
+        nop
+    }
+
+    // @ Description
+    // Prevents Bonus 1/2 pausing in fixed camera mode
+    scope prevent_fixed_camera_pause_bonus_: {
+        OS.patch_start(0x8F918, 0x80114118)
+        jal     prevent_fixed_camera_pause_bonus_
+        lw      v0, 0x1300(v0)                  // original line 1
+        OS.patch_end()
+
+        OS.read_word(Toggles.entry_camera_mode + 0x4, t6) // t6 = Cam type toggle value
+        addiu   t7, r0, type.FIXED              // t7 = camera type.fixed
+        beq     t6, t7, _frozen                 // account for frozen camera if fixed camera mode is on
+        nop
+
+        jr      ra
+        addiu   a0, sp, 0x0068                  // original line 2
+
+        _frozen:
+        j       0x80114248                      // skip past camera zoom code
         nop
     }
 
@@ -600,12 +650,18 @@ scope Camera {
         addiu   sp, sp, -0x10                       // allocate stackspace
         sw      ra, 0x0008(sp)                      // save ra
 
+        OS.read_word(Toggles.entry_camera_mode + 0x4, t6) // t6 = fixed cam boolean
+        addiu   t7, r0, type.SCENE                  // t7 = camera type.scene
+        beq     t6, t7, _original                   // skip clearing if scene
+        // yes, delay slot
+
         li      v0, camera_pan_offsets_
         sw      r0, 0x0000(v0)                      // clear x
         sw      r0, 0x0004(v0)                      // clear y
         sw      r0, 0x0008(v0)                      // clear z
         sw      r0, 0x000C(v0)                      // clear fov
 
+        _original:
         jal     0x8010CA7C                          // original line 1
         addiu   a0, a0, 0x001C                      // original line 2
 
@@ -638,9 +694,9 @@ scope Camera {
 
     // @ Description
     // pause.asm runs this routine so we can move the camera around in pause
-	// a1 = buttons pressed ptr
-	scope extended_movement_: {
-	    lh      a0, 0x0000(a1)                  // a0 = input flag (checking for A/B)
+    // a1 = buttons pressed ptr
+    scope extended_movement_: {
+        lh      a0, 0x0000(a1)                  // a0 = input flag (checking for A/B)
         sll     at, a0, 16                      // shift
         srl     at, at, 30                      // shift
         beqz    at, _check_pan                  // branch if not pressing A or B
@@ -805,6 +861,11 @@ scope Camera {
         OS.restore_registers()
 
         _clear_camera_offsets:
+        OS.read_word(Toggles.entry_camera_mode + 0x4, a0) // a0 = camera type toggle value
+        addiu   at, r0, type.SCENE                  // at = camera type.scene
+        beq     a0, at, _check_hud                  // don't clear if camera type is SCENE
+        // yes, delay slot
+
         // since player is unpausing, we will clear camera offsets
         li      a0, camera_pan_offsets_
         sw      r0, 0x0000(a0)                      // clear x
@@ -812,7 +873,14 @@ scope Camera {
         sw      r0, 0x0008(a0)                      // clear z
         sw      r0, 0x000C(a0)                      // clear fov
 
-        // v0 = TRUE
+        _check_hud:
+        // v0 = TRUE (enabled magnifying glass)
+
+        // If in special zoom, disable the magnifying glass
+        OS.read_word(Zoom.zoom_type, at)            // at = zoom_type
+        bnezl   at, pc() + 8                        // if in special zoom, hide mag glass
+        lli     v0, OS.FALSE                        // v0 = FALSE (disabled magnifying glass)
+
         // check if hud should be disabled
         OS.read_word(Toggles.entry_disable_hud + 0x4, a0) // a0 = entry_disable_hud (0 if OFF, 1 if PAUSE, 2 if ALL)
         andi    a0, a0, 0x0002                      // a0 = 1 if entry_disable_hud = 2
@@ -835,7 +903,6 @@ scope Camera {
         addiu   v0, r0, 0x0001                      // restore v0
         j       return_                             // return to original routine
         or      a0, r0, r0                          // restore a0
-
     }
 
     // @ Description
@@ -1336,6 +1403,9 @@ scope Camera {
         ori     t7, r0, Stages.id.FLAT_ZONE         // at = id.FLAT_ZONE
         beq     t6, t7, _disable_control            // disable pause controls if stage = FLAT_ZONE
         nop
+        ori     t7, r0, Stages.id.GB_LAND           // at = id.GB_LAND
+        beq     t6, t7, _disable_control            // disable pause analog controls if stage = GB_LAND
+        nop
 
         _normal:
         ori     t7, r0, Stages.id.WORLD1            // at = id.WORLD1
@@ -1343,9 +1413,6 @@ scope Camera {
         nop
         ori     t7, r0, Stages.id.HRC               // at = id.HRC
         beq     t6, t7, _disable_control            // disable pause analog controls if stage = HRC (failsafe)
-        nop
-        ori     t7, r0, Stages.id.GB_LAND           // at = id.GB_LAND
-        beq     t6, t7, _disable_control            // disable pause analog controls if stage = GB_LAND
         nop
 
         // if here, t5 == TRUE
@@ -1357,6 +1424,56 @@ scope Camera {
         _disable_control:
         b       _end
         addiu   t5, r0, 0x0000                      // t5 = false
+    }
+
+    // This zooms the camera out to the max camera coordinates (like Bonus pause).
+    // Inspired by 0x8011403C ifCommonBattleGoUpdateInterface starting at 0x80114108
+    scope zoom_to_max_: {
+        addiu   sp, sp, -0x0080             // allocate stack space
+        sw      ra, 0x007C(sp)              // save registers
+
+        addiu   a0, sp, 0x0068              // a0 = cam struct 1
+        addiu   a1, sp, 0x005C              // a1 = cam struct 2
+
+        OS.read_word(0x80131300, v0)        // v0 = gMPCollisionGroundData
+
+        lh      t6, 0x009A(v0)              // t6 = x
+        mtc1    t6, f4                      // f4 = x
+        nop
+        cvt.s.w f6, f4                      // f4 = x, float
+        swc1    f6, 0x0068(sp)              // set x
+        lh      t6, 0x009C(v0)              // t6 = y
+        mtc1    t6, f4                      // f4 = y
+        nop
+        cvt.s.w f6, f4                      // f4 = y, float
+        swc1    f6, 0x006C(sp)              // set y
+        lh      t6, 0x009E(v0)              // t6 = z
+        mtc1    t6, f4                      // f4 = z
+        nop
+        cvt.s.w f6, f4                      // f4 = z, float
+        swc1    f6, 0x0070(sp)              // set z
+
+        lh      t6, 0x00A0(v0)              // t6 = x
+        mtc1    t6, f4                      // f4 = x
+        nop
+        cvt.s.w f6, f4                      // f4 = x, float
+        swc1    f6, 0x005C(sp)              // set x
+
+        lh      t6, 0x00A2(v0)              // t6 = y
+        mtc1    t6, f4                      // f4 = y
+        nop
+        cvt.s.w f6, f4                      // f4 = y, float
+        swc1    f6, 0x0060(sp)              // set y
+        lh      t6, 0x00A4(v0)              // t6 = z
+        mtc1    t6, f4                      // f4 = z
+        nop
+        cvt.s.w f6, f4                      // f4 = z, float
+        jal     0x8010D0A4
+        swc1    f6, 0x0064(sp)              // set z
+
+        lw      ra, 0x007C(sp)              // save registers
+        jr      ra
+        addiu   sp, sp, 0x0080              // allocate stack space
     }
 }
 

@@ -1,3 +1,4 @@
+// Coded by HaloFactory
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(clanbomb_stage_setting_) // bomb is 0x80177D9C

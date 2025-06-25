@@ -14,8 +14,8 @@ scope GameEnd {
     // @ Description
     // Reset combination mask + Start
     constant BUTTON_MASK(Joypad.A | Joypad.B | Joypad.Z | Joypad.R | Joypad.START )
-    // Reset combination mask + Dpad-Right
-    constant BUTTON_MASK_ALT(Joypad.A | Joypad.B | Joypad.Z | Joypad.R | Joypad.DR )
+    // Reset combination mask + Dpad-Left
+    constant BUTTON_MASK_ALT(Joypad.A | Joypad.B | Joypad.Z | Joypad.R | Joypad.DL )
     // (R)esu(L)ts mask (display results regardless of toggles)
     constant BUTTON_MASK_RL(Joypad.R | Joypad.L )
 
@@ -30,7 +30,23 @@ scope GameEnd {
         OS.patch_end()
 
         _skip_results_screen:
-        Toggles.guard(Toggles.entry_skip_results_screen, _update_screen_return)
+        li      t6, Toggles.entry_skip_results_screen
+        lw      t6, 0x0004(t6)              // t6 = skip results screen (0 if "OFF", 1 if "ON", 2 if "ON RESET")
+        beqz    t6, _dont_skip_results      // if skip results screen is off, return
+        nop
+        addiu   t6, t6, -1                  // t6 = 0 if skip results screen is on
+        beqz    t6, _skip_results           // branch accordingly
+        nop
+        // if we're here, skip results screen is set to "ON RESET"
+        // check if the match ended normally or was reset, and branch accordingly
+        li      t6, 0x800A4AE2              // t6 = 1 if match was reset (flag)
+        lb      t6, 0x0000(t6)              // ~
+        bnez    t6, _skip_results
+        nop
+        _dont_skip_results:
+        j       _update_screen_return
+        nop
+        _skip_results:
         lli     t6, 0x0010                  // original line 1 (modified to character select screen)
         sb      t6, 0x0000(v0)              // original line 2
         j       _update_screen_return       // return
@@ -117,6 +133,18 @@ scope GameEnd {
         li      t0, is_salty_runback        // t0 = address of is_salty_runback
         lli     t6, 0x0001                  // t6 = 1
         sw      t6, 0x0000(t0)              // is_salty_runback = 1
+
+        // reset stockmode last counts
+        li      t0, StockMode.initial_previous_stock_count_table
+        lw      t6, 0x0000(t0)              // t6 = initial previous stock counts
+        li      t0, StockMode.previous_stock_count_table
+        sw      t6, 0x0000(t0)              // reset previous stock counts
+
+        // reset the heap, sheesh!
+        li      t6, custom_heap_address     // t6 = custom_heap_address
+        li      t0, custom_heap             // t0 = custom_heap
+        sw      t0, 0x0000(t6)              // reset custom_heap_address
+
         lw      t0, 0x0004(sp)              // ~
         lw      v0, 0x0008(sp)              // ~
         lw      ra, 0x000C(sp)              // restore registers

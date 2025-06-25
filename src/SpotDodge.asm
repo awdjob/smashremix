@@ -1,7 +1,8 @@
 // SpotDodge.asm
-
+// Adds spot dodge mechanic to smash remix
+// by halofactory
 scope SpotDodge {
-    
+
     // @ Description
     // Hook into shield routine that checks for shield drops
     scope check_input: {
@@ -41,7 +42,7 @@ scope SpotDodge {
         beqz    at, _end                        // branch if stick is above -32
         slti    at, t7, 0x0004                  // check if stick slammed down
         beqz    at, _end                        // branch if stick is above -32
-        
+
         // if here, then stick y is below -32
         lw      t8, 0x00F4(a0)                  // check if on a soft platform
         andi    t9, t8, 0x4000                  // ~
@@ -67,12 +68,12 @@ scope SpotDodge {
         and     t9, t7, t8
         beqzl   t9, _end
         or      v0, r0, v0                  // return 0
-        
+
         lw      a0, 0x0004(a0)
-        
+
         // initiate spot dodge
         Action.change(Action.DamageHigh2, -1)
-        
+
         lw      a0, 0x001C(sp)          // restore a0
         li      at, moveset
         sw      at, 0x086C(a0)          // update moveset pointer
@@ -91,5 +92,5 @@ scope SpotDodge {
         dw 0x04000010   // wait 16 frames
         dw 0x74000001
         dw 0x00000000
-    
+
 }

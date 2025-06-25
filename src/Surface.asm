@@ -176,8 +176,9 @@ scope Surface {
     add_surface(push_right_1, 4.0, OS.FALSE, 0, 0, 0, 0, 0, 0, 0, 0)
     add_surface(push_left_1, 4.0, OS.FALSE, 0, 0, 0, 0, 0, 0, 0, 0)
     add_surface(acid, 4.0, OS.FALSE, 0, 0, 0, 0, 0, 0, 0, 0)
+    add_surface(bounce, 4.0, OS.FALSE, 0, 0, 0, 0, 0, 0, 0, 0)
+    constant BOUNCE_Y_VELOCITY(0x4302)
 
-    
     // write surfaces to ROM
     write_surfaces()
     
@@ -236,6 +237,17 @@ scope Surface {
         // t0 = surface id - 7
         bltzl   t0, _end                    // skip if surface id < 7
         or      v0, r0, r0                  // v0 = 0 (disable knockback)		
+        
+        // check if surface is bounce
+        // t9 = surface id
+        addiu   at, r0, 0x24                // at = bounce surface id
+        bne     at, t9, _continue             // do bounce surface logic
+        nop
+
+        j       _bounce
+        nop
+
+        _continue:
         sll     t0, t0, 0x2                 // t0 = offset ((surface id - 7) * 0x4)
         li      at, knockback_table         // at = knockback_table
         addu    at, at, t0                  // at = knockback_table + offset
@@ -267,15 +279,68 @@ scope Surface {
         _enable:
         sw      t0, 0x0000(a1)              // store knockback struct
         ori     v0, r0, 0x0001              // v0 = 1 (enable knockback)
-        
+
         _end:
         jr      ra                          // return
         nop
         
-        fill 0x800E5D10 - pc()              // nop the rest of the original function
+        //fill 0x800E5D10 - pc()              // nop the rest of the original function
         OS.patch_end()
     }
     
+    scope _bounce: {
+        addiu   sp, sp, -0x20               // allocate stackspace
+        sw      ra, 0x14(sp)                // store ra
+        sw      a0, 0x18(sp)                // store player struct
+        
+        lw      at, 0x09EC(a0)              // at = on hit routine
+        beqzl   at, _check_on_hit_routine_2
+        lw      at, 0x09F0(a0)              // at = on hit routine
+        _check_on_hit_routine_2:
+        beqz    at, _start_jump
+        nop
+        li      ra, _start_jump             // ra = _start_jump
+        jr      at                          // run on hit routine
+        lw      a0, 0x0004(a0)              // a0 = player obj
+        
+        _start_jump:
+        lw      a0, 0x18(sp)                // restore player struct
+        jal     0x800E98B0                  // clear gfx overlay routine
+        lw      a0, 0x0004(a0)              // a0 = player obj
+        
+        lw      a0, 0x18(sp)                // restore player struct
+        // make the player jump
+        lli     a1, Action.JumpF            // a1(action id) = JumpF
+        or      a2, r0, r0                  // a2(starting frame) = 0
+        lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
+        sw      r0, 0x0010(sp)              // argument 4 = 0
+        jal     0x800E6F24                  // change action
+        lw      a0, 0x0004(a0)              // a0 = player obj
+        lw      a0, 0x18(sp)                // store player struct
+        jal     0x800E0830                  // unknown common subroutine
+        lw      a0, 0x0004(a0)              // a0 = player obj
+
+        // set initial Y velocity
+        lw      t1, 0x0018(sp)              // t1 = player struct
+        lui     at, BOUNCE_Y_VELOCITY       // at = initial Y velocity
+        sw      at, 0x004C(t1)              // set initial Y velocity
+        sw      r0, 0x0058(t1)              // clear knockback Y velocity
+        lbu     at, 0x018D(t1)              // at = bit field
+        andi    at, at, 0x0007              // at = bit field & mask(0b01111111), this disables the fast fall flag
+        sb      at, 0x018D(t1)              // store updated bit field
+        addiu   at, r0, 1                   // at = 1
+        sw      at, 0x014C(t1)              // set aerial
+        sb      at, 0x0148(t1)              // set num jumps to 1
+        
+        FGM.play(0x5C2)
+
+        _end:
+        addiu   v0, r0, 0                   // return 0
+        lw      ra, 0x14(sp)                // restore ra
+        jr      ra
+        addiu   sp, sp, 0x20                // deallocate stackspace
+    }
+
     // @ Description
     // Patch which checks for a custom FGM id for surface knockback and redirects to a new routine
     // if an FGM id is present.
@@ -322,8 +387,8 @@ scope Surface {
     conveyor_speed:
     dw  0x41A40000  // RTTF Remix, +20.5 units
     dw  0xC1C00000  // RTTF Remix, -24 units
-    dw  0x41400000  // unused, placeholder +12 units
-    dw  0xC1400000  // unused, placeholder -12 units
+    dw  0x41A00000  // Future Frenzy (Time Twister) +20 units
+    dw  0xC1A00000  // Future Frenzy (Time Twister) -20 units
 
     scope fighter_apply_conveyor_surface: {
         OS.patch_start(0x5DBD8, 0x800E23D8)
@@ -356,6 +421,25 @@ scope Surface {
         nop
 
         _apply_conveyor_movement:
+        // check if vs mode
+        OS.read_word(Global.match_info, t1) // t1 = global.match_info
+        lb      t1, 0x0001(t1)              // t1 = current stage id
+        lli     t2, 0xBD                    // v0 = remix RTTF stage id
+        beq     t1, t2, _apply_push_0       // if bonus mode, skip movement toggle check
+        OS.read_byte_unsigned(Global.current_screen, t1) // t1 = current screen id
+        addiu   t2, 0x0001                      // t2 =  1P Mode screen 1d
+        beq     t2, t1, _apply_push_0       // apply push if remix 1p
+        nop
+
+        //_check_movment_toggle:
+        // Check if movement disabled first
+        li      t1, Toggles.entry_hazard_mode
+        lw      t1, 0x0004(t1)
+        addiu   t2, r0, 0x0001
+        bgt     t1, t2, _apply_push         // don't move character if movement is disabled
+        nop
+
+        _apply_push_0:
         sw      t0, 0x00A4(s1)
 
         _apply_push:
@@ -372,9 +456,9 @@ scope Surface {
         lw      t0, 0x0108(a2)              // t0 = kinetic state
         _item_apply_conveyor_surface_return:
         OS.patch_end()
-           
-        bnez    t0, _continue               // skip conveyor surface logic if aerial
-        nop
+
+        bnezl   t0, _continue               // skip conveyor surface logic if aerial
+        sw      r0, 0x0064(a2)              // if aerial, resets wind x velocity
         // if grounded
         li      t0, Global.match_info       // ~ 0x800A50E8
         lw      t0, 0x0000(t0)              // t0 = match_info
@@ -398,20 +482,40 @@ scope Surface {
         beql    v0, at, _apply_conveyor_movement
         lw      t0, 0x0004(t1)              // load left moving speed
         addiu   at, r0, 0x21                // right moving clipping id (fast)
-        beql    t0, at, _apply_conveyor_movement
+        beql    v0, at, _apply_conveyor_movement
         lw      t0, 0x0008(t1)              // load right moving speed
         addiu   at, r0, 0x22                // left moving clipping id (slow)
-        beql    t0, at, _apply_conveyor_movement         // skip conveyor if not a conveyor surface
+        beql    v0, at, _apply_conveyor_movement         // skip conveyor if not a conveyor surface
         lw      t0, 0x000C(t1)              // load left moving speed (slow)
 
         b       _continue           // skip conveyor if not a conveyor surface
         lw      v0, 0x037C(a2)              // restore v0
 
         _apply_conveyor_movement:
-        sw      t0, 0x0064(a2)
-        lw      v0, 0x037C(a2)              // restore v0
+        // check if vs mode
+        OS.read_word(Global.match_info, t1) // t1 = global.match_info
+        lb      t1, 0x0001(t1)              // t1 = current stage id
+        lli     v0, 0xBD                    // v0 = remix RTTF stage id
+        beq     t1, v0, _continue_0         // if remix RTTF, don't check hazard toggle
+        
+        OS.read_byte_unsigned(Global.current_screen, t1) // t1 = current screen id
+        addiu   v0, 0x0001                      // v0 =  1P Mode screen 1d
+        beq     v0, t1, _continue_0             // skip hazard toggle check if remix 1P
+        nop
+
+        // Check if movement disabled first
+        li      t1, Toggles.entry_hazard_mode
+        lw      t1, 0x0004(t1)
+        addiu   v0, r0, 0x0001
+        bgt     t1, v0, _continue           // don't move item if movement is disabled
+        nop
+
+        _continue_0:
+        b       _continue
+        sw      t0, 0x0064(a2)              // save wind x velocity
 
         _continue:
+        lw      v0, 0x037C(a2)              // restore v0
         jalr    ra, v0
         sh      t4, 0x008C(a2)
         j       _item_apply_conveyor_surface_return
@@ -432,6 +536,7 @@ scope Surface {
 	// @ Description
 	// Returns flag of clipping.
 	// A0 = clipping ID
+    // for some reason this crashed on SAFFRON?
 	scope get_clipping_flag_: {
 		// first, get offset to flag
 		lui		at, 0x8013

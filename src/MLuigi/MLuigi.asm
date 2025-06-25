@@ -47,6 +47,10 @@ constant STEP_FGM(0x7A)
     Character.edit_menu_action_parameters(MLUIGI, 0x2,           -1,                            SHUFFLE_VICTORY,            -1)
     Character.edit_menu_action_parameters(MLUIGI, 0x4,           -1,                            VICTORY_1,                  -1)
 
+    // This fixes Polygon Luigi's CSS animation. Ideally would be in Character.asm, but this lets us reuse the moveset commands we've already made for Metal Luigi.
+    Character.edit_menu_action_parameters(NLUIGI, 0x1,           -1,                            VICTORY_1,                  -1)
+    Character.edit_menu_action_parameters(NLUIGI, 0x4,           -1,                            VICTORY_1,                  -1)
+
     Character.table_patch_start(variant_original, Character.id.MLUIGI, 0x4)
     dw      Character.id.LUIGI // set Luigi as original character (not Mario, who MLUIGI is a clone of)
     OS.patch_end()
@@ -87,6 +91,11 @@ constant STEP_FGM(0x7A)
     // No skeleton if hit by electric attacks
     Character.table_patch_start(electric_hit, Character.id.MLUIGI, 0x4)
     dw 0x10
+    OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.MLUIGI, 0x2)
+    dh {MIDI.id.METAL_BATTLE}
     OS.patch_end()
 
     // @ Description

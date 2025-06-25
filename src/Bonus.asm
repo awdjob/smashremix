@@ -4,7 +4,7 @@ define __BONUS__()
 print "included Bonus.asm\n"
 
 scope Bonus {
-    constant NUM_BONUS_STAGES(31)
+    constant NUM_BONUS_STAGES(33)
 
     // @ Description
     // Sets up CSS for alternate Bonus modes
@@ -124,10 +124,10 @@ scope Bonus {
         bnezl   t0, pc() + 8                // if not Bonus 1/2, hide STAGE string on init
         sw      r0, 0x0038(v0)              // turn off display
 
-        // Draw R button and Set Stage String
+        // Draw L button and Set Stage String
         Render.load_file(0xC5, Render.file_pointer_4)                 // load button images into file_pointer_4
         Render.draw_string(0x22, 0x1A, string_set_stage, Render.NOOP, 0x429D0000, 0x43590000, 0xFFFFFFFF, 0x3F500000, Render.alignment.LEFT)
-        Render.draw_texture_at_offset(0x22, 0x1A, Render.file_pointer_4, Render.file_c5_offsets.R, Render.NOOP, 0x42770000, 0x43580000, 0x848484FF, 0x303030FF, 0x3F800000)
+        Render.draw_texture_at_offset(0x22, 0x1A, Render.file_pointer_4, Render.file_c5_offsets.L, Render.NOOP, 0x42770000, 0x43580000, 0x848484FF, 0x303030FF, 0x3F800000)
 
         // Draw selected MODE string
         Render.draw_string_pointer(0x22, 0x19, mode_pointer, Render.update_live_string_, 0x43790000, 0x431C0000, 0xE4BE41FF, 0x3F600000, Render.alignment.CENTER)
@@ -317,9 +317,10 @@ scope Bonus {
     }
 
     // @ Description
-    // Checks if R is pressed and updates stage accordingly
+    // Checks if L is pressed and updates stage accordingly
     // @ Arguments
     // a0 - button mask
+    // a1 - released button mask
     scope check_input_: {
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x0004(sp)              // save registers
@@ -335,44 +336,57 @@ scope Bonus {
 
         li      t2, SinglePlayerModes.singleplayer_mode_flag
         lw      t2, 0x0000(t2)              // t0 = singleplayer mode flag
-        bnezl   t2, _R_text                 // if not Bonus 1/2, skip
+        bnezl   t2, _L_text                 // if not Bonus 1/2, skip
         lli     a1, 0x0001                  // a1 = display off
 
         li      t2, mode
         lw      t2, 0x0000(t2)              // t2 = mode (0 - Normal, 1 - Remix)
-        beqzl   t2, _R_text                 // if Normal selected, skip checking for input
+        beqzl   t2, _L_text                 // if Normal selected, skip checking for input
         lli     a1, 0x0001                  // a1 = display off
 
         lw      t2, 0x0054(t1)              // 0x0054(t1) = held token player index (port 0 - 3 or -1 if not holding a token)
-        bltzl   t2, _R_text                 // if token not held, skip checking for input
+        bltzl   t2, _L_text                 // if token not held, skip checking for input
         lli     a1, 0x0001                  // a1 = display off
 
         li      at, CharacterSelect.CSS_PLAYER_STRUCT_BONUS // at = Bonus CSS struct
         lw      v0, 0x0048(at)              // v0 = character id
         lli     at, Character.id.NONE
-        beql    at, v0, _R_text             // if no character is selected, don't update stage
+        beql    at, v0, _L_text             // if no character is selected, don't update stage
         lli     a1, 0x0001                  // a1 = display off
 
-        andi    a0, a0, Joypad.R            // a0 = 0 if R not pressed
-        beqzl   a0, _R_text                 // if not pressed, branch accordingly
+        lw      a1, 0x001C(sp)              // restore a1
+        andi    a0, a1, Joypad.L            // a0 = 0 if L not pressed and released
+        beqzl   a0, _L_text                 // if not pressed, branch accordingly
         lli     a1, 0x0000                  // a1 = display on
 
+        lli     at, Character.id.PLACEHOLDER
+        bne     at, v0, _get_stage_index    // branch accordingly
+        nop
+        // pick a random stage if hovering over '?'
+        addiu   a0, r0, NUM_BONUS_STAGES    // a0 = number of bonus stages
+        jal     Global.get_random_int_safe_ // v0 = stage index
+        nop
+        b       _update_stage_icons         // branch to next part
+        nop
 
+        _get_stage_index:
         // should be able to always get the stage index from the BTT tables
         li      at, Character.BTT_TABLE
         addu    at, at, v0                  // at = address of stage id
         lbu     a0, 0x0000(at)              // a0 = stage id
+
         jal     get_bonus_stage_index_      // v0 = stage index
         lli     a1, 0x0000                  // a1 = BTT
 
+        _update_stage_icons:
         jal     update_stage_and_icons_
         or      a0, v0, r0                  // a0 = stage index
 
         jal     FGM.play_
         lli     a0, FGM.menu.SCROLL         // a0 = FGM.menu.SCROLL
 
-        _R_text:
-        // show/hide "R: Set Stage" text based on context
+        _L_text:
+        // show/hide "L: Set Stage" text based on context
         lli     a0, 0x001A                  // a0 = group
         jal     Render.toggle_group_display_
         nop
@@ -701,7 +715,7 @@ scope Bonus {
     level:
     dw 0x0
 
-	// Table which maps CPU level index to the level string
+    // Table which maps CPU level index to the level string
     level_table:
     dw string_level_very_easy
     dw string_level_easy
@@ -754,6 +768,8 @@ scope Bonus {
     db Stages.id.BTT_DEDEDE
     db Stages.id.BTT_GOEMON
     db Stages.id.BTT_BANJO
+    db Stages.id.BTT_CRASH
+    db Stages.id.BTT_PEACH
 
     db Stages.id.BTT_STG1
     OS.align(4)
@@ -791,6 +807,8 @@ scope Bonus {
     db Stages.id.BTP_DEDEDE
     db Stages.id.BTP_GOEMON
     db Stages.id.BTP_BANJO
+    db Stages.id.BTP_CRASH
+    db Stages.id.BTP_PEACH
 
     db Stages.id.BTP_POLY
     OS.align(4)
@@ -799,7 +817,7 @@ scope Bonus {
     stock_icon_table:
     db Character.id.MARIO,      Character.id.METAL
     db Character.id.FOX,        Character.id.PEPPY
-    db Character.id.DK,         0x0
+    db Character.id.DK,         Character.id.LANKY
     db Character.id.SAMUS,      0x0
     db Character.id.LUIGI,      Character.id.MLUIGI
     db Character.id.LINK,       0x0
@@ -813,7 +831,7 @@ scope Bonus {
     db Character.id.FALCO,      Character.id.SLIPPY
     db Character.id.GND,        0x0
     db Character.id.YLINK,      0x0
-    db Character.id.DRM,        0x0
+    db Character.id.DRM,        Character.id.DRL
     db Character.id.WARIO,      0x0
     db Character.id.DSAMUS,     0x0
     db Character.id.LUCAS,      0x0
@@ -821,13 +839,15 @@ scope Bonus {
     db Character.id.WOLF,       0x0
     db Character.id.CONKER,     0x0
     db Character.id.MTWO,       0x0
-    db Character.id.MARTH,      0x0
+    db Character.id.MARTH,      Character.id.ROY
     db Character.id.SONIC,      Character.id.SSONIC
     db Character.id.SHEIK,      0x0
     db Character.id.MARINA,     0x0
     db Character.id.DEDEDE,     0x0
     db Character.id.GOEMON,     Character.id.EBI
     db Character.id.BANJO,      0x0
+    db Character.id.CRASH,      0x0
+    db Character.id.PEACH,      0x0
 
     db Character.id.NMARIO,     Character.id.PIANO
     OS.align(4)

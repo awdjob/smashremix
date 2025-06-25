@@ -4,6 +4,8 @@
 0164 Mario Entry Model/Data
 00A1 Fox Entry Script???
 00D2 Fox Projectile Hitbox
+0131 Polygon Fighter (Kirby) Character
+0132 Polygon Fighter (Jigglypuff) Character
 013A Fox Shield Pose
 013B Fox Unknown
 013C Fox Laser Graphic
@@ -171,7 +173,7 @@
 08EC Big Blue Header
 08ED Big Blue Stage
 08EE Big Blue BG
-08EF Dark Samus Walk3
+08EF Dark Samus Walk 3
 08F0 Onett Header
 08F1 Onett Stage
 08F2 Onett BG
@@ -344,10 +346,10 @@
 0999 Norfair Stage
 099A Norfair BG
 099B Norfair Lava
-099C Corneria City Header
-099D Corneria City Stage
-099E Corneria City BG
-099F Corneria City Image 2
+099C Raid Blue Header
+099D Raid Blue Stage
+099E Raid Blue BG
+099F Corneria City File 2
 09A0 Osohe Castle Header
 09A1 Osohe Castle
 09A2 Osohe Castle BG
@@ -579,7 +581,7 @@
 0A84 Giga Bowser Entry Right
 0A85 Giga Bowser Entry Left
 0A86 Ganondorf Entry 1
-0A87 Ganondorf Entry 1 Left (UNUSED/PLACEHOLDER)
+0A87 Falco Idle
 0A88 Ganondorf Entry 2 Right
 0A89 Ganondorf Entry 2 Left
 0A8A Bowser's Keep Header
@@ -1576,7 +1578,7 @@
 0E69 Pokemon Stadium 2 Header
 0E6A Pokemon Stadium 2 Stage
 0E6B Pokemon Stadium 2 BG
-0E6C Dark Samus Up Special
+0E6C Dr. Mario Victory 1
 0E6D Sheik Main
 0E6E Sheik Character
 0E6F Sheik Projectile Hitbox
@@ -1990,8 +1992,8 @@
 1007 Dedede Turn Run
 1008 Dedede Jump F
 1009 Dedede Jump B
-100A Dedede Jump Aerial F
-100B Dedede Jump Aerial B
+100A Dedede Jump Aerial 1
+100B Dedede Jump Aerial 2
 100C Dedede Fall
 100D Dedede Fall Aerial
 100E Dedede Jump Squat
@@ -2696,7 +2698,632 @@
 12C9 Ebisumaru Ending Image 1
 12CA Ebisumaru Ending Image 2
 12CB EPuff Main
-12CC Dark Samus CSS Idle
+12CC Crash Main
+12CD Crash Character
+12CE Crash Idle
+12CF Crash Walk1
+12D0 Crash Walk2
+12D1 Crash Walk3
+12D2 Crash WalkEnd
+12D3 Crash Dash
+12D4 Crash Run
+12D5 Crash RunBrake
+12D6 Crash Turn
+12D7 Crash TurnRun
+12D8 Crash JumpF
+12D9 Crash JumpB
+12DA Crash JumpAerialF
+12DB Crash JumpAerialB
+12DC Crash Fall
+12DD Crash FallAerial
+12DE Crash Crouch
+12DF Crash CrouchIdle
+12E0 Crash CrouchEnd
+12E1 Crash Landing
+12E2 Crash ShieldDrop
+12E3 Crash Teeter
+12E4 Crash TeeterStart
+12E5 Crash Stun
+12E6 Crash DamageHigh1
+12E7 Crash DamageHigh2
+12E8 Crash DamageHigh3
+12E9 Crash DamageMid1
+12EA Crash DamageMid2
+12EB Crash DamageMid3
+12EC Crash DamageLow1
+12ED Crash DamageLow2
+12EE Crash DamageLow3
+12EF Crash DamageAir1
+12F0 Crash DamageAir2
+12F1 Crash DamageAir3
+12F2 Crash DamageFlyHigh
+12F3 Crash DamageFlyMid
+12F4 Crash DamageFlyLow
+12F5 Crash DamageFlyTop
+12F6 Crash DamageFlyRoll
+12F7 Crash DamageElec
+12F8 Crash Tumble
+12F9 Crash FallSpecial
+12FA Crash CeilingBonk
+12FB Crash DownBounceD
+12FC Crash DownBounceU
+12FD Crash DownStandD
+12FE Crash DownStandU
+12FF Crash TechF
+1300 Crash TechB
+1301 Crash DownForwardD
+1302 Crash DownForwardU
+1303 Crash DownBackD
+1304 Crash DownBackU
+1305 Crash DownAttackD
+1306 Crash DownAttackU
+1307 Crash Tech
+1308 Crash ClangRecoil
+1309 Crash ShieldOn
+130A Crash ShieldOff
+130B Crash RollF
+130C Crash RollB
+130D Crash Grab
+130E Crash GrabPull
+130F Crash ThrowF
+1310 Crash ThrowB
+1311 Crash CapturePulled
+1312 Crash ThrownDKPulled
+1313 Crash ThrownMarioBros
+1314 Crash ThrownDK
+1315 Crash Thrown2
+1316 Crash Thrown1
+1317 Crash Taunt
+1318 Crash CliffCatch
+1319 Crash CliffWait
+131A Crash CliffQuick
+131B Crash CliffClimbQuick1
+131C Crash CliffClimbQuick2
+131D Crash CliffSlow
+131E Crash CliffClimbSlow1
+131F Crash CliffClimbSlow2
+1320 Crash CliffAttackQuick1
+1321 Crash CliffAttackQuick2
+1322 Crash CliffAttackSlow1
+1323 Crash CliffAttackSlow2
+1324 Crash CliffEscapeQuick1
+1325 Crash CliffEscapeQuick2
+1326 Crash CliffEscapeSlow1
+1327 Crash CliffEscapeSlow2
+1328 Crash LightItemPickup
+1329 Crash ItemThrowF
+132A Crash ItemThrowU
+132B Crash ItemThrowD
+132C Crash ItemThrowDash
+132D Crash ItemDrop
+132E Crash ItemThrowAirF
+132F Crash ItemThrowAirU
+1330 Crash ItemThrowAirD
+1331 Crash HeavyItemPickup
+1332 Crash HeavyItemThrow
+1333 Crash ItemJab
+1334 Crash ItemTilt
+1335 Crash ItemSmash
+1336 Crash ItemDash
+1337 Crash HammerIdle
+1338 Crash HammerWalk
+1339 Crash ItemShoot
+133A Crash ItemShootAir
+133B Crash Jab1
+133C Fox Duo Pose
+133D Polygon Dr. Mario Character
+133E Crash DashAttack
+133F Crash FTiltHigh
+1340 Crash FTilt
+1341 Crash FTiltLow
+1342 Crash UTilt
+1343 Crash DTilt
+1344 Crash FSmashHigh
+1345 Crash FSmashMidHigh
+1346 Crash FSmash
+1347 Crash FSmashMidLow
+1348 Crash FSmashLow
+1349 Crash USmash
+134A Crash DSmash
+134B Crash AttackAirN
+134C Crash AttackAirF
+134D Crash AttackAirB
+134E Crash AttackAirU
+134F Crash AttackAirD
+1350 Crash LandingAirF
+1351 Crash LandingAirB
+1352 Crash LandingAirU
+1353 Crash EnterPipe
+1354 Crash ExitPipe
+1355 Crash ExitPipeWalk
+1356 Crash AppearL
+1357 Crash AppearR
+1358 Crash Victory 1
+1359 Crash Victory 2
+135A Crash Victory 3
+135B Crash Clap
+135C Crash Continue Fall
+135D Crash Continue Up
+135E Crash 1P Pose
+135F Crash CPU Pose
+1360 Crash NSPG
+1361 Crash NSPA
+1362 Crash USPA
+1363 Crash USPG
+1364 Crash USPLanding
+1365 Crash DSPAirDive
+1366 Transition Remix Logo
+1367 Dreamland Beta DL Stage
+1368 Dreamland Beta DL Header
+1369 LMAO Castle Stage
+136A LMAO Castle Header
+136B Slippy Shoot Ground
+136C Slippy Shoot Aerial
+136D Crash Shield Pose
+136E Peach Main
+136F Peach Character
+1370 Peach Shield Pose
+1371 Peach Idle
+1372 Peach Walk1
+1373 Peach Walk2
+1374 Peach Walk3
+1375 Peach Float
+1376 Peach Dash
+1377 Peach Run
+1378 Peach RunBrake
+1379 Peach Turn
+137A Peach TurnRun
+137B Peach JumpF
+137C Peach JumpB
+137D Peach JumpAerialF
+137E Peach JumpAerialB
+137F Peach Fall
+1380 Peach FallAerial
+1381 Peach Crouch
+1382 Peach CrouchIdle
+1383 Peach CrouchEnd
+1384 Peach Landing
+1385 Peach PlatformDrop
+1386 Peach Teeter
+1387 Peach Teeterstart
+1388 Peach Stun
+1389 Peach DamageHigh1
+138A Peach DamageHigh2
+138B Peach DamageHigh3
+138C Peach DamageMid1
+138D Peach DamageMid2
+138E Peach DamageMid3
+138F Peach DamageLow1
+1390 Peach DamageLow2
+1391 Peach DamageLow3
+1392 Peach DamageAir1
+1393 Peach DamageAir2
+1394 Peach DamageAir3
+1395 Peach DamageFlyHigh
+1396 Peach DamageFlyMid
+1397 Peach DamageFlyLow
+1398 Peach DamageFlyTop
+1399 Peach DamageFlyRoll
+139A Peach DamageElec
+139B Peach Tumble
+139C Peach FallSpecial
+139D Peach CeilingBonk
+139E Peach DownBounceD
+139F Peach DownBounceU
+13A0 Peach DownStandD
+13A1 Peach DownStandU
+13A2 Peach TechF
+13A3 Peach TechB
+13A4 Peach DownForwardD
+13A5 Peach DownForwardU
+13A6 Peach DownBackD
+13A7 Peach DownBackU
+13A8 Peach DownAttackD
+13A9 Peach DownAttackU
+13AA Peach Tech
+13AB Peach ClangRecoil
+13AC Peach ShieldOn
+13AD Peach ShieldOff
+13AE Peach RollF
+13AF Peach RollB
+13B0 Peach Grab
+13B1 Peach GrabPull
+13B2 Peach ThrowF
+13B3 Peach ThrowB
+13B4 Peach CapturePulled
+13B5 Peach ThrownDKPulled
+13B6 Peach ThrownMarioBros
+13B7 Peach ThrownDK
+13B8 Peach Thrown1
+13B9 Peach Thrown2
+13BA Peach Thrown3
+13BB Peach ThrownFoxB
+13BC Peach Taunt
+13BD Peach CliffCatch
+13BE Peach CliffWait
+13BF Peach CliffQuick
+13C0 Peach CliffClimbQuick1
+13C1 Peach CliffClimbQuick2
+13C2 Peach CliffSlow
+13C3 Peach CliffClimbSlow1
+13C4 Peach CliffClimbSlow2
+13C5 Peach CliffAttackQuick1
+13C6 Peach CliffAttackQuick2
+13C7 Peach CliffAttackSlow1
+13C8 Peach CliffAttackSlow2
+13C9 Peach CliffEscapeQuick1
+13CA Peach CliffEscapeQuick2
+13CB Peach CliffEscapeSlow1
+13CC Peach CliffEscapeSlow2
+13CD Peach LightItemPickup
+13CE Peach ItemThrowF
+13CF Peach ItemThrowU
+13D0 Peach ItemThrowD
+13D1 Peach ItemThrowDash
+13D2 Peach ItemDrop
+13D3 Peach ItemThrowAirF
+13D4 Peach ItemThrowAirU
+13D5 Peach ItemThrowAirD
+13D6 Peach HeavyItemPickup
+13D7 Peach HeavyItemThrow
+13D8 Peach ItemJab
+13D9 Peach ItemTilt
+13DA Peach ItemSmash
+13DB Peach ItemDash
+13DC Peach HammerIdle
+13DD Peach HammerWalk
+13DE Peach ItemShoot
+13DF Peach ItemShootAir
+13E0 Peach Jab1
+13E1 Peach Jab2
+13E2 Peach DashAttack
+13E3 Soccer Stage Header
+13E4 Soccer Stage
+13E5 Peach FTilt
+13E6 Conker Pipe Enter
+13E7 Conker Pipe Exit
+13E8 Peach UTilt
+13E9 Peach DTilt
+13EA Peach FSmash
+13EB Peach USmash
+13EC Peach DSmash
+13ED Peach AttackAirN
+13EE Peach AttackAirF
+13EF Peach AttackAirB
+13F0 Peach AttackAirU
+13F1 Peach AttackAirD
+13F2 Peach LandingAirF
+13F3 Peach LandingAirB
+13F4 Peach EnterPipe
+13F5 Peach ExitPipe
+13F6 Peach ExitPipeWalk
+13F7 Peach Entry Left
+13F8 Peach Entry Right
+13F9 Dr. Mario Victory 2
+13FA Peach Victory Image Bottom
+13FB Peach Victory Image Top
+13FC Crash Victory Image Bottom
+13FD Crash Victory Image Top
+13FE Peach USPG
+13FF Peach USPA
+1400 Peach USPOpen
+1401 Peach USPFloat
+1402 Peach USPClose
+1403 Roy Up Tilt
+1404 Dark Samus Walk 1
+1405 Dark Samus Walk 2
+1406 Dark Samus DSPLanding
+1407 Peach Turnip Pull
+1408 Peach Neutral Special
+1409 Peach Neutral Special Air
+140A Peach Neutral Special Recoil
+140B Peach Break the Targets Header
+140C Peach Break the Targets Stage
+140D Crash NSPG Blocked
+140E Crash NSPA Blocked
+140F Peach Victory1
+1410 Peach Victory2
+1411 Peach Victory3
+1412 Peach Clap
+1413 Peach ContinueFall
+1414 Peach ContinueUp
+1415 Peach 1PPose
+1416 Peach CPUPose
+1417 Peach Turnip Info
+1418 Peach Turnip Graphics
+1419 Peach Team Pose
+141A Crash Spin GFX
+141B Crash CSS
+141C Dark Samus NSP Start
+141D Dark Samus NSP Charge
+141E Dark Samus NSP Shoot
+141F Dark Samus NSP Start Air
+1420 Dark Samus NSP Charge Air
+1421 Dark Samus NSP Shoot Air
+1422 Crash Entry Object
+1423 Dark Samus Idle CSS
+1424 Crash Dig GFX
+1425 Crash DSP Begin
+1426 Crash DSP Platform
+1427 Discovery Falls BG
+1428 Discovery Falls Stage
+1429 Discovery Falls Header
+142A Roy Main
+142B Roy Character
+142C Roy Taunt
+142D Roy 1P Pose
+142E Roy Victory 1
+142F Roy Down Special Ground Begin
+1430 Roy Down Special Ground Wait
+1431 Roy Down Special Ground End
+1432 Roy Down Special Air Begin
+1433 Roy Down Special Air Wait
+1434 Roy Down Special Air End
+1435 Roy Victory 2
+1436 Roy Victory 3
+1437 Roy Jab 1
+1438 Roy Dash Attack
+1439 Roy Duo Pose
+143A Marth Duo Pose
+143B Crash DSP Attack
+143C Crash Team Pose
+143D Crash DSP Wait
+143E Crash DSP Turn
+143F Crash Break the Targets Header
+1440 Crash Break the Targets Stage
+1441 Discovery Falls Remix Stage
+1442 Discovery Falls Remix Header
+1443 N64 Remix Stage
+1444 N64 Remix Header
+1445 Random Main File
+1446 Random Character File
+1447 Random Idle
+1448 Random Selected Animation
+1449 Crash Board the Platforms Stage
+144A Crash Board the Platforms Header
+144B Dr. Luigi Main
+144C Dr. Luigi Character
+144D Dr. Luigi UTilt
+144E Dr. Luigi Jab3
+144F Dr. Luigi AttackAirF
+1450 Dr. Luigi AttackAirD
+1451 Dr. Luigi Victory 1
+1452 Kirby Crash NSPG
+1453 Kirby Crash NSPA
+1454 Kirby Crash NSPG Blocked
+1455 Kirby Crash NSPA Blocked
+1456 Lanky Main
+1457 Lanky Character
+1458 Lanky Shield Pose
+1459 Lanky Idle
+145A Lanky Walk1
+145B Lanky Walk2
+145C Lanky Walk3
+145D Lanky WalkEnd
+145E Lanky Dash
+145F Lanky Run
+1460 Lanky RunBrake
+1461 Lanky Turn
+1462 Lanky TurnRun
+1463 Lanky JumpF
+1464 Lanky JumpB
+1465 Lanky JumpAerialF
+1466 Lanky JumpAerialB
+1467 Lanky Fall
+1468 Lanky FallAerial
+1469 Lanky Crouch
+146A Lanky CrouchIdle
+146B Lanky CrouchEnd
+146C Lanky Landing
+146D Lanky ShieldDrop
+146E Lanky Teeter
+146F Lanky TeeterStart
+1470 Lanky Stun
+1471 Lanky DamageHigh1
+1472 Lanky DamageHigh2
+1473 Lanky DamageHigh3
+1474 Lanky DamageMid1
+1475 Lanky DamageMid2
+1476 Lanky DamageMid3
+1477 Lanky DamageLow1
+1478 Lanky DamageLow2
+1479 Lanky DamageLow3
+147A Lanky DamageAir1
+147B Lanky DamageAir2
+147C Lanky DamageAir3
+147D Lanky DamageFlyHigh
+147E Lanky DamageFlyMid
+147F Lanky DamageFlyLow
+1480 Lanky DamageFlyTop
+1481 Lanky DamageFlyRoll
+1482 Lanky DamageElec
+1483 Lanky Tumble
+1484 Lanky FallSpecial
+1485 Lanky CeilingBonk
+1486 Lanky DownBounceD
+1487 Lanky DownBounceU
+1488 Lanky DownStandD
+1489 Lanky DownStandU
+148A Lanky TechF
+148B Lanky TechB
+148C Lanky DownForwardD
+148D Lanky DownForwardU
+148E Lanky DownBackD
+148F Lanky DownBackU
+1490 Lanky DownAttackD
+1491 Lanky DownAttackU
+1492 Lanky Tech
+1493 Lanky ClangRecoil
+1494 Lanky ShieldOn
+1495 Lanky ShieldOff
+1496 Lanky RollF
+1497 Lanky RollB
+1498 Lanky Grab
+1499 Lanky GrabPull
+149A Lanky ThrowF
+149B Lanky ThrowB
+149C Lanky CapturePulled
+149D Lanky ThrownDKPulled
+149E Lanky ThrownMarioBros
+149F Lanky ThrownDK
+14A0 Lanky Thrown2
+14A1 Lanky Thrown1
+14A2 Lanky Taunt
+14A3 Lanky CliffCatch
+14A4 Lanky CliffWait
+14A5 Lanky CliffQuick
+14A6 Lanky CliffClimbQuick1
+14A7 Lanky CliffClimbQuick2
+14A8 Lanky CliffSlow
+14A9 Lanky CliffClimbSlow1
+14AA Lanky CliffClimbSlow2
+14AB Lanky CliffAttackQuick1
+14AC Lanky CliffAttackQuick2
+14AD Lanky CliffAttackSlow1
+14AE Lanky CliffAttackSlow2
+14AF Lanky CliffEscapeQuick1
+14B0 Lanky CliffEscapeQuick2
+14B1 Lanky CliffEscapeSlow1
+14B2 Lanky CliffEscapeSlow2
+14B3 Lanky LightItemPickup
+14B4 Lanky ItemThrowF
+14B5 Lanky ItemThrowU
+14B6 Lanky ItemThrowD
+14B7 Lanky ItemThrowDash
+14B8 Lanky ItemDrop
+14B9 Lanky ItemThrowAirF
+14BA Lanky ItemThrowAirU
+14BB Lanky ItemThrowAirD
+14BC Lanky HeavyItemPickup
+14BD Lanky HeavyItemThrow
+14BE Lanky ItemJab
+14BF Lanky ItemTilt
+14C0 Lanky ItemSmash
+14C1 Lanky ItemDash
+14C2 Lanky HammerIdle
+14C3 Lanky HammerWalk
+14C4 Lanky ItemShoot
+14C5 Lanky ItemShootAir
+14C6 Lanky Jab1
+14C7 Lanky Jab2
+14C8 Lanky Jab3
+14C9 Lanky DashAttack
+14CA Lanky FTiltHigh
+14CB Lanky FTilt
+14CC Lanky FTiltLow
+14CD Lanky UTilt
+14CE Lanky DTilt
+14CF Lanky FSmashHigh
+14D0 Lanky FSmashMidHigh
+14D1 Lanky FSmash
+14D2 Lanky FSmashMidLow
+14D3 Lanky FSmashLow
+14D4 Lanky USmash
+14D5 Lanky DSmash
+14D6 Lanky AttackAirN
+14D7 Lanky AttackAirF
+14D8 Lanky AttackAirB
+14D9 Lanky AttackAirU
+14DA Lanky AttackAirD
+14DB Lanky LandingAirF
+14DC Lanky LandingAirB
+14DD Lanky LandingAirD
+14DE Lanky EnterPipe
+14DF Lanky ExitPipe
+14E0 Lanky ExitPipeWalk
+14E1 Lanky AppearL
+14E2 Lanky AppearR
+14E3 Lanky Victory 1
+14E4 Lanky Victory 2
+14E5 Lanky Victory 3
+14E6 Lanky Clap
+14E7 Lanky Continue Fall
+14E8 Lanky Continue Up
+14E9 Lanky 1P Pose
+14EA Lanky Duo Pose
+14EB Lanky NSPG
+14EC Lanky NSPA
+14ED Lanky USPGBegin
+14EE Lanky USPABegin
+14EF Lanky DSPG
+14F0 Lanky DSPA
+14F1 Peach Board the Platforms Stage
+14F2 Peach Board the Platforms Header
+14F3 King of the Hill GFX
+14F4 Goemon DSPG Break
+14F5 Goemon DSPA Break
+14F6 Goemon NSPA End
+14F7 Kirby Goemon NSPA End
+14F8 Kirby Roy Sword
+14F9 Lanky DSP Idle
+14FA Lanky DSP Walk
+14FB Lanky DSP Turn
+14FC Lanky DSP Jumpsquat
+14FD Lanky DSP Jump
+14FE Lanky DSP Fall
+14FF Lanky DSP End
+1500 Lanky DSP End Air
+1501 Lanky DSP Pass
+1502 Lanky DSP Taunt
+1503 Lanky USP Move
+1504 Lanky USP Turn
+1505 Lanky USP End
+1506 Lanky Projectile Hitbox
+1507 Lanky Projectile Graphic
+1508 Polygon Peach Main
+1509 Polygon Peach Character
+150A Kirby Lanky Gun
+150B Kirby Lanky NSPG
+150C Kirby Lanky NSPA
+150D Lanky USP Damage
+150E Polygon Crash Main
+150F Polygon Crash Character
+1510 Lanky Entry Object
+1511 Time Twister Header
+1512 Time Twister Stage
+1513 Time Twister BG
+1514 N. Sanity Beach BG
+1515 Snow Go BG
+1516 Future Frenzy BG
+1517 Kirby Crash Spin GFX
+1518 Time Twister SSS Header
+1519 N. Sanity Beach Header
+151A N. Sanity Beach Stage
+151B Snow Go Header
+151C Snow Go Stage
+151D Future Frenzy Header
+151E Future Frenzy Stage
+151F Dr. Luigi Ending Image 1
+1520 Dr. Luigi Ending Image 2
+1521 Roy Ending Image 1
+1522 Roy Ending Image 2
+1523 Mad Piano Ending Image 1
+1524 Mad Piano Ending Image 2
+1525 Young Link CSS
+1526 Kirby Peach NSP Ground
+1527 Kirby Peach NSP Air
+1528 Kirby Peach NSP Recoil
+1529 Sonic Down Bounce Up
+152A Sonic Down Bounce Down
+152B Super Sonic USP Ground Begn
+152C Super Sonic USP Ground End
+152D Super Sonic USP Air Begin
+152E Super Sonic USP Air End
+152F Lanky Kong Ending Image 1
+1530 Lanky Kong Ending Image 2
+1531 Super Sonic NSP Begin
+1532 Super Sonic NSP Move
+1533 Kirby Custom Hats 2
+1534 Super Sonic Emeralds
+1535 Super Sonic DSP
+1536 Super Sonic DSPA
+1537 Marina HeavyItemPickup
+1538 Dedede Jump Aerial 3
+1539 Dedede Jump Aerial 4
+153A Kirby Super Sonic NSP Begin
+153B Kirby Super Sonic NSP Move
+153C Dragon King Ending Image 1
+153D Dragon King Ending Image 2
 
 0611 CAPTAIN DeadU
 0611 CAPTAIN ScreenKO

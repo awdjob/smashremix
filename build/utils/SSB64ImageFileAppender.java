@@ -47,6 +47,8 @@ public class SSB64ImageFileAppender {
             appendStageIcon(rgbArray);
         } else if (ssb64file.equals("0A05")) {
             appendCharacterIcon(rgbArray);
+        } else if (ssb64file.equals("0011")) {
+            appendNameTexture(rgbArray);
         }
     }
 
@@ -116,6 +118,38 @@ public class SSB64ImageFileAppender {
         return outArray;
     }
 
+    public byte[] ia8(int[] rgbArray) {
+        // declare variable for each channel
+        int intensity;
+        int alpha;
+        int argb8888;
+
+        // create IA_8 (8 bits, 1 byte per pixel)
+        byte outArray[] = new byte[rgbArray.length];
+
+        // index for outArray
+        int j = 0;
+
+        for (int i = 0; i < rgbArray.length; i++) {
+            // get color
+            argb8888 = rgbArray[i];
+
+            // get channels
+            intensity = (getRed(argb8888) >> 4) << 4;
+            alpha = getAlpha(argb8888) >> 4;
+            
+            // update array
+            outArray[j + 0] = (byte) intensity;
+            outArray[j + 0] |= (byte) alpha;
+            j += 1;
+        }
+
+        // interleave the array (O(n))
+        this.interleave(outArray);
+
+        return outArray;
+    }
+
     public void appendStageIcon(int[] rgbArray) {
         // declare variable for each channel
         int intensity;
@@ -132,8 +166,13 @@ public class SSB64ImageFileAppender {
             currentLength = currentFile.length;
 
 	        // next pointer
-	        currentFile[currentLength - 0x14] = (byte) (((currentLength + dataArray.length + 0x10) / 4) >> 8);
-	        currentFile[currentLength - 0x13] = (byte) (((currentLength + dataArray.length + 0x10) / 4));
+            if (currentFile[currentLength - 0x14] == -1 && currentFile[currentLength - 0x13] == -1) {
+                currentFile[currentLength - 0x14] = (byte) (((currentLength + dataArray.length + 0x10) / 4) >> 8);
+                currentFile[currentLength - 0x13] = (byte) (((currentLength + dataArray.length + 0x10) / 4));
+            } else {
+                currentFile[currentLength - 0xC] = (byte) (((currentLength + dataArray.length + 0x10) / 4) >> 8);
+                currentFile[currentLength - 0xB] = (byte) (((currentLength + dataArray.length + 0x10) / 4));
+            }
 
 	        outArray = new byte[dataArray.length + currentLength + 0x60];
 	        System.arraycopy(currentFile, 0, outArray, 0, currentLength);
@@ -285,6 +324,190 @@ public class SSB64ImageFileAppender {
 
         // output the file
         try (FileOutputStream fos = new FileOutputStream("0A04-new.bin")) {
+            fos.write(outArray);
+        } catch (Exception e) {
+            System.out.println("Unknown error occured!");
+            System.exit(0);
+        }
+    }
+
+    public void appendNameTexture(int[] rgbArray) {
+        // declare variable for each channel
+        int intensity;
+        int alpha;
+        int argb8888;
+        byte[] currentFile;
+        int currentLength = 0;
+        byte outArray[] = new byte[0];
+
+        byte image_width = (byte) 0x48; // 72px
+        byte image_height = (byte) 0x10; // 16px
+
+        byte dataArray[] = ia8(rgbArray);
+
+        try {
+            currentFile = Files.readAllBytes(Paths.get("./0011.bin"));
+            currentLength = currentFile.length;
+
+	        // next pointer
+            if (currentFile[currentLength - 0x14] == -1 && currentFile[currentLength - 0x13] == -1) {
+                currentFile[currentLength - 0x14] = (byte) (((currentLength + dataArray.length + 0x10) / 4) >> 8);
+                currentFile[currentLength - 0x13] = (byte) (((currentLength + dataArray.length + 0x10) / 4));
+            } else {
+                currentFile[currentLength - 0xC] = (byte) (((currentLength + dataArray.length + 0x10) / 4) >> 8);
+                currentFile[currentLength - 0xB] = (byte) (((currentLength + dataArray.length + 0x10) / 4));
+            }
+
+	        outArray = new byte[dataArray.length + currentLength + 0x60];
+	        System.arraycopy(currentFile, 0, outArray, 0, currentLength);
+        } catch (IOException ex) {
+            System.out.println("Could not open NameTexture file. Do you have the NameTexture file in the directory called 0011.bin?");
+            System.exit(0);
+        }
+
+        // index for outArray
+        int data1 = 0;
+        int data2 = 0;
+        int pointer1 = 0;
+
+        int j = currentLength;
+        outArray[j++] = (byte) 0xDF;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        data1 = j / 4;
+
+        System.arraycopy(dataArray, 0, outArray, j, dataArray.length);
+        j += dataArray.length;
+
+        data2 = j / 4;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_width; // width
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_width; // width
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+
+        pointer1 = (j + 60) / 4;
+        outArray[j++] = (byte) (pointer1 >> 8); // pointer 1
+        outArray[j++] = (byte) pointer1; // pointer 1
+        outArray[j++] = (byte) (data1 >> 8); // data 1
+        outArray[j++] = (byte) data1; // data 1
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_height; // height
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_width; // width
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_height; // height
+
+
+        // x scale
+        outArray[j++] = (byte) 0x3F;
+        outArray[j++] = (byte) 0x80;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        // y scale
+        outArray[j++] = (byte) 0x3F;
+        outArray[j++] = (byte) 0x80;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x02;
+        outArray[j++] = (byte) 0x20;
+        outArray[j++] = (byte) 0x12;
+        outArray[j++] = (byte) 0x34;
+
+
+        // color
+        outArray[j++] = (byte) 0xFF;
+        outArray[j++] = (byte) 0xFF;
+        outArray[j++] = (byte) 0xFF;
+        outArray[j++] = (byte) 0xFF;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x01; // ?
+
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x01;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x24;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_height;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) image_height;
+
+        outArray[j++] = (byte) 0x03; // ~
+        outArray[j++] = (byte) 0x01; // mode: 0301 = rgba8888
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0xFF;
+        outArray[j++] = (byte) 0xFF;
+        outArray[j++] = (byte) (data2 >> 8); // data 2
+        outArray[j++] = (byte) data2; // data 2
+
+        // empty line
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+        outArray[j++] = (byte) 0x00;
+
+        // output the file
+        try (FileOutputStream fos = new FileOutputStream("0011-new.bin")) {
             fos.write(outArray);
         } catch (Exception e) {
             System.out.println("Unknown error occured!");

@@ -74,9 +74,7 @@ scope Piano {
     insert SELECT, "moveset/SELECT.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action                   // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(PIANO, Action.DeadU,               File.PIANO_TUMBLE,          0x80000000,                 -1)
@@ -348,11 +346,6 @@ scope Piano {
     dw      Fireball.Book.create_
     OS.patch_end()
 
-    // Set Kirby as original character (not Mario, who PIANO is a clone of)
-    Character.table_patch_start(variant_original, Character.id.PIANO, 0x4)
-    dw      Character.id.KIRBY
-    OS.patch_end()
-
     // Remove entry script.
     Character.table_patch_start(entry_script, Character.id.PIANO, 0x4)
     dw 0x8013DD68                           // skips entry script
@@ -365,7 +358,7 @@ scope Piano {
 
     // Set crowd chant FGM.
     Character.table_patch_start(crowd_chant_fgm, Character.id.PIANO, 0x2)
-    dh  0x02B7
+    dh  0x04D3
     OS.patch_end()
 
     // Set menu zoom size.
@@ -391,6 +384,29 @@ scope Piano {
     dh 0x17
     OS.patch_end()
 
+    // Use custom action for the grabbed character when grabbing
+    Character.table_patch_start(custom_capture_action, Character.id.PIANO, 0x4)
+    dw Action.ThrownDK
+    OS.patch_end()
+
+    // Fix the logic for breaking out of ThrownDK since we're using it for our grabbed opponent
+    scope capture_action_fix_: {
+        lli     a3, Action.GrabWait         // a3 = GrabWait
+        lw      t7, 0x0024(a2)              // t7 = grabbing player action
+        bne     a3, t7, _end                // skip if action != GrabWait
+        lw      a2, 0x0084(a0)              // a2 = captured player struct
+        // if we're here, then the captured player is being held by Mad Piano's grab, so make them invisible.
+        lbu     t7, 0x018D(a2)              // t7 = bit field
+        ori     t7, t7, 0x0001              // enable bitflag for invisibility
+        sb      t7, 0x018D(a2)              // update bit field
+        _end:
+        jr      ra
+        lli     v0, 0x1 // return 1 (skip the original ThrownDK logic)
+    }
+    Character.table_patch_start(custom_capture_dk_interrupt, Character.id.PIANO, 0x4)
+    dw capture_action_fix_
+    OS.patch_end()
+
     // Set Yoshi Egg Size override ID, these values are just copied from DK
     Character.table_patch_start(yoshi_egg, Character.id.PIANO, 0x1C)
     dw  0x40600000
@@ -402,36 +418,10 @@ scope Piano {
     dw  0x43750000
     OS.patch_end()
 
-    // Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.PIANO, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.USP   // skip usp if unsafe
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.PIANO, 0x2)
+    dh {MIDI.id.HORROR_LAND}
     OS.patch_end()
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.PIANO, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  12,   33,  -1, -1, -1000, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  15,   45,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  15,   45,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  10,   38,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  8,    13,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  8,    15,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  10,   19,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  6,    11,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  12,   27,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  4,    9,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,    31,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  26,   45,  50, 150, 200, 500) // todo: check if coords good
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  26,   45,  50, 150, 200, 500) // todo: check if coords good
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  3,    32,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  0,   47,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1, 0,    47,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  10,   33,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,    13,  -1, -1, -1, -1)
 
     // @ Description
     // Mad Piano's extra actions

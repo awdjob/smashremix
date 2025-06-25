@@ -1,3 +1,5 @@
+// Coded by HaloFactory
+// Based on code by Fray's Conker Grenade
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(flashbang_stage_setting_)
@@ -633,7 +635,7 @@ scope flashbang_explosion_: {
 
     jal     Item.BlueShell.hit_gfx_
     lw      a1, 0x0020(sp)
-    
+
     lw      ra, 0x001C(sp)                  // ~
     lw      s0, 0x0018(sp)                  // load ra, s0
     jr      ra                              // return
@@ -672,7 +674,7 @@ scope flashbang_begin_explosion_: {
     sw      t2, 0x011C(v0)                  // save damage type as STUN
     lui     t2, EXPLODE_SIZE                // ~
     sw      t2, 0x0138(v0)                  // save damage type as STUN
-    addiu   at, r0, EXPLODE_DAMAGE 
+    addiu   at, r0, EXPLODE_DAMAGE
     sw      at, 0x0110(v0)                  // set damage to EXPLODE_DAMAGE
     lw      ra, 0x0014(sp)                  // load ra
     jr      ra                              // return
@@ -707,7 +709,7 @@ scope flashbang_hurtbox_collision_: {
 
     lw      a0, 0x0028(sp)              // a0 = item struct
     lw      t0, 0x0084(a0)              // t0 = item special struct
-    
+
     sw      r0, 0x010C(t0)              // disable hitbox
     lwc1    f0, 0x002C(t0)              // f0 = current x speed
     lwc1    f2, 0x0030(t0)              // f2 = current y speed

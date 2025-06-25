@@ -326,9 +326,8 @@ scope collide_with_player_: {
 
     _end:
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x20
     jr      ra
-    nop
+    addiu   sp, sp, 0x20
 }
 
 
@@ -370,9 +369,8 @@ scope set_idle_aerial_: {
     lw      a0, 0x0020 (sp)
     lw      ra, 0x0014 (sp)
     addiu   sp, sp, 0x20
-    or      v0, r0, r0
     jr      ra
-    nop
+    or      v0, r0, r0
 }
 // @ Description
 // Changes state to idle after hitting a player. based on 0x80178930
@@ -400,9 +398,8 @@ scope set_idle_aerial_2: {
     jal     0x80172ec8             // change item state
     addiu   a2, r0, 0x0001         // state = 1
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 
@@ -422,9 +419,8 @@ scope prepickup_: {
     addiu   a2, r0, 0x0002              // state = 2 (picked up)
 
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -439,9 +435,8 @@ scope throw_initial_: {
     jal     0x80172ec8              // change item state
     addiu   a2, r0, 0x0003          // state = 3(thrown)
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -453,9 +448,8 @@ scope throw_duration_: {
     jal     0x80173e58
     nop
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -475,9 +469,8 @@ scope collide_transition: {
     jal     0x80172ec8         // change item state
     addiu   a2, r0, 0x0004     // state = 4 (collide with clipping)
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 
 }
 
@@ -506,9 +499,8 @@ scope collide_with_clipping_: {
     or      v0, r0, r0
 	_end_2:
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 
@@ -564,9 +556,8 @@ scope shatter_gfx_: {
     _end:
     sb          t1, 0x0351(v0)
     lw          ra, 0x0014(sp)
-    addiu       sp, sp, 0x30
     jr          ra
-    nop
+    addiu       sp, sp, 0x30
 }
 
 // @ Description

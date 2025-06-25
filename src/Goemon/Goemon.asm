@@ -133,9 +133,9 @@ scope Goemon {
     DAIR:; dw MODEL.FACE.ATTACK; dw MODEL.PIPE.SHOW; insert "moveset/DAIR.bin"
     insert GRAB_RELEASE_DATA,"moveset/GRAB_RELEASE_DATA.bin"
     GRAB:; Moveset.THROW_DATA(GRAB_RELEASE_DATA); insert "moveset/GRAB.bin"
-    FTHROW:; Moveset.THROW_DATA(FTHROW_DATA); insert "moveset/F_THROW.bin"
+    FTHROW:; Moveset.THROW_DATA(FTHROW_DATA); dw MODEL.FACE.ATTACK; insert "moveset/F_THROW.bin"
     insert FTHROW_DATA,"moveset/F_THROW_DATA.bin"
-    BTHROW:; Moveset.THROW_DATA(BTHROWDATA); insert "moveset/BTHROW.bin"
+    BTHROW:; Moveset.THROW_DATA(BTHROWDATA); dw MODEL.FACE.ATTACK; insert "moveset/BTHROW.bin"
     insert BTHROWDATA, "moveset/BTHROWDATA.bin"
 
     ONEP:; dw MODEL.HAND_L.OPEN; dw MODEL.PIPE.SHOW; Moveset.END();
@@ -183,6 +183,16 @@ scope Goemon {
     dw 0
     DSP_PULL:; Moveset.THROW_DATA(DSP_THROW_DATA); Moveset.SUBROUTINE(SHOW_CHAIN); insert "moveset/DSP_PULL.bin"
     DSP_ATTACK:; insert "moveset/DSP_ATTACK.bin"
+    DSP_BREAK:
+    dw MODEL.FACE.IDLE
+    Moveset.HIDE_ITEM()
+    Moveset.SUBROUTINE(SHOW_CHAIN)
+    Moveset.AFTER(12)
+    dw 0xD0003F80       // fsm = 1.0
+    Moveset.SFX(0x475)  // fgm chain pipe 2
+    Moveset.SUBROUTINE(HIDE_CHAIN)
+    dw MODEL.PIPE.SHOW
+    dw 0
 
     BAT_SMASH:
     dw 0xC4000007, 0x50000000, 0xB1300028, MODEL.FACE.ATTACK, 0x08000014, 0xBC000004, 0x08000016; Moveset.SUBROUTINE(Moveset.shared.BAT_SMASH); dw 0x04000003, 0xBC000003, 0x04000003, 0x18000000, 0;
@@ -230,9 +240,7 @@ scope Goemon {
     dw MODEL.PIPE.SHOW; Moveset.WAIT(80); dw MODEL.HAND_L.RYO; dw 0;
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // @ Description
     // Goemon's extra actions
@@ -267,11 +275,13 @@ scope Goemon {
         string_0x0F0:; String.insert("ChainPipeGroundPull")
         string_0x0F1:; String.insert("ChainPipeGroundWallPull")
         string_0x0F2:; String.insert("ChainPipeAttack")
-        string_0x0F3:; String.insert("ChainPipeAir")
-        string_0x0F4:; String.insert("ChainPipeAirPull")
-        string_0x0F5:; String.insert("ChainPipeAirWallPull")
-        string_0x0F6:; String.insert("ChainPipeAirAttack")
-        string_0x0F7:; String.insert("ChainPipeEnd")
+        string_0x0F3:; String.insert("ChainPipeBreak")
+        string_0x0F4:; String.insert("ChainPipeAir")
+        string_0x0F5:; String.insert("ChainPipeAirPull")
+        string_0x0F6:; String.insert("ChainPipeAirWallPull")
+        string_0x0F7:; String.insert("ChainPipeAirAttack")
+        string_0x0F8:; String.insert("ChainPipeAirBreak")
+        string_0x0F9:; String.insert("ChainPipeEnd")
 
 
         action_string_table:
@@ -303,7 +313,8 @@ scope Goemon {
         dw string_0x0F5
         dw string_0x0F6
         dw string_0x0F7
-        dw string_0x0F7
+        dw string_0x0F8
+        dw string_0x0F9
     }
 
     // Modify Action Parameters                 // Action               // Animation                // Moveset Data             // Flags
@@ -421,9 +432,11 @@ scope Goemon {
     Character.add_new_action_params(GOEMON, DSPGround,          -1,             File.GOEMON_DSPG,           DSP,                        0x1FF00000)
     Character.add_new_action_params(GOEMON, DSPGroundPull,      -1,             File.GOEMON_DSP_PULL,       DSP_PULL,                   0x5FF00000)
     Character.add_new_action_params(GOEMON, DSPGAttack,         -1,             File.GOEMON_DSPG_ATTACK,    DSP_ATTACK,                 0x00000000)
+    Character.add_new_action_params(GOEMON, DSPGBreak,          -1,             File.GOEMON_DSPG_BREAK,     DSP_BREAK,                  0x1FF00000)
     Character.add_new_action_params(GOEMON, DSPAir,             -1,             File.GOEMON_DSPA,           DSP_AIR,                    0x1FF00000)
     Character.add_new_action_params(GOEMON, DSPAirPull,         -1,             File.GOEMON_DSP_PULL,       DSP_PULL,                   0x5FF00000)
     Character.add_new_action_params(GOEMON, DSPAAttack,         -1,             File.GOEMON_DSPA_ATTACK,    DSP_ATTACK,                 0x00000000)
+    Character.add_new_action_params(GOEMON, DSPABreak,          -1,             File.GOEMON_DSPA_BREAK,     DSP_BREAK,                  0x1FF00000)
     Character.add_new_action_params(GOEMON, DSPEnd,             -1,             File.GOEMON_DSP_END,        0x80000000,                 0x00000000)
     Character.add_new_action_params(GOEMON, NSP_Ground_Begin,   -1,             File.GOEMON_NSPG_BEGIN,     NSP_BEGIN,                  0)
     Character.add_new_action_params(GOEMON, NSP_Ground_Wait,    -1,             File.GOEMON_NSPG_IDLE,      NSP_WAIT,                   0)
@@ -434,7 +447,7 @@ scope Goemon {
     Character.add_new_action_params(GOEMON, NSP_Ground_End,     -1,             File.GOEMON_NSPG_END,       NSP_END,                    0)
     Character.add_new_action_params(GOEMON, NSP_Air_Begin,      -1,             File.GOEMON_NSPG_BEGIN,     NSP_BEGIN,                  0)
     Character.add_new_action_params(GOEMON, NSP_Air_Wait,       -1,             File.GOEMON_NSPG_IDLE,      NSP_WAIT,                   0)
-    Character.add_new_action_params(GOEMON, NSP_Air_End,        -1,             File.GOEMON_NSPG_END,       NSP_END,                    0)
+    Character.add_new_action_params(GOEMON, NSP_Air_End,        -1,             File.GOEMON_NSPA_END,       NSP_END,                    0)
 
     // Add Actions                   // Action Name     // Base Action  //Parameters                    // Staling ID   // Main ASM                     // Interrupt/Other ASM          // Movement/Physics ASM             // Collision ASM
     Character.add_new_action(GOEMON, NSP_Ground_Begin,  -1,             ActionParams.NSP_Ground_Begin,  0x12,           GoemonNSP.ground_begin_main_,   0,                              0x800D8BB4,                         GoemonNSP.ground_collision_)
@@ -450,12 +463,14 @@ scope Goemon {
     Character.add_new_action(GOEMON, DSPGround,         -1,             ActionParams.DSPGround,         0x1E,           GoemonDSP.main_,                0,                              0x800D8BB4,                         GoemonDSP.ground_collision_)
     Character.add_new_action(GOEMON, DSPGroundPull,     -1,             ActionParams.DSPGroundPull,     0x1E,           GoemonDSP.pull_main_,           0,                              0x800D8C14,                         GoemonDSP.shared_ground_collision_)
     Character.add_new_action(GOEMON, DSPGroundWallPull, -1,             ActionParams.DSPGroundPull,     0x1E,           GoemonDSP.wall_pull_main_,      0,                              0x800D8C14,                         GoemonDSP.shared_ground_collision_)
-    Character.add_new_action(GOEMON, DSPGAttack,         -1,            ActionParams.DSPGAttack,        0x1E,           0x800D94C4,                     0,                              0x800D8BB4,                         GoemonDSP.shared_ground_collision_)
+    Character.add_new_action(GOEMON, DSPGAttack,        -1,             ActionParams.DSPGAttack,        0x1E,           0x800D94C4,                     0,                              0x800D8BB4,                         GoemonDSP.shared_ground_collision_)
+    Character.add_new_action(GOEMON, DSPGBreak,         -1,             ActionParams.DSPGBreak,         0x1E,           0x800D94C4,                     0,                              0x800D8BB4,                         GoemonDSP.shared_ground_collision_)
     Character.add_new_action(GOEMON, DSPAir,            -1,             ActionParams.DSPAir,            0x1E,           GoemonDSP.main_,                0,                              0x800D90E0,                         GoemonDSP.air_collision_)
     Character.add_new_action(GOEMON, DSPAirPull,        -1,             ActionParams.DSPAirPull,        0x1E,           GoemonDSP.pull_main_,           0,                              0x800D93E4,                         GoemonDSP.shared_air_collision_)
     Character.add_new_action(GOEMON, DSPAirWallPull,    -1,             ActionParams.DSPAirPull,        0x1E,           GoemonDSP.wall_pull_main_,      0,                              0x800D93E4,                         GoemonDSP.shared_air_collision_)
-    Character.add_new_action(GOEMON, DSPAAttack,         -1,            ActionParams.DSPAAttack,        0x1E,           0x800D94E8,                     0,                              0x800D91EC,                         GoemonDSP.shared_air_collision_)
-    Character.add_new_action(GOEMON, DSPEnd,            -1,             ActionParams.DSPEnd,            0x1E,           0x800D94E8,                     0,                              0x800D9160,                         0x800DE978)
+    Character.add_new_action(GOEMON, DSPAAttack,        -1,             ActionParams.DSPAAttack,        0x1E,           0x800D94E8,                     0,                              0x800D91EC,                         GoemonDSP.shared_air_collision_)
+    Character.add_new_action(GOEMON, DSPABreak,         -1,             ActionParams.DSPABreak,         0x1E,           0x800D94E8,                     0,                              0x800D90E0,                         GoemonDSP.shared_air_collision_)
+    Character.add_new_action(GOEMON, DSPEnd,            -1,             ActionParams.DSPEnd,            0x1E,           0x800D94E8,                     0,                              0x800D9160,                         GoemonDSP.end_collision_)
 
     // Modify Menu Action Parameters                    // Action       // Animation                    // Moveset Data    // Flags
     Character.edit_menu_action_parameters(GOEMON,       0x0,            File.GOEMON_IDLE,               IDLE,           -1)
@@ -506,53 +521,28 @@ scope Goemon {
     OS.patch_end()
 
     // Set default costumes
-    Character.set_default_costumes(Character.id.GOEMON, 0, 1, 2, 3, 4, 1, 3)
+    Character.set_default_costumes(Character.id.GOEMON, 0, 1, 2, 3, 7, 1, 3)
     Teams.add_team_costume(YELLOW, GOEMON, 0x6)
 
     // Shield colors for costume matching
-    Character.set_costume_shield_colors(GOEMON, RED, BLUE, GREEN, PURPLE, MAGENTA, WHITE, YELLOW, NA)
-    
+    Character.set_costume_shield_colors(GOEMON, RED, BLUE, GREEN, PURPLE, MAGENTA, WHITE, YELLOW, RED)
+
     Character.table_patch_start(variants, Character.id.GOEMON, 0x4)
-    db      Character.id.EBI // set EBI as SPECIAL variant for GOEMON
+    db      Character.id.NONE // set EBI as SPECIAL variant for GOEMON
     db      Character.id.NGOEMON
     db      Character.id.NONE
     db      Character.id.NONE
     OS.patch_end()
-
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  10,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  20,   0,  50, 700, 0, 150)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  20,   0,  50, 700, 0, 150)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  7,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  5,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  9,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  7,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  12,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  3,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  3,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  25,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  25,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  6,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  0,   0,  0, 0, 0, 0)   // never use up special to attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  0,   0,  0, 0, 0, 0)   // never use up special to attack
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  12,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  5,   0,  -1, -1, -1, -1)
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.GOEMON, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-
 
     // Set action strings
     Character.table_patch_start(action_string, Character.id.GOEMON, 0x4)
     dw  Action.action_string_table
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.GOEMON, 0x2)
+    dh {MIDI.id.KAI_HIGHWAY}
+    OS.patch_end()
 
     // Hook allows goemon to have his golden hair while holding a heavy item
     scope heavy_item_hold_moveset: {
@@ -599,7 +589,7 @@ scope Goemon {
         j       _return
         sw      t7, 0x0010(sp)      // og line 2
     }
-    
+
     // Hook allows goemon to have his golden hair after he picks up a heavy item
     scope heavy_item_pickup_moveset: {
         OS.patch_start(0xC0A88, 0x80146048)

@@ -1,3 +1,5 @@
+// Coded by HaloFactory
+// Additional help by Fray
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(stage_setting_) // bomb is 0x80177D9C
@@ -260,9 +262,8 @@ scope slow_initial_: {
     lw      a0, 0x0018(sp)                  // ~
     lw      t6, 0x0084(a0)                  // t6 = item special struct
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -277,9 +278,8 @@ scope falling_initial_: {
     jal     0x80172EC8                      // change item state
     addiu   a2, r0, 0x0005                  // state = 5(falling)
     lw      ra, 0x0014(sp)
-    addiu   sp, sp, 0x30
     jr      ra
-    nop
+    addiu   sp, sp, 0x30
 }
 
 // @ Description
@@ -551,9 +551,8 @@ scope prepickup_: {
     addiu   a2, r0, 0x0002              // state = 2 (picked up)
 
     lw      ra, 0x0014 (sp)
-    addiu   sp, sp, 0x18
     jr      ra
-    nop
+    addiu   sp, sp, 0x18
 }
 
 // @ Description

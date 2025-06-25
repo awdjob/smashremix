@@ -52,4 +52,17 @@ scope EPuff {
     Character.table_patch_start(action_string, Character.id.EPUFF, 0x4)
     dw  Action.JIGGLY.action_string_table
     OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.EPUFF, 0x2)
+    dh {MIDI.id.SS_AQUA}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.EPUFF, 0x4)
+    db      Character.id.PUFF
+    db      Character.id.JPUFF
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
 }

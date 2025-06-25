@@ -681,14 +681,13 @@ scope ConkerNSP {
         nop
 
         _fired:
-       jal      0x800DE99C                  // air collision subroutine (cancel on landing)
+       jal      0x800DE978                  // air collision subroutine (cancel on landing)
        nop
 
         _end:
         lw      ra, 0x0014(sp)              // load ra
-        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
-        nop
+        addiu   sp, sp, 0x0020              // deallocate stack space
     }
 
     // @ Description

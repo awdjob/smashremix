@@ -1,3 +1,5 @@
+// Coded by HaloFactory
+// Based on code by Fray's Conker Grenade
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(stage_setting_)
@@ -32,7 +34,7 @@ scope minion_attributes {
 	constant WALK_SPEED_VALUE(15)
 
 	struct:
-	dw 420                                  // 0x0000 - duration (int)
+	dw 480                                  // 0x0000 - duration (int)
 	float32 2.0                             // 0x0004 - gravity
 	float32 48                              // 0x0008 - max speed (THROWN)
 	float32 0.3                             // 0x000C - bounce multiplier
@@ -1170,6 +1172,30 @@ scope waddle_ground_collision: {
     sw      ra, 0x0014(sp)     // store ra
 }
 
+scope waddle_edge_check_: {
+    addiu   sp, sp,-0x0040                  // allocate stack space
+    sw      ra, 0x0014(sp)                  // store ra
+    sw      a0, 0x0018(sp)                  // store a0
+    sw      a1, 0x001C(sp)                  // store a1
+
+    lw      a0, 0x0084(a0)                  // a0 = item struct
+    jal		check_for_targets_
+	lli     a1, OS.TRUE                     // bool edge = TRUE
+
+	lw		at, 0x0000(v0)				    // != 0 if target found
+	bnez	at, _end			            // branch and don't turn if target is ahead
+	lw      a0, 0x0018(sp)                  // load a0
+
+    // if there's no target ahead, turn around
+    jal     ground_move_initial             // initiate turnaround
+    lw      a1, 0x001C(sp)                  // load a1
+
+    _end:
+    lw      ra, 0x0014(sp)                  // load ra
+    jr      ra                              // return
+    addiu   sp, sp, 0x0040                  // deallocate stack space
+}
+
 scope waddle_ground_to_air_transition: {
 	addiu   sp, sp, -0x18
 	sw      ra, 0x0014(sp)
@@ -1194,9 +1220,8 @@ scope waddle_ground_to_air_transition: {
 	jal     0x80172Ec8                      // change item state
 	addiu   a2, r0, 0x0001                  // thrown state
 	lw      ra, 0x0014 (sp)
-	addiu   sp, sp, 0x18
 	jr      ra
-	nop
+	addiu   sp, sp, 0x18
 }
 
 // @ Description
@@ -1241,8 +1266,8 @@ scope minion_walk_main: {
 	nop
 	bc1fl   _check_timer
 	lhu     v1, 0x033E(s0)           // v1 = timer
-	// jal     ground_move_initial 	// edge detect / turnaround
-	// addiu   a1, r0, 0x0001
+	jal     waddle_edge_check_ 	    // edge detect / turnaround
+	addiu   a1, r0, 0x0001
 	b       _check_timer
 	lhu     v1, 0x033E(s0)           // v1 = timer
 
@@ -1263,8 +1288,8 @@ scope minion_walk_main: {
 	nop
 	bc1fl   _check_timer
 	lhu     v1, 0x033E(s0)              // v1 = timer
-	// jal     ground_move_initial      // edge detect / turnaorund
-	// or      a1, r0, r0
+	jal     waddle_edge_check_          // edge detect / turnaorund
+	or      a1, r0, r0
 	lhu     v1, 0x033E(s0)              // v1 = timer
 
 	_check_timer:
@@ -1286,6 +1311,7 @@ scope minion_walk_main: {
 	bnez	at, _check_duration			// skip attack if not walking for 30 frames
 	nop
 
+    lli     a1, OS.FALSE                // bool edge = FALSE
 	jal		check_for_targets_
 	or      a0, s0, r0                 	// a0 = item struct
 
@@ -1345,8 +1371,10 @@ scope minion_walk_main: {
 // @ Description
 // Based on subroutine which checks for valid targets for Sonic's homing attack.
 // a0 - waddle Dee object
+// a1 - bool edge
 scope check_for_targets_: {
 	addiu   sp, sp,-0x0050              // allocate stack space
+    sw      a1, 0x0010(sp)              // argument 4 = bool edge
 	sw      ra, 0x001C(sp)              // ~
 	sw      s0, 0x0020(sp)              // ~
 	sw      s1, 0x0024(sp)              // ~
@@ -1461,6 +1489,7 @@ constant MAX_X_RANGE(0x4416)            // - float: 600
 constant MAX_Y_RANGE(0x442F)            // - float: 700
 constant MAX_X_RANGE_DOO(0x4489)        // (Waddle Doo) - float: 1096
 constant MAX_Y_RANGE_DOO(0x4416)        // (Waddle Doo) - float: 600
+constant MAX_RANGE_EDGE(0x44A0)         // (Edge Check) - float: 1280
 
 // @ Description
 // Copy of subroutine which checks if a potential target is in range for Sonic's homing attack.
@@ -1468,6 +1497,7 @@ constant MAX_Y_RANGE_DOO(0x4416)        // (Waddle Doo) - float: 600
 // a1 - target top joint struct
 // a2 - target object struct
 // a3 - stackspace address for known targets
+// a4 (0x0010(sp)) - boolean for edge check
 // returns
 // v0 - target object (NULL when no valid target)
 // v1 - target X_DIFF
@@ -1490,6 +1520,9 @@ scope check_target_: {
 	lw      t7, 0x000C(a0)              // t7 = item id
 	beql    t7, t6, pc() + 8            // if  = if WADDLE DOO
 	lui     at, MAX_X_RANGE_DOO         // ...use MAX_X_RANGE_DOO instead
+    lw      t6, 0x0010(sp)              // t6 = bool edge
+    bnezl   t6, pc() + 8                // if bool edge = TRUE
+	lui     at, MAX_RANGE_EDGE          // ...use MAX_RANGE_EDGE instead
 	mtc1    at, f8                      // f8 = MAX_X_RANGE
 	c.le.s  f10, f8                     // ~
 	nop                                 // ~
@@ -1522,6 +1555,9 @@ scope check_target_: {
 	lw      t7, 0x000C(a0)              // t7 = item id
 	beql    t7, t6, pc() + 8            // if item = WADDLE DOO...
 	lui     at, MAX_Y_RANGE_DOO         // ...use MAX_Y_RANGE_DOO instead
+    lw      t6, 0x0010(sp)              // t6 = bool edge
+    bnezl   t6, pc() + 8                // if bool edge = TRUE
+	lui     at, MAX_RANGE_EDGE          // ...use MAX_RANGE_EDGE instead
 	mtc1    at, f8                      // f8 = MAX_Y_RANGE
 	lui     at, 0x3F00                  // ~
 	mtc1    at, f6                      // f6 = 0.5
@@ -1778,6 +1814,13 @@ scope minion_free_: {
 
     _free_minion:
     lw      v1, 0x0084(v1)                  // v1 = player owner struct
+
+    // possible tag team fix, ensure this player struct = DEDEDE
+    addiu   at, r0, Character.id.DEDEDE
+    lw      t2, 0x0008(v1)                  // t2 = character id
+    bne     at, t2, _end                    // skip if this fighter != DEDEDE
+    nop
+
     lw      at, 0x0B20(v1)                  // get held minion ptr
     beql    at, a0, _continue               // branch if...
     sw      r0, 0x0B20(v1)                  // ...held minion = this minion

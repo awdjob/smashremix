@@ -124,6 +124,18 @@ scope Moveset {
         dw  0x18000000
     }
 
+
+    // @ Description
+    // adds a SLOPE_CONTOUR moveset command
+    // 0 = none
+    // 1 = 
+    // 2 = 
+    // 3 = feet
+    macro SLOPE_CONTOUR(state) {
+        dh 0xBC00
+        dh {state}
+    }
+
     // @ Description
     // adds a HURTBOX_RESET moveset command
     // sets a single hurtbox to a specific state (1 = Vulnerable, 2 = Invincible, 3 = Intangible)
@@ -290,9 +302,14 @@ scope Moveset {
         insert STARROD_TILT,"moveset/STARROD_TILT.bin"
         insert STARROD_SMASH,"moveset/STARROD_SMASH.bin"
         insert STARROD_DASH,"moveset/STARROD_DASH.bin"
-		insert DOWN_BOUNCE,"moveset/DOWN_BOUNCE.bin"
-		insert CLIFF_CATCH,"moveset/CLIFF_CATCH.bin"
-		insert CLIFF_WAIT,"moveset/CLIFF_WAIT.bin"
-
+        insert DOWN_BOUNCE,"moveset/DOWN_BOUNCE.bin"
+        insert CLIFF_CATCH,"moveset/CLIFF_CATCH.bin"
+        insert CLIFF_WAIT,"moveset/CLIFF_WAIT.bin"
+        insert HAMMER,"moveset/HAMMER.bin"
+        insert ITEM_THROW_DASH,"moveset/ITEM_THROW_DASH.bin"
+        insert ITEM_THROW,"moveset/ITEM_THROW.bin"
+        insert ITEM_THROW_SMASH_FB,"moveset/ITEM_THROW_SMASH_FB.bin"
+        insert ITEM_THROW_SMASH_UD,"moveset/ITEM_THROW_SMASH_UD.bin"
+        insert ITEM_THROW_AIR_SMASH_FB,"moveset/ITEM_THROW_AIR_SMASH_FB.bin"
     }
 }

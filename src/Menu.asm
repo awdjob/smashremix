@@ -1332,12 +1332,12 @@ scope Menu {
         jal     get_num_entries_            // v0 = num_entries
         nop
         addiu   v0, v0, -0x0001             // v0 = num_entries, 0 based
-        sh      v0, 0x001C(sp)              // temporarily save number of entries in free space
         lhu     a2, 0x0032(a0)              // a2 = max_per_page
         divu    v0, a2                      // t1 = number of pages, 0 based
         mflo    t1                          // ~
         beqz    t1, _a                      // if only one page, skip
         lw      t0, 0x000C(a0)              // t0 - selection
+        sh      v0, 0x001C(sp)              // temporarily save number of entries in free space
         div     t0, a2                      // ~
         mfhi    at                          // at (row) = t0 % max_per_page
         sw      at, 0x001C(a0)              // temporarily store row

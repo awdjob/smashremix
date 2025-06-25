@@ -32,6 +32,12 @@ scope Global {
     constant get_random_int_alt_(0x80018A30)
 
     // @ Description
+    // Gets a random float
+    // @ Arguments
+    // a0 - N
+    constant get_random_float(0x80018948)
+
+    // @ Description
     // Byte, Current screen value is here (CSS = 0x10, Debug = 0x03/0x04)
     constant current_screen(0x800A4AD0)
 
@@ -153,6 +159,10 @@ scope Global {
         // @ Description
         // Byte, 50 = 50%, 200 = 200%
         constant damage(0x800A4D13)
+
+        // @ Description
+        // State of game (0 = wait, 1 = ongoing, 2 = paused, 3 = unpause, 5 = match end, 7 = reset
+        constant game_status(0x800A4D19)
 
         // @ Description
         // Word, timer in seconds * 60 fps

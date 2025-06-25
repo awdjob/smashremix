@@ -15,9 +15,15 @@ include "OS.asm"
 include "String.asm"
 
 scope Japan {
+    constant HITLAG_NORMAL(0x0)
+    constant HITLAG_JAPANESE(0x1)
+    constant HITLAG_MELEE(0x2)
+    constant HITLAG_ULTIMATE(0x3)
+    constant HITLAG_NONE(0x4)
+
     // @ Description
     // Toggle for Japanese Style Hitlag.
-    // The hitlag percentage is identical for the American and Japanese versions, it is present at 
+    // The hitlag percentage is identical for the American and Japanese versions, it is present at
     // 8012FF50. However, the calculation changes very slightly in a way that increases hitlag in the
     // US Version, thus allowing for greater DI
     scope hitlag_: {
@@ -26,34 +32,74 @@ scope Japan {
         nop
         hitlag_end_:
         OS.patch_end()
-        
-        
+
         lui     at, 0x40A0                  // original line 1 (5 fp)
         mtc1    at, f16                     // original line 2, move to floating point register (f16)
+
         Toggles.single_player_guard(Toggles.entry_hitlag, hitlag_end_)
         li      at, Toggles.entry_hitlag       // ~
-        lw      at, 0x0004(at)              // at = 2 if melee mode
-        
-        addiu   t7, r0, 0x0002
-        beql    at, t7, _end
-        lui     at, 0x4040                  // Melee style (3 fp), this adds less to the hitlag calculation thus decreasing hitlag
+        lw      at, 0x0004(at)              // at = hitlag toggle value
 
-        addiu   t7, r0, 0x0003
-        beql    at, t7, _end
-        lui     at, 0x0000                  // no hitlag
+        addiu   t7, r0, HITLAG_JAPANESE
+        beq    at, t7, hitlag_japanese
+        nop
 
-        lui     at, 0x4080                  // Japanese style (4 fp), this adds less to the hitlag calculation thus decreasing hitlag
-        
+        addiu   t7, r0, HITLAG_MELEE
+        beq    at, t7, hitlag_melee
+        nop
+
+        addiu   t7, r0, HITLAG_ULTIMATE
+        beq    at, t7, hitlag_ultimate
+        nop
+
+        b hitlag_none
+        nop
+
+        // For following branches, consider this:
+        // Final hitlag = (damage * MULTIPLIER) + CONSTANT
+        // By default:
+        //  - MULTIPLIER (f8) = 0.333333F
+        //  - CONSTANT (f16) = 5.0F
+        hitlag_japanese:
+        // damage * 0.333333F + 4
+        lui     at, 0x4080          // Japanese style (4 fp), this adds less to the hitlag calculation thus decreasing hitlag
+        b _end
+        nop
+
+        hitlag_melee:
+        // damage * 0.333333F + 3
+        lui     at, 0x4040          // Melee style (3 fp), this adds less to the hitlag calculation thus decreasing hitlag
+        b _end
+        nop
+
+        hitlag_ultimate:
+        // damage * 0.65 + 6
+        lui     at, 0x3F27          // 0.65234375
+        mtc1    at, f8
+        lui     at, 0x40C0          // 6.0
+        b _end
+        nop
+
+        hitlag_none:
+        mtc1    r0, f8
+        lui     at, 0x0000          // no hitlag
+        b _end
+        nop
+
         _end:
-        mtc1    at, f16                     // original line 2, move to floating point register (f16)
-        
+        mtc1    at, f16            // original line 2, move to floating point register (f16)
+
         j      hitlag_end_         // return
         nop
     }
-    
+
+    constant DI_NORMAL(0x0)
+    constant DI_JAPANESE(0x1)
+    constant DI_ULTIMATE(0x2)
+
     // @ Description
     // Toggle for Japanese Style DI.
-    // The percent effect of DI is different in the international vs J versions, the format of the coding is very similar to DK's Cargo hold 
+    // The percent effect of DI is different in the international vs J versions, the format of the coding is very similar to DK's Cargo hold
     // In the US 0x40066666 (2.09999990463) and in Japan 0x3fc00000 (1.5)
     // US Version, thus allowing for greater DI distance
     scope japanese_di_: {
@@ -62,39 +108,140 @@ scope Japan {
         nop
         japanese_di_end_:
         OS.patch_end()
-        
-        
+
         lui     at, 0x8019                  // original line 1
         lwc1    f0, 0xC0E0(at)              // original line 2
-        Toggles.single_player_guard(Toggles.entry_japanese_di, japanese_di_end_)
+
+        Toggles.single_player_guard(Toggles.entry_di, japanese_di_end_)
+        li      at, Toggles.entry_di       // ~
+        lw      at, 0x0004(at)             // at = di toggle value
+
+        addiu   t7, r0, DI_JAPANESE
+        beq    at, t7, di_japanese
+        nop
+
+        addiu   t7, r0, DI_ULTIMATE
+        beq    at, t7, di_ultimate
+        nop
+
+        // It's set to an unknown value? Do nothing.
+        j      japanese_di_end_          // return
+        nop
+
+        di_japanese:
         lui     at, 0x3FC0                  // Japanese coding part 1
         mtc1    at, f0                      // Japanese coding part 2
-        
+        j      japanese_di_end_          // return
+        nop
+
+        di_ultimate:
+        // This is not accurate, it's just weaker (S)DI
+        lui     at, 0x3F19                  // Ultimate coding part 1
+        mtc1    at, f0                      // Ultimate coding part 2
         j      japanese_di_end_          // return
         nop
     }
-	
-	// @ Description
+
+    constant SHIELDSTUN_NORMAL(0x0)
+    constant SHIELDSTUN_JAPANESE(0x1)
+    constant SHIELDSTUN_MELEE(0x2)
+    constant SHIELDSTUN_BRAWL(0x3)
+    constant SHIELDSTUN_ULTIMATE(0x4)
+
+    // @ Description
     // Toggle for Japanese Style Shield Stun.
     // The length of shield stun is different in the international vs J versions.
     // In the US 0x3FCF5C29 (1.62) and in Japan 0x3FE00000 (1.75)
     scope japanese_shieldstun_: {
         OS.patch_start(0xC3B78, 0x80149138)
         j       japanese_shieldstun_
-        lwc1	f8, 0xC200(at)				// original line 1
+        lwc1    f8, 0xC200(at)              // original line 1
         japanese_shieldstun_end_:
         OS.patch_end()
-        
-        
-        lw		t7, 0x07C8(v0)              // original line 2
-        Toggles.single_player_guard(Toggles.entry_japanese_shieldstun, japanese_shieldstun_end_)
-        lui     at, 0x3FE0                  // Japanese coding part 1
-        mtc1    at, f8                      // Japanese coding part 2
-        
+
+        lw      t7, 0x07C8(v0)              // original line 2
+
+        Toggles.single_player_guard(Toggles.entry_shieldstun, japanese_shieldstun_end_)
+        li      at, Toggles.entry_shieldstun    // ~
+        lw      at, 0x0004(at)                  // at = shieldstun toggle value
+
+        addiu   t0, r0, SHIELDSTUN_JAPANESE
+        beq     at, t0, shieldstun_japanese
+        nop
+
+        addiu   t0, r0, SHIELDSTUN_MELEE
+        beq     at, t0, shieldstun_melee
+        nop
+
+        addiu   t0, r0, SHIELDSTUN_BRAWL
+        beq     at, t0, shieldstun_brawl
+        nop
+
+        addiu   t0, r0, SHIELDSTUN_ULTIMATE
+        beq     at, t0, shieldstun_ultimate
+        nop
+
+        j       japanese_shieldstun_end_
+        nop
+
+        // Smash 64 (US): shieldstun = DAMAGE * MULTIPLIER + CONSTANT
+        // By default:
+        //  - MULTIPLIER (f8) = 1.62
+        //  - CONSTANT (at) = 4.0
+        // This patch happens right before 4.0 is being loaded into at.
+        // (so we must skip the following line if we want to overwrite it)
+        // f8 is already loaded with 1.62.
+
+        shieldstun_japanese:
+        // japanese: damage * 1.75 + 3
+        // multiplier = 1.75
+        lui     at, 0x3FE0                  // at = 1.75
+        mtc1    at, f8                      // f8 = 1.75
+
+        lui     at, 0x4040                  // at = 3
+
+        j 0x80149144 // 80149108+34. Skip original line that loads 4.0
+        nop
+
+        shieldstun_melee:
+        // melee: damage * (0.45) + 1.99 (full press)
+        lui     at, 0x3EE7                  // at = 0.45117188
+        mtc1    at, f8                      // f8 = 0.45117188
+
+        lui     at, 0x3FFF                  // at = 1.9921875
+
+        j 0x80149144 // 80149108+34. Skip original line that loads 4.0
+        nop
+
+        shieldstun_brawl:
+        // brawl: damage * 0.345 (+0)
+        lui     at, 0x3EB1                  // at = 0.34570313
+        mtc1    at, f8                      // f8 = 0.34570313
+
+        or      at, r0, r0                  // at = 0.0
+
+        j 0x80149144 // 80149108+34. Skip original line that loads 4.0
+        nop
+
+        shieldstun_ultimate:
+        // ultimate: damage * (0.8 * t) + 2
+        // where t = ...
+        // - smash attacks: 0.725
+        // - aerials: 0.33
+        // - projectiles and items: 0.29
+        // using the one for smash attacks, to be generic
+        lui     at, 0x3F3A                  // at = 0.7265625
+        mtc1    at, f8                      // f8 = 0.7265625
+
+        lui     at, 0x4000                  // at = 2.0
+
+        j 0x80149144 // 80149108+34. Skip original line that loads 4.0
+        nop
+
         j      japanese_shieldstun_end_     // return
         nop
     }
-    
+
     // @ Description
     // Toggle for the Momentum Sliding Glitch present in the Japanese version.
     // A very straightforward fix was added to the international version of Smash
@@ -110,13 +257,13 @@ scope Japan {
         nop
         momentum_slide_end_:
         OS.patch_end()
-        
+
         lwc1    f4, 0x0060(v1)              // original line 1
         lwc1    f0, 0x0030(t6)              // original line 1
         Toggles.single_player_guard(Toggles.entry_momentum_slide, momentum_slide_end_)
         j       0x8013F150
         nop
- 
+
         _end:
         j       momentum_slide_end_                          // return
         nop
@@ -211,7 +358,7 @@ scope Japan {
         jr      ra
         addiu   v1, t7, -0x0004                // restore v1, just in case
     }
-    
+
     // @ Description
     // This changes the sound effects for when Link's bomb hits another bomb for J characters or all characters if J sound toggle is ALWAYS
     // It is coded to be more generic, so may apply to other sounds that we don't know about
@@ -362,9 +509,9 @@ scope Japan {
         nop                                    // otherwise, test if player is J player
 
         lw      t4, 0x0008(s0)                 // t4 = projectile struct address (maybe)
-        beqz	t4, _return                    // if t4 is zero, then not a projectile struct, so use U sound
-		nop
-		lw      t4, 0x0084(t4)                 // t4 = player struct address (maybe)
+        beqz    t4, _return                    // if t4 is zero, then not a projectile struct, so use U sound
+        nop
+        lw      t4, 0x0084(t4)                 // t4 = player struct address (maybe)
         beqz    t4, _return                    // if t4 is zero, then not a player struct, so use U sound
         nop
         li      t9, Global.p_struct_head       // t9 = pointer to player struct linked list
@@ -398,13 +545,13 @@ scope Japan {
     // This changes the reflect multiplier for J characters
     scope reflect_: {
         constant J_MULTIPLIER(0x3FC0)      // float:1.5
-        
+
         OS.patch_start(0xE1814, 0x80166DD4)
         j       reflect_
         nop
         _return:
         OS.patch_end()
-        
+
         // v1 = projectile struct
         // at this point in the routine the projectile's "owner" has already been set as the reflecting character
         lui     at, 0x8019                     // original line 1
@@ -421,11 +568,11 @@ scope Japan {
         // loads the J multiplier if execution reaches here
         lui     at, J_MULTIPLIER               // ~
         mtc1    at, f4                         // f4 = J_MULTIPLIER
-        
+
         _end:
         j       _return                        // return
         nop
-        
+
     }
 }
 

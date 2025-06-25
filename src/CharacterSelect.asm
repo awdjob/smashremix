@@ -18,6 +18,57 @@ scope CharacterSelect {
     constant CSS_PLAYER_STRUCT_1P(0x80138EC0)
     constant CSS_PLAYER_STRUCT_BONUS(0x80137620)
 
+    // @ Description
+    // Holds the char_ids for bonus characters in order of appearance scrolling through bonus bookend
+    bonus_chars:
+    db Character.id.DSAMUS
+    db Character.id.LUCAS
+    db Character.id.PEPPY
+    db Character.id.SLIPPY
+    db Character.id.ROY
+    db Character.id.DRL
+    db Character.id.LANKY
+    db Character.id.DRAGONKING
+    db Character.id.EBI
+    db Character.id.PIANO
+    OS.align(4)
+    constant NUM_BONUS_CHARS(10)
+
+    // @ Description
+    // Points to the Bonus Character index table for the current screen
+    bonus_char_index_pointer:
+    dw bonus_char_index_vs
+
+    // @ Description
+    // Bonus Character index in bonus_chars table per port on vs
+    bonus_char_index_vs:
+    db 0, 0, 0, 0
+
+    // @ Description
+    // Bonus Character index in bonus_chars table per port on 1p
+    bonus_char_index_1p:
+    db 0, 0, 0, 0
+
+    // @ Description
+    // Bonus Character index in bonus_chars table per port on training
+    bonus_char_index_training:
+    db 0, 0, 0, 0
+
+    // @ Description
+    // Bonus Character index in bonus_chars table per port on bonus
+    bonus_char_index_bonus:
+    db 0, 0, 0, 0
+
+    // @ Description
+    // Helper that indicates we've toggled the stock/time picker to the Time mode
+    showing_time:
+    dw OS.FALSE
+
+    // @ Description
+    // Helper that holds the stock/time picker value for non-time values when toggling between Time-type pickers
+    saved_nontime_value:
+    dw 0
+
     string_high_scores_disabled:; String.insert("High Scores Disabled")
 
     // @ Description
@@ -156,37 +207,37 @@ scope CharacterSelect {
     dw  0x12170                             // 0x05 - LINK
     dw  0xAEE0                              // 0x06 - YOSHI
     dw  0xCA90                              // 0x07 - CAPTAIN
-    dw  0x1D8C0 + 0xC18 + 0x740 + 0xB50 + 0x400 + 0x35F48  // 0x08 - KIRBY
+    dw  0x1D8C0 + 0xC18 + 0x740 + 0xB50 + 0x400 + 0x3F980 + 0x30B0  // 0x08 - KIRBY
     dw  0x9E30                              // 0x09 - PIKACHU
     dw  0x7FE0                              // 0x0A - JIGGLY
     dw  0xC5C0                              // 0x0B - NESS
     dw  0x2D40 + 0x200                      // 0x0C - BOSS
-    dw  0x36D4                              // 0x0D - METAL
-    dw  0x41B0                              // 0x0E - NMARIO (file 0x012D)
-    dw  0x4304                              // 0x0F - NFOX (file 0x012F)
-    dw  0x4120                              // 0x10 - NDONKEY
+    dw  0x3510 + 0x200                      // 0x0D - METAL
+    dw  0x4030 + 0x200                      // 0x0E - NMARIO (file 0x012D)
+    dw  0x4168 + 0x200                      // 0x0F - NFOX (file 0x012F)
+    dw  0x3F60 + 0x200                      // 0x10 - NDONKEY
     dw  0x5AF0                              // 0x11 - NSAMUS (file 0x0135)
-    dw  0x41B0                              // 0x12 - NLUIGI (file 0x012D - same as Mario)
-    dw  0x4640                              // 0x13 - NLINK
-    dw  0x4860                              // 0x14 - NYOSHI
-    dw  0x4190                              // 0x15 - NCAPTAIN (file 0x0137)
-    dw  0x3724                              // 0x16 - NKIRBY (file 0x0131)
-    dw  0x434C                              // 0x17 - NPIKACHU (file 0x0133)
-    dw  0x3590                              // 0x18 - NJIGGLY (file 0x0132)
+    dw  0x4030 + 0x200                      // 0x12 - NLUIGI (file 0x012D - same as Mario)
+    dw  0x4498 + 0x200                      // 0x13 - NLINK
+    dw  0x4700 + 0x200                      // 0x14 - NYOSHI
+    dw  0x3FC0 + 0x200                      // 0x15 - NCAPTAIN (file 0x0137)
+    dw  0x3408 + 0x200                      // 0x16 - NKIRBY (file 0x0131)
+    dw  0x4198 + 0x200                      // 0x17 - NPIKACHU (file 0x0133)
+    dw  0x3560 + 0x200                      // 0x18 - NJIGGLY (file 0x0132)
     dw  0x4940                              // 0x19 - NNESS (file 0x0138)
-    dw  0xD800                              // 0x1A - GDONKEY (file 0x013D - sams as DK)
-    dw  0                                   // 0x1B - PLACEHOLDER
+    dw  0xD800                              // 0x1A - GDONKEY (file 0x013D - same as DK)
+    dw  0x1878 + 0x200                      // 0x1B - RANDOM
     dw  0                                   // 0x1C - PLACEHOLDER
     dw  0xA498 + 0x200                      // 0x1D - FALCO
-    dw  0x1A6D8 + 0x200                     // 0x1E - GND
+    dw  0x15F00 + 0x200                     // 0x1E - GND
     dw  0x186D0 + 0x200                     // 0x1F - YLINK
-    dw  0xAED0 + 0x200                      // 0x20 - DRM
+    dw  0xC838 + 0x200                      // 0x20 - DRM
     dw  0xC440 + 0x200                      // 0x21 - WARIO
-    dw  0xE708 + 0x200                      // 0x22 - DARK SAMUS
+    dw  0x14440 + 0x200                     // 0x22 - DARK SAMUS
     dw  0x0                                 // 0x23 - ELINK
     dw  0x0                                 // 0x24 - JSAMUS
     dw  0x0                                 // 0x25 - JNESS
-    dw  0x10580 + 0x200                     // 0x26 - LUCAS
+    dw  0x18820 + 0x200                     // 0x26 - LUCAS
     dw  0x12170                             // 0x27 - JLINK
     dw  0x0                                 // 0x28 - JFALCON
     dw  0x0                                 // 0x29 - JFOX
@@ -217,9 +268,14 @@ scope CharacterSelect {
     dw  0x5A50 + 0x200                      // 0x42 - PEPPY
     dw  0xA310 + 0x200                      // 0x43 - SLIPPY
     dw  0x27C70 + 0x200                     // 0x44 - BANJO
-    dw  0x3500 + 0x200                      // 0x44 - METAL LUIGI
-    dw  0xCEE0 + 0x200                      // 0x45 - EBISUMARU
-    dw  0x58D0 + 0x200                      // 0x46 - DRAGONKING
+    dw  0x3500 + 0x200                      // 0x45 - METAL LUIGI
+    dw  0xCEE0 + 0x200                      // 0x46 - EBISUMARU
+    dw  0x58D0 + 0x200                      // 0x47 - DRAGONKING
+    dw  0x22F30 + 0x200                     // 0x48 - CRASH
+    dw  0x13C40 + 0x200                     // 0x49 - PEACH
+    dw  0x129B0 + 0x200                     // 0x4A - ROY
+    dw  0x6510 + 0x200                      // 0x4B - DRL
+    dw  0x1A7C0 + 0x200                     // 0x4C - LANKY
     // ADD NEW CHARACTERS HERE
 
     // REMIX POLYGONS
@@ -227,20 +283,22 @@ scope CharacterSelect {
     dw  0x4810 + 0x200                      // NLUCAS
     dw  0x4268 + 0x200                      // NBOWSER
     dw  0x38C8 + 0x200                      // NWOLF
-    dw  0x41B0                              // NDRM
+    dw  0x3F98 + 0x200                      // NDRM
     dw  0x4BC0 + 0x200                      // NSONIC
     dw  0x3F78 + 0x200                      // NSHEIK
     dw  0x35A0 + 0x200                      // NMARINA
-    dw  0x4328 + 0x200                      // NFALCO
+    dw  0x40F8 + 0x200                      // NFALCO
     dw  0x4470 + 0x200                      // NGND
     dw  0x5AF0                              // NDSAMUS
-    dw  0x43D0 + 0x200                      // NMARTH
-    dw  0x4708 + 0x200                      // NMTWO
+    dw  0x4728 + 0x200                      // NMARTH
+    dw  0x48B8 + 0x200                      // NMTWO
     dw  0x38D8 + 0x200                      // NDEDEDE
     dw  0x3018 + 0x200                      // NYLINK
     dw  0x62A0 + 0x200                      // NGOEMON
     dw  0x70E8 + 0x200                      // NCONKER
     dw  0x7700 + 0x200                      // NBANJO
+    dw  0x6D78 + 0x200                      // NPEACH
+    dw  0x4C48 + 0x200                      // NCRASH
 
     // @ Description
     // Holds the ROM offset of an alternate req list, used by get_alternate_req_list_
@@ -301,7 +359,7 @@ scope CharacterSelect {
     add_alt_req_list(Character.id.NFOX, req/NFOX_MODEL)
     add_alt_req_list(Character.id.NDONKEY, req/NDONKEY_MODEL)
     add_alt_req_list(Character.id.NSAMUS, req/NSAMUS_MODEL)
-    add_alt_req_list(Character.id.NLUIGI, req/NLUIGI_MODEL)
+    add_alt_req_list(Character.id.NLUIGI, req/NMARIO_MODEL)
     add_alt_req_list(Character.id.NLINK, req/NLINK_MODEL)
     add_alt_req_list(Character.id.NYOSHI, req/NYOSHI_MODEL)
     add_alt_req_list(Character.id.NCAPTAIN, req/NCAPTAIN_MODEL)
@@ -310,6 +368,7 @@ scope CharacterSelect {
     add_alt_req_list(Character.id.NJIGGLY, req/NJIGGLY_MODEL)
     add_alt_req_list(Character.id.NNESS, req/NNESS_MODEL)
     add_alt_req_list(Character.id.GDONKEY, req/GDONKEY_MODEL)
+    add_alt_req_list(Character.id.PLACEHOLDER, req/RANDOM_MODEL)
     add_alt_req_list(Character.id.FALCO, req/FALCO_MODEL)
     add_alt_req_list(Character.id.GND, req/GND_MODEL)
     add_alt_req_list(Character.id.YLINK, req/YLINK_MODEL)
@@ -333,10 +392,10 @@ scope CharacterSelect {
     add_alt_req_list(Character.id.JYOSHI, req/YOSHI_MODEL)
     add_alt_req_list(Character.id.JPIKA, req/PIKACHU_MODEL)
     add_alt_req_list(Character.id.ESAMUS, req/SAMUS_MODEL)
-	add_alt_req_list(Character.id.BOWSER, req/BOWSER_MODEL)
-	add_alt_req_list(Character.id.GBOWSER, req/GBOWSER_MODEL)
+    add_alt_req_list(Character.id.BOWSER, req/BOWSER_MODEL)
+    add_alt_req_list(Character.id.GBOWSER, req/GBOWSER_MODEL)
     add_alt_req_list(Character.id.PIANO, req/PIANO_MODEL)
-	add_alt_req_list(Character.id.WOLF, req/WOLF_MODEL)
+    add_alt_req_list(Character.id.WOLF, req/WOLF_MODEL)
     add_alt_req_list(Character.id.CONKER, req/CONKER_MODEL)
     add_alt_req_list(Character.id.MTWO, req/MTWO_MODEL)
     add_alt_req_list(Character.id.MARTH, req/MARTH_MODEL)
@@ -353,13 +412,18 @@ scope CharacterSelect {
     add_alt_req_list(Character.id.MLUIGI, req/MLUIGI_MODEL)
     add_alt_req_list(Character.id.EBI, req/EBI_MODEL)
     add_alt_req_list(Character.id.DRAGONKING, req/DRAGONKING_MODEL)
+    add_alt_req_list(Character.id.CRASH, req/CRASH_MODEL)
+    add_alt_req_list(Character.id.PEACH, req/PEACH_MODEL)
+    add_alt_req_list(Character.id.ROY, req/ROY_MODEL)
+    add_alt_req_list(Character.id.DRL, req/DRL_MODEL)
+    add_alt_req_list(Character.id.LANKY, req/LANKY_MODEL)
 
     // POLYGONS
     add_alt_req_list(Character.id.NWARIO, req/NWARIO_MODEL)
     add_alt_req_list(Character.id.NLUCAS, req/NLUCAS_MODEL)
     add_alt_req_list(Character.id.NBOWSER, req/NBOWSER_MODEL)
     add_alt_req_list(Character.id.NWOLF, req/NWOLF_MODEL)
-    add_alt_req_list(Character.id.NDRM, req/NMARIO_MODEL)
+    add_alt_req_list(Character.id.NDRM, req/NDRM_MODEL)
     add_alt_req_list(Character.id.NSONIC, req/NSONIC_MODEL)
     add_alt_req_list(Character.id.NSHEIK, req/NSHEIK_MODEL)
     add_alt_req_list(Character.id.NMARINA, req/NMARINA_MODEL)
@@ -373,6 +437,8 @@ scope CharacterSelect {
     add_alt_req_list(Character.id.NGOEMON, req/NGOEMON_MODEL)
     add_alt_req_list(Character.id.NCONKER, req/NCONKER_MODEL)
     add_alt_req_list(Character.id.NBANJO, req/NBANJO_MODEL)
+    add_alt_req_list(Character.id.NPEACH, req/NPEACH_MODEL)
+    add_alt_req_list(Character.id.NCRASH, req/NCRASH_MODEL)
     OS.align(4)
 
     // @ Description
@@ -423,8 +489,8 @@ scope CharacterSelect {
         mfc1    a1, f6                      // original line 2 (a1 = (int) xpos)
 
         // make the furthest left/up equal 0 for arithmetic purposes
-        addiu   a1, a1, -START_X            // a1 = xpos - X_START
-        addiu   v1, v1, -START_Y            // v1 = ypos - Y_START
+        addiu   a1, a1, -(START_X - TOKEN_OFFSET_X) // a1 = xpos - X_START
+        addiu   v1, v1, -(START_Y - TOKEN_OFFSET_Y) // v1 = ypos - Y_START
 
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      t0, 0x0004(sp)              // ~
@@ -436,32 +502,37 @@ scope CharacterSelect {
         sw      a2, 0x001C(sp)              // ~
         sw      v0, 0x0020(sp)              // save registers
 
-        // discard values past given y value
-        sltiu   t0, v1, 86                  // if ypos greater than given value
-        beqz    t0, _end                    // ...return
-        lli     v0, Character.id.NONE       // v0 = ret = NONE
-
         // use different algorithm for 12cb
         li      t0, TwelveCharBattle.twelve_cb_flag
         lw      t0, 0x0000(t0)              // t0 = 1 if 12cb
         beqz    t0, _normal                 // if not 12cb, calculate normally
         nop                                 // otherwise, we'll have to do some different calculations
 
-        addiu   v1, v1, START_Y             // v1 = ypos, unadjusted
+        addiu   v1, v1, (START_Y - TOKEN_OFFSET_Y) // v1 = ypos, unadjusted
         // discard values past given y value
-        sltiu   t0, v1, TwelveCharBattle.START_Y + 86 // if ypos greater than given value
+        sltiu   t0, v1, TwelveCharBattle.START_Y + 85 // if ypos greater than given value
         beqz    t0, _end                    // ...return
         lli     v0, Character.id.NONE       // v0 = ret = NONE
 
         jal     TwelveCharBattle.get_character_id_
-        addiu   a1, a1, START_X             // a1 = xpos, unadjusted
+        addiu   a1, a1, (START_X - TOKEN_OFFSET_X) // a1 = xpos, unadjusted
         b       _end
         nop
 
         _normal:
-        // discard values right of certain given x value
-        sltiu   t0, a1, PORTRAIT_WIDTH * NUM_COLUMNS // if xpos less than given value
+        // discard values past given y value
+        sltiu   t0, v1, 72                  // if ypos greater than given value
         beqz    t0, _end                    // ...return
+        lli     v0, Character.id.NONE       // v0 = ret = NONE
+
+        // discard values right of certain given x value
+        slti    t0, a1, PORTRAIT_WIDTH * NUM_COLUMNS // if xpos less than given value
+        beqz    t0, _check_random           // ...check if in random rectangle
+        lli     v0, Character.id.NONE       // v0 = ret = NONE
+
+        // discard values left of certain given x value
+        slti    t0, a1, 0                   // if xpos less than first portrait x
+        bnez    t0, _check_bonus            // ...check if in bonus rectangle
         lli     v0, Character.id.NONE       // v0 = ret = NONE
 
         // calculate id
@@ -490,6 +561,7 @@ scope CharacterSelect {
         addu    t0, t0, t1                  // t1 = id_table[index]
         lbu     v0, 0x0000(t0)              // v0 = character id
 
+        _begin_check_variant:
         // Variant check requires some setup based on screen
         li      t0, Global.current_screen   // ~
         lbu     t0, 0x0000(t0)              // t0 = screen id
@@ -546,6 +618,27 @@ scope CharacterSelect {
         addiu   sp, sp, 0x0030              // deallocate stack space
         jr      ra                          // return (discard the rest of the function)
         addiu   sp, sp, 0x0028              // deallocate stack space (original function)
+
+        _check_random:
+        sltiu   t0, a1, PORTRAIT_WIDTH * NUM_COLUMNS + BOOKEND_WIDTH // if xpos less than given value
+        beqz    t0, _end                    // ...return
+        lli     v0, Character.id.NONE       // v0 = ret = NONE
+
+        b       _end                        // return
+        lli     v0, Character.id.PLACEHOLDER // random flag
+
+        _check_bonus:
+        slti    t0, a1, -BOOKEND_WIDTH      // if xpos less than given value
+        bnez    t0, _end                    // ...return
+        lli     v0, Character.id.NONE       // v0 = ret = NONE
+
+        OS.read_word(bonus_char_index_pointer, t0) // t0 = address of bonus_char_index array for screen
+        addu    t0, t0, a0                  // t0 = address of bonus char index for held token
+        lbu     t1, 0x0000(t0)              // t1 = current bonus char index
+        li      t0, bonus_chars
+        addu    t0, t0, t1                  // t0 = address of char_id
+        b       _begin_check_variant        // return
+        lbu     v0, 0x0000(t0)              // v0 = char_id
     }
 
     // @ Description
@@ -621,14 +714,14 @@ scope CharacterSelect {
         multu   t9, t8                      // ~
         mflo    t9                          // t2 = ulx
         jal     token_autoposition_._vs_x_position
-        addiu   t9, t9, START_X + 12        // t9 = (int) ulx + offset
+        addiu   t9, t9, START_X + AUTO_POSITION_OFFSET_X // t9 = (int) ulx + offset
         addu    t9, v0, r0                  // remember portrait_id
         OS.patch_end()
 
         _vs_x_position:
         li      t0, TwelveCharBattle.twelve_cb_flag
         lw      t0, 0x0000(t0)              // t0 = 1 if 12cb mode
-        beqz    t0, _end_vs_x_position      // skip if not 12cb
+        beqz    t0, _check_bookends         // skip if not 12cb
         nop
         lli     t8, TwelveCharBattle.NUM_COLUMNS
         divu    v0, t8                      // ~
@@ -636,13 +729,22 @@ scope CharacterSelect {
         lli     t9, TwelveCharBattle.PORTRAIT_WIDTH // ~
         multu   t9, t8                      // ~
         mflo    t9                          // t2 = ulx
-        addiu   t9, t9, TwelveCharBattle.START_X + 12 // t9 = (int) ulx + offset
+        addiu   t9, t9, TwelveCharBattle.START_X + AUTO_POSITION_OFFSET_X // t9 = (int) ulx + offset
         sltiu   t0, t8, 0x0004              // t0 = 1 if left grid
         addiu   t9, t9, -0x0008             // adjust x for left grid
-        beqzl   t0, _end_vs_x_position      // if right grid, then adjust x for right grid
+        beqzl   t0, _check_bookends         // if right grid, then adjust x for right grid
         addiu   t9, t9, 0x0010              // adjust x for right grid (8 * 2 to unadjust fo rleft)
 
-        _end_vs_x_position:
+        _check_bookends:
+        lli     t8, BOOKEND_RANDOM_PORTRAIT
+        beql    t8, v0, _return             // if random bookend, use RANDOM_TOKEN_X_INT
+        lli     t9, RANDOM_TOKEN_X_INT
+
+        lli     t8, BOOKEND_BONUS_PORTRAIT
+        beql    t8, v0, _return             // if bonus bookend, use start x
+        lli     t9, START_VISUAL + START_X - BOOKEND_WIDTH
+
+        _return:
         jr      ra
         mtc1    t9, f4                      // original line 8
 
@@ -654,8 +756,8 @@ scope CharacterSelect {
         lli     t9, PORTRAIT_WIDTH          // ~
         multu   t9, t8                      // ~
         mflo    t9                          // t2 = ulx
-        addiu   t9, t9, START_X + 12        // t9 = (int) ulx + offset
-        mtc1    t9, f4                      // original line 8
+        jal     token_autoposition_._check_bookends
+        addiu   t9, t9, START_X + AUTO_POSITION_OFFSET_X // t9 = (int) ulx + offset
         addu    t9, v0, r0                  // remember portrait_id
         OS.patch_end()
 
@@ -672,6 +774,14 @@ scope CharacterSelect {
             lui     at, 0x4120                  // original line 1
             OS.patch_end()
 
+            lli     t1, BOOKEND_RANDOM_PORTRAIT
+            beq     t9, t1, _end                // if random bookend, use top
+            lli     t2, START_Y + AUTO_POSITION_OFFSET_Y // t2 = top
+
+            lli     t1, BOOKEND_BONUS_PORTRAIT
+            beq     t9, t1, _end                // if bonus bookend, use top
+            lli     t2, START_Y + AUTO_POSITION_OFFSET_Y // t2 = top
+
             lli     t1, NUM_COLUMNS             // ~
             li      t2, TwelveCharBattle.twelve_cb_flag
             lw      at, 0x0000(t2)              // at = 1 if 12cb mode
@@ -684,10 +794,11 @@ scope CharacterSelect {
             addiu   t2, t2, TwelveCharBattle.PORTRAIT_HEIGHT - PORTRAIT_HEIGHT
             multu   t2, t1                      // ~
             mflo    t2                          // t2 = uly
-            addiu   t2, t2, START_Y + 14        // t2 = (int) uly + offset
+            addiu   t2, t2, START_Y + AUTO_POSITION_OFFSET_Y // t2 = (int) uly + offset
             bnezl   at, pc() + 8                // if 12cb, use correct height
             addiu   t2, t2, TwelveCharBattle.START_Y - START_Y
 
+            _end:
             jr      ra
             lui     at, 0x4120                  // original line 1
         }
@@ -700,16 +811,28 @@ scope CharacterSelect {
             lw      a1, 0x0088(sp)              // original line 1
             OS.patch_end()
             // training
-            //OS.patch_start(0x145BB0, 0x801365D0)
-            //jal     adjust_created_token_
-            //lw      a1, 0x0088(sp)              // original line 1
-            //OS.patch_end()
+            OS.patch_start(0x145BB0, 0x801365D0)
+            jal     adjust_created_token_._change_scale
+            lw      a1, 0x0088(sp)              // original line 1
+            OS.patch_end()
+            // 1p
+            OS.patch_start(0x13F86C, 0x8013766C)
+            jal     adjust_created_token_._change_scale
+            lw      t6, 0x0068(sp)              // original line 1
+            addiu   v1, t2, 0x8EE8              // original line 3, modified to use t2
+            OS.patch_end()
+            // bonus
+            OS.patch_start(0x14C144, 0x80136114)
+            jal     adjust_created_token_._bonus
+            lw      a1, 0x0068(sp)              // original line 1
+            OS.patch_end()
 
             li      t2, TwelveCharBattle.twelve_cb_flag
             lw      t2, 0x0000(t2)              // t2 = 1 if 12cb, 0 if not
             bnez    t2, _end                    // if 12cb, skip
             nop
 
+            _change_scale:
             // v0 is newly created token object
             lw      v0, 0x0074(v0)              // v0 = image struct
             lui     t2, PORTRAIT_SCALE          // t2 = float of portrait scale
@@ -719,7 +842,11 @@ scope CharacterSelect {
 
             _end:
             jr      ra
-            lui     t2, 0x8014                  // original line 2
+            lui     t2, 0x8014                  // original line 2 (vs & training, v1 for 1p)
+
+            _bonus:
+            b       _change_scale
+            lw      t0, 0x003C(sp)              // original line 2
         }
 
         // Set the scale of token gfx after it is changed between PLAYER TO CPU
@@ -731,7 +858,7 @@ scope CharacterSelect {
             OS.patch_end()
             // training
             OS.patch_start(0x145278, 0x80135C98)
-            jal     adjust_changed_token_
+            jal     adjust_changed_token_._change_scale
             lwc1    f8, 0x0038(sp)              // original line 1
             OS.patch_end()
 
@@ -740,6 +867,7 @@ scope CharacterSelect {
             bnez    t4, _end                    // if 12cb, skip
             nop
 
+            _change_scale:
             // v0 is the existing token object's image struct
             lui     t4, PORTRAIT_SCALE          // t2 = float of portrait scale
             sw      t4, 0x0018(v0)              // overwrite x scale of token
@@ -750,25 +878,114 @@ scope CharacterSelect {
             lhu     t4, 0x0024(v0)              // original line 2
         }
 
+        // Adjust token position after scaling
+        scope adjust_scaled_token_position_: {
+            // vs
+            OS.patch_start(0x136C80, 0x80138A00)
+            // lui     at, 0x4130                  // original line (11)
+            jal     adjust_scaled_token_position_._x
+            lui     at, TOKEN_X_OFFSET             // adjust X offset
+            OS.patch_end()
+            OS.patch_start(0x136C90, 0x80138A10)
+            // lui     at, 0xC160                  // original line (-14)
+            jal     adjust_scaled_token_position_._y
+            lui     at, TOKEN_Y_OFFSET             // adjust X offset
+            OS.patch_end()
+
+            // training
+            OS.patch_start(0x1454C0, 0x80135EE0)
+            // lui     at, 0x4130                  // original line (11)
+            lui     at, TOKEN_X_OFFSET             // adjust X offset
+            OS.patch_end()
+            OS.patch_start(0x1454D0, 0x80135EF0)
+            // lui     at, 0xC160                  // original line (-14)
+            lui     at, TOKEN_Y_OFFSET             // adjust X offset
+            OS.patch_end()
+
+            // 1p
+            OS.patch_start(0x13F3CC, 0x801371CC)
+            // lui     at, 0x4130                  // original line (11)
+            lui     at, TOKEN_X_OFFSET             // adjust X offset
+            OS.patch_end()
+            OS.patch_start(0x13F3DC, 0x801371DC)
+            // lui     at, 0xC160                  // original line (-14)
+            lui     at, TOKEN_Y_OFFSET             // adjust X offset
+            OS.patch_end()
+
+            // bonus
+            OS.patch_start(0x14BC9C, 0x80135C6C)
+            // lui     at, 0x4130                  // original line (11)
+            lui     at, TOKEN_X_OFFSET             // adjust X offset
+            OS.patch_end()
+            OS.patch_start(0x14BCAC, 0x80135C7C)
+            // lui     at, 0xC160                  // original line (-14)
+            lui     at, TOKEN_Y_OFFSET             // adjust X offset
+            OS.patch_end()
+
+            _x:
+            li      t4, TwelveCharBattle.twelve_cb_flag
+            lw      t4, 0x0000(t4)                 // t4 = 1 if 12cb, 0 if not
+            bnezl   t4, _end_x                     // if 12cb, use original
+            lui     at, 0x4130                     // original line (11)
+
+            _end_x:
+            jr      ra
+            mtc1    at, f6                         // original line 2
+
+            _y:
+            li      t4, TwelveCharBattle.twelve_cb_flag
+            lw      t4, 0x0000(t4)                 // t4 = 1 if 12cb, 0 if not
+            bnezl   t4, _end_y                     // if 12cb, use original
+            lui     at, 0xC160                     // original line (-14)
+
+            _end_y:
+            jr      ra
+            add.s   f8, f4, f6                     // original line 2
+        }
+
         // fix right boundary check value
-        // vs
-        OS.patch_start(0x001377EC, 0x8013956C)
-        lui     at, 0x4200
-        OS.patch_end()
-        // training
-        OS.patch_start(0x00145F74, 0x80136994)
-        lui     at, 0x4200
-        OS.patch_end()
+        scope fix_right_boundary_check_: {
+            // vs
+            OS.patch_start(0x001377EC, 0x8013956C)
+            jal     fix_right_boundary_check_
+            lui     at, PORTRAIT_WIDTH_FLOAT     // original line 1, modified
+            OS.patch_end()
+            // training
+            OS.patch_start(0x00145F74, 0x80136994)
+            jal     fix_right_boundary_check_
+            lui     at, PORTRAIT_WIDTH_FLOAT     // original line 1, modified
+            OS.patch_end()
+
+            sltiu   t0, t9, BOOKEND_BONUS_PORTRAIT // t0 = 0 if bookend
+            beqzl   t0, _end                     // if random or bonus, boundary is bigger
+            lui     at, BOOKEND_WIDTH_FLOAT      // original line 1, modified
+
+            _end:
+            jr      ra
+            mtc1    at, f10                      // original line 2
+        }
 
         // fix bottom boundary check value
-        // vs
-        OS.patch_start(0x0013782C, 0x801395AC)
-        lui     at, 0x41D0
-        OS.patch_end()
-        // training
-        OS.patch_start(0x00145FB4, 0x801369D4)
-        lui     at, 0x41D0
-        OS.patch_end()
+        scope fix_bottom_boundary_check_: {
+            // vs
+            OS.patch_start(0x0013782C, 0x801395AC)
+            jal     fix_bottom_boundary_check_
+            lui     at, PORTRAIT_HEIGHT_FLOAT    // original line 1, modified
+            OS.patch_end()
+            // training
+            OS.patch_start(0x00145FB4, 0x801369D4)
+            jal     fix_bottom_boundary_check_
+            lui     at, PORTRAIT_HEIGHT_FLOAT    // original line 1, modified
+            OS.patch_end()
+
+            sltiu   t0, t9, BOOKEND_BONUS_PORTRAIT // t0 = 0 if bookend
+            beqzl   t0, _end                     // if random or bonus, boundary is bigger
+            lui     at, BOOKEND_HEIGHT_FLOAT     // original line 1, modified
+
+            _end:
+            jr      ra
+            mtc1    at, f4                       // original line 2
+        }
 
         // extend max y for cursor so it's easier to reach Reset in 12CB and bottom CSS panel menu options
         // vs
@@ -853,6 +1070,12 @@ scope CharacterSelect {
             j       0x80136BC8                      // jump
             nop
         }
+
+        // @ Description
+        // Decreases size of overlap boundary so that our shrunken tokens don't spread out as much in VS
+        OS.patch_start(0x13794C, 0x801396CC)
+        lui     at, 0x4120                          // at = 10.0F (reduced from 15.0F)
+        OS.patch_end()
     }
 
     // disable drawing of default portraits on VS CSS
@@ -861,9 +1084,9 @@ scope CharacterSelect {
     nop
     OS.patch_end()
 
-	// skip loading default portraits on VS CSS
-	OS.patch_start(0x139634, 0x8013B3B4)
-	dw 0			// original = 0x00000013
+    // skip loading default portraits on VS CSS
+    OS.patch_start(0x139634, 0x8013B3B4)
+    dw 0            // original = 0x00000013
     OS.patch_end()
 
     // disable drawing of default portraits on Training Mode CSS
@@ -872,9 +1095,9 @@ scope CharacterSelect {
     nop
     OS.patch_end()
 
-	// skip loading default portraits on Training mode CSS
+    // skip loading default portraits on Training mode CSS
     OS.patch_start(0x147558, 0x80137F78)
-    dw 0			// original = 0x00000013
+    dw 0            // original = 0x00000013
     OS.patch_end()
 
     // disable drawing of default portraits on 1P Mode CSS
@@ -883,9 +1106,9 @@ scope CharacterSelect {
     nop
     OS.patch_end()
 
-	// skip loading default portraits on 1P Mode CSS
+    // skip loading default portraits on 1P Mode CSS
     OS.patch_start(0x140840, 0x80138640)
-    dw 0			// original = 0x00000013
+    dw 0            // original = 0x00000013
     OS.patch_end()
 
     // disable drawing of default portraits on BTT/BTP CSS
@@ -894,9 +1117,9 @@ scope CharacterSelect {
     nop
     OS.patch_end()
 
-	// skip loading default portraits on BTT/BTP CSS
+    // skip loading default portraits on BTT/BTP CSS
     OS.patch_start(0x14CF90, 0x80136F60)
-    dw 0			// original = 0x00000013
+    dw 0            // original = 0x00000013
     OS.patch_end()
 
 
@@ -930,6 +1153,13 @@ scope CharacterSelect {
 
         _get_random_id:
         addiu   a0, r0, NUM_SLOTS           // original line 2 modified to include all slots
+
+        // Check toggle to see if we should include bonus chars
+        li      s0, Toggles.entry_variant_random
+        lw      s0, 0x0004(s0)              // s0 = random select (0 = DEFAULT, 1 = BONUS, 2 = ALL VARIANTS, 3 = VANILLA)
+        bnezl   s0, pc() + 8                // if random select is not 'DEFAULT', then include
+        addiu   a0, a0, NUM_BONUS_CHARS     // a0 = all slots including bonus
+
         li      s0, TwelveCharBattle.twelve_cb_flag
         lw      s0, 0x0000(s0)              // s0 = 1 if 12cb
         bnezl   s0, pc() + 8                // if 12cb, use correct slot count
@@ -987,10 +1217,10 @@ scope CharacterSelect {
 
         // so the random character is not defeated... if the match is started, then force that character_id if the player won
         jal     TwelveCharBattle.get_last_match_portrait_and_stocks_ // v0 = remaining stocks, v1 = portrait_id of last game
-        lli     s0, 0x00FF                  // s0 = 0x000000FF (no portrait)
+        nop
         beqz    v0, _end                    // if the character was defeated last match, then keep new character_id
         lw      v0, 0x0008(sp)              // restore v0
-        beq     v1, s0, _end                // if no portrait, then skip
+        bltz    v1, _end                    // if no portrait, then skip
         nop
         // otherwise, the player won previously so we need to get the character_id and force it
         lw      s0, 0x0014(sp)              // s0 = CSS player struct
@@ -1011,8 +1241,15 @@ scope CharacterSelect {
         nop
 
         _not_12cb:
+        li      s0, bonus_chars
+        addiu   v1, v0, -NUM_SLOTS          // v1 >= 0 if a bonus char
+        bgezl   v1, _get_char_from_table    // if a bonus char, use bonus_chars table
+        or      v0, v1, r0                  // v0 = index in bonus_chars_index
+
         li      s0, id_table_pointer
         lw      s0, 0x0000(s0)              // s0 = id_table
+
+        _get_char_from_table:
         addu    s0, s0, v0                  // s0 = id_table + offset
         lbu     v0, 0x0000(s0)              // v0 = character_id
         lli     s0, Character.id.NONE       // s0 = Character.id.NONE
@@ -1021,12 +1258,20 @@ scope CharacterSelect {
 
         // Check toggle to see if we should include variants
         li      s0, Toggles.entry_variant_random
-        lw      s0, 0x0004(s0)              // t1 = random select with variants when 1
-        beqz    s0, _end                    // if random select with variants is off, then skip
-        nop                                 // otherwise, determine id taking variants into account:
+        lw      s0, 0x0004(s0)              // s0 = random select (0 = DEFAULT, 1 = BONUS, 2 = ALL VARIANTS, 3 = VANILLA)
+        lli     v1, 0x0002                  // v1 = 'ALL'
+        beq     s0, v1, _check_variants     // branch to determine id taking variants into account
+        lli     v1, 0x0003                  // v1 = 'VANILLA'
+        bne     s0, v1, _end                // branch if 'DEFAULT' or 'BONUS'
+        slti    v1, v0, Character.id.NESS + 1  // v1 = 1 if v0 = Vanilla character ID
+        beqz    v1, _get_random_id          // if v0 was not a vanilla character then get a new number...
+        nop
+        b       _end                        // ...otherwise use this character
+        nop
 
+        _check_variants:
         addu    s0, r0, v0                  // s0 = character id
-        jal     Global.get_random_int_alt_  // get random number for variant offset
+        jal     Global.get_random_int_safe_ // get random number for variant offset
         addiu   a0, r0, 0x0005              // a0 = 5
         // v0 = random number between 0 and 4
         beqzl   v0, _end                    // if 0, just use original character
@@ -1109,11 +1354,19 @@ scope CharacterSelect {
         sw      a0, 0x0014(sp)              // ~
         sw      a1, 0x0018(sp)              // save registers
 
+        lli     t0, Character.id.PLACEHOLDER
+        beq     t0, a0, _random_bookend     // if random selected, can skip stuff below
+        nop
+
         // get portrait id
         li      t0, portrait_id_table_pointer
         lw      t0, 0x0000(t0)              // t0 = portrait_id_table
         addu    t0, t0, a0                  // t0 = portrait_id_table + character id
         lbu     v0, 0x0000(t0)              // v0 = portrait_id for character in a0
+
+        lli     t0, BOOKEND_BONUS_PORTRAIT
+        beq     t0, v0, _bonus_bookend      // if bonus bookend, can skip stuff below
+        nop
 
         li      t0, TwelveCharBattle.twelve_cb_flag
         lw      t0, 0x0000(t0)              // t0 = 1 if 12cb mode
@@ -1189,6 +1442,7 @@ scope CharacterSelect {
         move    t2, v0                      // t2 = (float) uly + offset
         sw      t2, 0x005C(t8)              // update token_ypos
 
+        _end:
         lw      t0, 0x0004(sp)              // ~
         lw      t1, 0x0008(sp)              // ~
         lw      t2, 0x000C(sp)              // ~
@@ -1202,26 +1456,44 @@ scope CharacterSelect {
         jr      ra                          // end function
         addiu   sp, sp, 0x0018              // deallocate stack space
 
+        _random_bookend:
+        lui     t0, RANDOM_TOKEN_X
+        sw      t0, 0x0058(t8)              // set x position
+        lui     t0, BOOKEND_TOKEN_Y
+        sw      t0, 0x005C(t8)              // set y position
+        b       _end
+        nop
+
+        _bonus_bookend:
+        lui     t0, BONUS_TOKEN_X
+        sw      t0, 0x0058(t8)              // set x position
+        lui     t0, BOOKEND_TOKEN_Y
+        sw      t0, 0x005C(t8)              // set y position
+        b       _end
+        nop
     }
 
     // @ Description
     // This helper macro will overwrite some of the white flash routine for each screen.
     macro set_white_flash_texture() {
-        li      t2, portrait_offset_table_pointer
-        lw      t2, 0x0000(t2)              // t2 = portrait_offset_table
+        OS.read_word(portrait_offset_table_pointer, t2) // t2 = portrait_offset_table
         sll     t3, s0, 0x0002              // t3 = offset in portrait offset table
         addu    t2, t2, t3                  // t2 = address of portrait offset
         lw      t2, 0x0000(t2)              // t2 = portrait offset
-        li      a1, Render.file_pointer_1   // a1 = base address of character portraits file
-        lw      a1, 0x0000(a1)              // ~
+        OS.read_word(Render.file_pointer_1, a1) // a1 = base address of character portraits file
+        OS.read_word(Render.file_pointer_2, t1) // t1 = base address of character images file
+        sltiu   t0, s0, BOOKEND_BONUS_PORTRAIT // t0 = 0 if bookend
+        beqzl   t0, pc() + 8                // if a bookend, use css images file
+        or      a1, t1, r0                  // a1 = base address of character images file
         addu    a1, a1, t2                  // a1 = portrait image footer address
+        beqzl   t0, pc() + 8                // if a bookend, it's farther away than 0x860 (it's 0xC60)
+        addiu   a1, a1, 0x0C60 - 0x0860     // a1 = flash portrait image footer address
         jal     0x800CCFDC
         addiu   a1, a1, 0x0860              // a1 = flash portrait image footer address
 
         // use portraits to get position/scale/etc info
         lli     t3, 0x0000                  // t3 = loop variable/portrait_id
-        li      t4, Render.ROOM_TABLE + (0x1B * 4)
-        lw      t4, 0x0000(t4)              // t4 = first portrait object
+        OS.read_word(Render.ROOM_TABLE + (0x1B * 4), t4) // t4 = first portrait object
         _loop_{#}:
         beql    s0, t3, _set_portrait_info_{#}  // if this is the right portrait, exit loop
         lw      t4, 0x0074(t4)              // t4 = image struct
@@ -1648,8 +1920,14 @@ scope CharacterSelect {
         li      s0, CharacterSelectDebugMenu.debug_control_object
         sw      r0, 0x0000(s0)              // clear out control object reference before it is used
 
+        // This either, MEH!
+        li      at, custom_heap_address     // at = custom_heap_address
+        li      t0, custom_heap             // t0 = custom_heap
+        sw      t0, 0x0000(at)              // reset custom_heap_address
+
         // for (char_id i = METAL; i < last character; i++)
         lli     s0, Character.id.BOSS
+        lli     s1, 0x0000                  // s1 = loop counter - set externally for dynamic loading
 
         _loop:
         lli     a0, Character.id.PLACEHOLDER// a0 = PLACEHOLDER
@@ -1662,11 +1940,48 @@ scope CharacterSelect {
         beql    a0, s0, _loop               // if char_id = SANDBAG, skip
         addiu   s0, s0, 0x0001              // increment index
 
-		// check variant
+        li      a0, alt_malloc_table
+        sll     at, s0, 0x0002              // at = offset to alt malloc size
+        addu    a0, a0, at                  // a0 = address of alt malloc size
+        lw      a0, 0x0000(a0)              // a0 = alt malloc size
+        li      at, dynamic_css.HEAP_SIZE   // at = size of heap
+        addiu   at, at, -0x1000
+        sltu    at, at, a0                  // at = 1 if char is too big to load dynamically
+
+        bnez    s1, _second_time            // if we're on the second loop, skip
+        nop
+        // first time through, load only the chars we can't load dynamically
+        beqz    at, _next                   // if char can be loaded dynamically, skip loading now
+        nop
+        b       _load                       // otherwise, load this large character
+        nop
+
+        _second_time:
+        bnez    at, _next                   // we've already loaded the char if at = 1, so we can skip
+        nop
+
+        // let's only load if:
+        // (1) variant_type is NA
+        // (2) we haven't reached the end of normal RAM yet
+
         li      a0, Character.variant_type.table
-		addu    a0, a0, s0
-		lb      a0, 0x0000(a0)              // get variant type
+        addu    a0, a0, s0
+        lb      a0, 0x0000(a0)              // get variant type
         bnez    a0, _next                   // if not variant_type.NA, skip
+        nop
+
+        // Ideally we could load until we fill out the heap slots, but it's not set up like that currently
+        // OS.read_word(dynamic_css.heap_slot_7.character_id, a0) // a0 = Character.id.NONE if last heap slot not loaded
+        // addiu   a0, a0, -Character.id.NONE  // a0 = 0 if last heap slot not loaded
+        // bnez    a0, _end                    // if loaded, then exit the loop altogether
+        // nop
+
+        // li      t7, 0x80800000 - dynamic_css.HEAP_SIZE - dynamic_css.BUFFER // t7 = ram threshold
+        lui     t7, 0x8078                  // t7 = 0x80780000 = ram threshold
+        li      t8, 0x800465E8              // t8 = main heap struct
+        lw      t8, 0x000C(t8)              // t8 = current free memory address
+        sltu    t8, t7, t8                  // t1 = 1 if above threshold
+        bnez    t8, _end                    // if above threshold, then exit the loop altogether
         nop
 
         _load:
@@ -1680,8 +1995,14 @@ scope CharacterSelect {
         addiu   s0, s0, 0x0001              // increment index
 
         _end:
+        bnez    s1, _really_end             // if we're on the second loop, skip
+        nop
+        // first time through, initialize the dynamic css
+        jal     initialize_dynamic_css_
+        nop
+
+        _really_end:
         lui     v1, 0x8014                  // original line 1
-		_end_2:
         lui     s0, 0x8013                  // original line 2
 
         lw      ra, 0x0004(sp)              // ~
@@ -1724,13 +2045,14 @@ scope CharacterSelect {
 
         // Custom heap Logic:
         //  - Skip if loaded (0x80116E10 pointers loaded - lines above)
-        //  - Skip if current_heap under threshold (0x807D0000)
+        //  - Skip if current_heap under threshold (0x80800000 - dynamic_css.HEAP_SIZE - dynamic_css.BUFFER)
         //  - Get empty heap slot
         //    - If none empty, find first slot where char_id is not associated w/a panel
         //    - Clear slot and return as empty slot
         //  - Load into empty heap slot
 
-        lui     t7, 0x807D                  // t7 = 0x807D0000 = ram threshold
+        // li      t7, 0x80800000 - dynamic_css.HEAP_SIZE - dynamic_css.BUFFER // t7 = ram threshold
+        lui     t7, 0x8078                  // t7 = 0x80780000 = ram threshold
         li      t8, 0x800465E8              // t8 = main heap struct
         lw      t8, 0x000C(t8)              // t8 = current free memory address
         sltu    t8, t7, t8                  // t1 = 1 if above threshold
@@ -1872,8 +2194,17 @@ scope CharacterSelect {
     }
 
     // @ Description
+    // When we expand to expansion RAM, we may leave some vanilla RAM unutilized.
+    // We will treat this leftover vanilla RAM as expansion expansion RAM.
+    // This holds the addresses of expansion expansion RAM start and end, which will inform the
+    // patch below to use this when not 0.
+    expansion_expansion_ram:
+    dw 0x00000000 // initialized to 0, will be set to expansion expansion RAM start address
+    dw 0x00000000 // initialized to 0, will be set to expansion expansion RAM end address
+
+    // @ Description
     // This patch increases the heap space by moving it to expansion RAM when the original heap fills up.
-    // This enables us to load a nearly unlimited number of character models on the CSS.
+    // This enables us to load a nearly unlimited number of character models on the CSS. [this aged poorly!]
     // It also ensures large stages don't crash with large characters.
     scope increase_heap_: {
         OS.patch_start(0x7920, 0x80006D20)
@@ -1889,19 +2220,52 @@ scope CharacterSelect {
         sltu    at, t9, v0                  // original line 2
 
         lui     at, 0x8080                  // at = 0x80800000 = end of expansion RAM
-        beql    at, t9, _return             // if we've already extended the main heap, continue normally
+        beql    at, t9, _expand             // if we've already extended the main heap, expand again
         sltu    at, t9, v0                  // original line 2
 
         // if we're here, the current malloc will not fit in the original heap, so extend to expansion RAM
-        li      at, custom_heap             // at = free memory start
+
+        // first, remember the current heap address
+        li      at, expansion_expansion_ram // at = expansion expansion RAM info
+        sw      v1, 0x0000(at)              // save current heap address
+        sw      t9, 0x0004(at)              // save current heap end address
+
+        // then, expand to expansion RAM
+        OS.read_word(custom_heap_address, at) // at = free memory start
         sw      at, 0x000C(a3)              // update current heap free memory
         lui     at, 0x8080                  // at = end of expansion RAM
+        j       0x80006CF4                  // jump back to (almost) the start of routine
+        sw      at, 0x0008(a3)              // update end of heap
+
+        _expand:
+        // if we're here, we need to expand the heap to expansion expansion RAM
+        li      t9, expansion_expansion_ram // t9 = expansion expansion RAM info
+        lw      at, 0x0000(t9)              // at = expansion expansion RAM start
+        sw      at, 0x000C(a3)              // update current heap free memory
+        lw      at, 0x0004(t9)              // at = expansion expansion RAM end
         j       0x80006CF4                  // jump back to (almost) the start of routine
         sw      at, 0x0008(a3)              // update end of heap
 
         _return:
         jr      ra
         sw      v0, 0x000C(a3)              // original line 1
+    }
+
+    // @ Description
+    // This clears the expansion expansion RAM info when the general heap is initialized.
+    scope clear_expansion_expansion_ram_: {
+        OS.patch_start(0x5570, 0x80004970)
+        j      clear_expansion_expansion_ram_
+        lw     ra, 0x0014(sp)               // original line 1
+        _return:
+        jr     ra                           // original line 3
+        addiu  sp, sp, 0x0018               // original line 2
+        OS.patch_end()
+
+        li      at, expansion_expansion_ram // at = expansion expansion RAM info
+        sw      r0, 0x0000(at)              // clear start address
+        j       _return                          // return
+        sw      r0, 0x0004(at)              // clear end address
     }
 
     // @ Description
@@ -1948,6 +2312,8 @@ scope CharacterSelect {
         // L press triggers random char select for human players if not hovering over portraits
         andi    at, t8, Joypad.L            // at = 0 if L not pressed
         beqz    at, _check_12cb             // if L not pressed, skip
+        lw      at, 0x005C(v0)              // at = is_recalling
+        bnez    at, _check_12cb             // if recalling token, skip
         lw      at, 0x0080(v0)              // at = held token index
         bltz    at, _do_random_char_select  // if not holding a token (meaning char is selected), do random
         lli     t0, Character.id.NONE       // t0 = Character.id.NONE
@@ -1958,9 +2324,10 @@ scope CharacterSelect {
         _do_random_char_select:
         lw      at, 0x0084(v0)              // at = panel state (0 if HMN)
         bnez    at, _check_12cb             // if not HMN, skip
-        nop
+        sw      v0, 0x000C(sp)              // save v0
         jal     select_random_char_
         or      a0, a1, r0                  // a0 = port
+        lw      v0, 0x000C(sp)              // restore v0
 
         _check_12cb:
         li      v1, TwelveCharBattle.twelve_cb_flag
@@ -1975,6 +2342,17 @@ scope CharacterSelect {
         nop
 
         _not_12cb:
+        lw      at, 0x0080(v0)              // at = held token index
+        bltz    at, _goto_shared            // if not holding a token (meaning char is selected), don't get char_id
+        lli     t0, 0x00BC                  // t0 = size of player struct
+        multu   t0, at
+        mflo    t0
+        li      at, CSS_PLAYER_STRUCT
+        addu    at, at, t0                  // at = held token css struct
+        lw      at, 0x0048(at)              // at = held char_id
+        sw      at, 0x0010(sp)              // save char_id
+
+        _goto_shared:
         jal     _shared                     // call main routine (shared between vs and training)
         addu    v1, v0, r0                  // v1 = pointer to player CSS struct
 
@@ -1996,9 +2374,12 @@ scope CharacterSelect {
         addu    t8, t6, t7                  // original line 2
         sw      t8, 0x001C(sp)              // original line 3
 
-        addiu   sp, sp, -0x000C             // allocate stack space
+        addiu   sp, sp, -0x0020             // allocate stack space
         sw      v1, 0x0004(sp)              // ~
         sw      ra, 0x0008(sp)              // ~
+
+        lw      v1, 0x0020(t1)              // v1 = held char_id
+        sw      v1, 0x0010(sp)              // save char_id
 
         lhu     t8, 0x0002(t8)              // unique press button state
         jal     _shared                     // call main routine (shared between vs and training)
@@ -2006,7 +2387,7 @@ scope CharacterSelect {
 
         lw      v1, 0x0004(sp)              // ~
         lw      ra, 0x0008(sp)              // ~
-        addiu   sp, sp, 0x000C              // deallocate stack space
+        addiu   sp, sp, 0x0020              // deallocate stack space
 
         lw      t8, 0x001C(sp)              // restore t8
 
@@ -2026,11 +2407,22 @@ scope CharacterSelect {
         subu    t0, t0, s0                  // original line 2
         lw      a0, 0x0040(sp)              // original line 3
 
-        addiu   sp, sp, -0x0010             // allocate stack space
+        addiu   sp, sp, -0x0020             // allocate stack space
         sw      v1, 0x0004(sp)              // ~
         sw      a1, 0x0008(sp)              // ~
         sw      ra, 0x000C(sp)              // ~
 
+        lw      v1, 0x007C(v0)              // v1 = held token index
+        bltz    v1, _goto_shared_training   // if not holding a token (meaning char is selected), don't get char_id
+        lli     a1, 0x00B8                  // a1 = size of player struct
+        multu   a1, v1
+        mflo    a1
+        li      v1, CSS_PLAYER_STRUCT_TRAINING
+        addu    a1, v1, a1                  // a1 = held token css struct
+        lw      a1, 0x0048(a1)              // a1 = held char_id
+        sw      a1, 0x0010(sp)              // save char_id
+
+        _goto_shared_training:
         addu    a1, s0, r0                  // a1 = player index
         jal     _shared                     // call main routine (shared between vs and training)
         addiu   v1, v0, -0x0004             // v1 = pointer to player CSS struct, adjusted for training so some offsets line up correctly
@@ -2038,7 +2430,7 @@ scope CharacterSelect {
         lw      v1, 0x0004(sp)              // ~
         lw      a1, 0x0008(sp)              // ~
         lw      ra, 0x000C(sp)              // ~
-        addiu   sp, sp, 0x0010              // deallocate stack space
+        addiu   sp, sp, 0x0020              // deallocate stack space
 
         jr      ra
         nop
@@ -2051,24 +2443,29 @@ scope CharacterSelect {
         addu    t8, t6, t7                  // original line 1
         sw      t8, 0x0024(sp)              // original line 2
 
-        addiu   sp, sp, -0x0010             // allocate stack space
+        addiu   sp, sp, -0x0020             // allocate stack space
         sw      v1, 0x0004(sp)              // ~
         sw      a1, 0x0008(sp)              // ~
         sw      ra, 0x000C(sp)              // ~
 
+        lw      v1, 0x0020(t1)              // v1 = held char_id
+        sw      v1, 0x0010(sp)              // save char_id
+
         addu    a1, s0, r0                  // a1 = player index
         lhu     t8, 0x0002(t8)              // unique press button state
+
         jal     _shared                     // call main routine (shared between vs and training)
         addiu   v1, t1, -0x002C             // v1 = pointer to player CSS struct, adjusted for bonus so some offsets line up correctly
 
-        lw      a0, 0x0034(sp)              // a0 = controller struct pointer
+        lw      a0, 0x0044(sp)              // a0 = controller struct pointer
+        lhu     a1, 0x0006(a0)              // a1 = released button mask
         jal     Bonus.check_input_          // extra checks for bonus screen
         lhu     a0, 0x0002(a0)              // a0 = button mask
 
         lw      v1, 0x0004(sp)              // ~
         lw      a1, 0x0008(sp)              // ~
         lw      ra, 0x000C(sp)              // ~
-        addiu   sp, sp, 0x0010              // deallocate stack space
+        addiu   sp, sp, 0x0020              // deallocate stack space
 
         lw      t8, 0x0024(sp)              // restore t8
 
@@ -2093,15 +2490,26 @@ scope CharacterSelect {
         nop
 
         _check_mask:
-        andi    t8, t8, 0x2F00              // Check for Z or any d-pad button
-        beq     t8, r0, _end                // if no Z or d-pad press, exit
+        andi    t8, t8, Joypad.DU | Joypad.DD | Joypad.DL | Joypad.DR | Joypad.Z | Joypad.R // Check for Z or any d-pad button
+        bnez    t8, _continue               // if Z or R or d-pad press, continue
+        nop
+        // a1 = port. we need to calculate offset for current player (10 bytes)
+        // note: t6 normally is this value (except in Training CSS, which uses t7)
+        sll     t1, a1, 1                   // t1 = port * 2
+        sll     at, a1, 3                   // at = port * 8
+        addu    at, t1, at                  // at = offset for port (a1 * 10)
+        li      t1, Joypad.struct
+        addu    t1, t1, at                  // t1 = Joypad.struct + offset for port
+        lh      t1, 0x0000(t1)              // held button mask
+        andi    t1, t1, Joypad.Z | Joypad.R // check for Z or R held
+        beqz    t1, _no_Z_or_R              // if no Z or R held, exit
         nop
 
+        _continue:
         li      at, variant_offset          // at = variant_offset address
         lw      t0, 0x0080(v1)              // t0 = currently held token
         addiu   t0, t0, 0x0001              // t0 = 0 if no token held, else 1 - 4 corresponding to port
-        beq     t0, r0, _end                // if not holding a token, then skip altogether
-        nop
+        beqz    t0, _end                    // if not holding a token, then skip altogether
         addiu   t0, t0, -0x0001             // ...otherwise, we'll use the token index to adjust variant_offset
         addu    t1, at, t0                  // t1 = variant_offset
 
@@ -2124,18 +2532,81 @@ scope CharacterSelect {
         bnel    at, r0, _set_variant_offset // if pressed, update to E
         addiu   t8, r0, Character.variants.DR + 1
 
-        andi    at, t8, Joypad.Z            // Z
-        bnel    at, r0, _set_variant_offset // if pressed, reset to normal character
-        addu    t8, a0, r0                  // t8 = a0
+        // get portrait id
+        li      at, portrait_id_table_pointer
+        lw      at, 0x0000(at)              // at = portrait_id_table
+        lw      a0, 0x0038(sp)              // a0 = held token char_id
+        addu    at, at, a0                  // at = portrait_id_table + character id
+        lbu     a0, 0x0000(at)              // a0 = portrait_id for character in a0
 
-        addu    t8, r0, r0                  // t8 = 0
+        lli     at, BOOKEND_BONUS_PORTRAIT
+        bne     at, a0, _no_Z_or_R          // if not hovering over bonus bookend, can skip stuff below
+        nop
+
+        OS.read_word(bonus_char_index_pointer, at) // at = address of bonus_char_index array for screen
+        addu    t1, at, t0                  // t1 = address of bonus char_id for held token
+        lbu     a0, 0x0000(t1)              // a0 = current bonus char index
+
+        // Check if holding Z or R to cycle through Bonus characters
+        sll     t8, a1, 1                   // t8 = port * 2
+        sll     at, a1, 3                   // at = port * 8
+        addu    at, t8, at                  // at = offset for port (a1 * 10)
+        li      t8, Joypad.struct
+        addu    t8, t8, at                  // t8 = Joypad.struct + offset for port
+        lh      t8, 0x0000(t8)              // held button mask
+
+        andi    at, t8, Joypad.Z            // Z
+        bnel    at, r0, _held_Z_R           // if held, go to previous char_id
+        addiu   t8, a0, -0x0001             // t8 = previous bonus char index
+
+        andi    at, t8, Joypad.R            // R
+        bnel    at, r0, _held_Z_R           // if held, go to next char_id
+        addiu   t8, a0, 0x0001              // t8 = next bonus char index
+
+        _no_Z_or_R:
+        // neither Z nor R is held, reset initial repeat delay
+        li      t1, variant_cycle_timer     // t1 = variant_cycle_timer
+        sll     at, a1, 0x0002              // at = offset
+        addu    t1, t1, at                  // t1 = player entry in variant_cycle_timer
+        addiu   at, r0, -0x0001             // at = -1
+        sw      at, 0x0000(t1)              // save updated timer
+
+        b       _end                        // otherwise, done
+        nop
 
         _set_variant_offset:
         beqzl   t8, _end                    // if t8 = 0, then use previous variant_offset
         sb      a0, 0x0000(t1)              // ~
         beql    a0, t8, _end                // if the same direction already selected is selected again...
         sb      r0, 0x0000(t1)              // ...then reset to normal character
+        b       _end
         sb      t8, 0x0000(t1)              // ...else store new variant_offset
+
+        _held_Z_R:
+        li      a2, variant_cycle_timer     // a2 = variant_cycle_timer
+        sll     at, a1, 0x0002              // at = offset
+        addu    a2, a2, at                  // a2 = player entry in variant_cycle_timer
+        lw      at, 0x0000(a2)              // at = players value in table
+        addiu   at, at, 0x0001              // at++
+        sw      at, 0x0000(a2)              // at = timer for cycling portraits
+        beqz    at, _set_bonus_char         // at = 0 if initial press
+        slti    t0, at, 0x001E              // wait 30 frames
+        bne     t0, r0, _end                // if not 30 or greater, skip cycling
+        addiu   at, at, -0x0008             // add to timer (8 frames)
+        sw      at, 0x0000(a2)              // save updated timer
+
+        _set_bonus_char:
+        bltzl   t8, pc() + 8                // if t8 is negative, set to last index
+        lli     t8, NUM_BONUS_CHARS - 1     // t8 = last char index
+        sltiu   a0, t8, NUM_BONUS_CHARS     // a0 = 0 if past last char index
+        beqzl   a0, pc() + 8                // if past last char index, set to first index
+        lli     t8, 0x0000                  // t8 = first char index
+
+        sb      t8, 0x0000(t1)              // update bonus char index
+
+        // audial feedback
+        jal     0x800269C0
+        lli     a0, FGM.menu.SCROLL         // play sound
 
         _end:
         lw      at, 0x0004(sp)              // ~
@@ -2158,6 +2629,241 @@ scope CharacterSelect {
     db 0x00                                 // player 3
     db 0x00                                 // player 4
 
+    variant_cycle_timer:
+    dw -1, -1, -1, -1   // p1, p2, p3, p4
+
+    // @ Description
+    // This adds/updates UI in the panels for the bonus character portrait to explain how to change portraits.
+    scope draw_bonus_scroll_indicators_: {
+        // a0 = control object
+        // 0x0030(a0) = p1 object (0 if non-existent)
+        // 0x0034(a0) = p2 object (0 if non-existent)
+        // 0x0038(a0) = p3 object (0 if non-existent)
+        // 0x003C(a0) = p4 object (0 if non-existent)
+        // 0x0040(a0) = p1 blink timer
+        // 0x0044(a0) = p2 blink timer
+        // 0x0048(a0) = p3 blink timer
+        // 0x004C(a0) = p4 blink timer
+        // 0x0050(a0) = offset in css_player_structs
+        // 0x0070(a0) = CSS_PLAYER_STRUCT
+        OS.save_registers()
+        // a0 => 0x0010(sp)
+
+        lli     s0, 0x0000                  // s0 = panel index = start at 0
+        addiu   s1, a0, 0x0030              // s1 = address of p1 object pointer
+        lw      s2, 0x0070(a0)              // s2 = CSS player struct for p1
+        lw      s3, 0x0050(a0)              // s3 = 0x0: VS, 0x4: 1P, 0x8: Training, 0xC: Bonus 1, 0x10: Bonus 2
+
+        _loop:
+        lw      s5, 0x0080(s2)              // s5 = token_id or -1 if token is not held
+        bnezl   s3, pc() + 8                // if not VS, token held is at a different offset
+        lw      s5, 0x007C(s2)              // s5 = token_id or -1 if token is not held
+        bltz    s5, _check_destroy          // skip if not held
+        lli     at, 0x0008                  // at = offset if training
+
+        lli     t0, 0x0000                  // t0 = offset for 1P and Bonus 1/2
+        beqzl   s3, check_if_bonus_         // if VS, use VS offset
+        lli     t0, 0x00BC                  // t0 = offset for VS
+        beql    s3, at, check_if_bonus_     // if Training, use Training offset
+        lli     t0, 0x00B8                  // t0 = offset for Training
+
+        check_if_bonus_:
+        multu   s5, t0                      // mflo = token_id * offset = offset for held token
+        mflo    t0                          // t0 = offset for held token
+        lw      a0, 0x0010(sp)              // a0 = control object
+        lw      t2, 0x0070(a0)              // t2 = CSS_PLAYER_STRUCT
+        addu    s4, t2, t0                  // s4 = address of token's css panel struct
+        lw      t1, 0x0048(s4)              // t1 = char_id
+        li      t2, portrait_id_table_pointer
+        lw      t2, 0x0000(t2)              // t2 = portraid_id_table
+        addu    t2, t2, t1                  // t2 = address of hovered character's portrait_id
+        lbu     t2, 0x0000(t2)              // t2 = portrait_id
+        lli     t1, BOOKEND_BONUS_PORTRAIT  // t1 = portrait_id for bonus bookend
+        bne     t1, t2, _check_destroy      // if bonus portrait is not hovered, then skip
+        nop
+
+        // if here, then we need to display the object
+        lw      a0, 0x0000(s1)              // a0 = object address
+        bnez    a0, _update_display         // if object defined, skip creating it
+        nop
+
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0004(sp)              // ~
+        sw      s0, 0x0008(sp)              // ~
+        sw      s1, 0x000C(sp)              // ~
+        sw      s2, 0x0010(sp)              // ~
+        sw      s3, 0x0014(sp)              // ~
+        sw      s4, 0x0018(sp)              // ~
+
+        OS.read_word(0x8013C4A0, a2)        // a2 = file 0x11 base address in VS
+        lw      a0, 0x0018(s4)              // a0 = token's panel object in VS
+        beqz    s3, _create_textures        // if VS, a2 is correct
+        lli     at, 0x0004                  // at = offset if 1P
+        OS.read_word(0x801396A0, a2)        // a2 = file 0x11 base address in 1P
+        lw      a0, 0x003C(s4)              // a0 = token's panel object in 1P
+        beq     s3, at, _create_textures    // if 1P, a2 is correct
+        lli     at, 0x0008                  // at = offset if Training
+        OS.read_word(0x80138C98, a2)        // a2 = file 0x11 base address in Training
+        lw      a0, 0x0018(s4)              // a0 = token's panel object in Training
+        beq     s3, at, _create_textures    // if Training, a2 is correct
+        nop
+        OS.read_word(0x80137DF8, a2)        // a2 = file 0x11 base address in Bonus 1/2
+        lw      a0, 0x003C(s4)              // a0 = token's panel object in Bonus 1/2
+
+        _create_textures:
+        sw      a2, 0x001C(sp)              // save file 0x11 base address
+        lw      a0, 0x0074(a0)              // a0 = panel image struct
+        lh      t0, 0x0014(a0)              // t0 = panel width
+        mtc1    t0, f0                      // f0 = panel width
+        cvt.s.w f0, f0                      // f0 = panel width, float
+        lwc1    f2, 0x0058(a0)              // f2 = panel width
+        add.s   f0, f2, f0                  // f0 = panel ulx
+        swc1    f2, 0x0020(sp)              // save token's panel ulx
+        swc1    f0, 0x0024(sp)              // save token's panel urx
+
+        // Draw left arrow
+        Render.draw_texture_at_offset_in_a2(0x1C, 0x16, 0xECE8, Render.NOOP, 0x41D00000, 0x432C0000, 0xFF0000FF, 0x303030FF, 0x3F800000)
+        lw      s1, 0x000C(sp)              // s1 = object reference
+        sw      v0, 0x0000(s1)              // save object reference
+        or      a0, r0, v0                  // a0 = object
+
+        lwc1    f0, 0x0020(sp)              // f0 = token's panel ulx
+        lui     at, 0x4080                  // at = 4
+        mtc1    at, f2                      // f2 = 4
+        add.s   f2, f0, f2                  // f2 = ulx for left arrow
+        lw      t0, 0x0074(v0)              // t0 = image struct
+        swc1    f2, 0x0058(t0)              // save ulx
+
+        // Draw right arrow
+        lw      a1, 0x001C(sp)              // a1 = file 0x11 base address
+        lli     t0, 0xEDC8                  // t0 = right arrow image footer offset
+        addu    a1, a1, t0                  // t0 = right arrow image footer address
+        jal     Render.TEXTURE_INIT_        // v0 = RAM address of texture struct
+        addiu   sp, sp, -0x0030             // allocate stack space for TEXTURE_INIT_
+        addiu   sp, sp, 0x0030              // restore stack space
+
+        lwc1    f0, 0x0024(sp)              // f0 = token's panel urx
+        lui     at, 0xC120                  // at = -10
+        mtc1    at, f2                      // f2 = -10
+        add.s   f2, f0, f2                  // f2 = urx for right arrow
+        swc1    f2, 0x0058(v0)              // save ulx
+        lui     t0, 0x432C                  // t0 = uly
+        sw      t0, 0x005C(v0)              // save uly
+        lli     t0, 0x0201                  // t0 = render flags
+        sh      t0, 0x0024(v0)              // turn on blur
+
+        // Draw Z button
+        lw      a0, 0x0000(s1)              // a0 = object reference
+        li      a1, Render.file_pointer_4   // a1 = file 0xC5 base address pointer
+        lw      a1, 0x0000(a1)              // a1 = file 0xC5 base address
+        lli     t0, Render.file_c5_offsets.Z // t0 = Z image footer offset
+        addu    a1, a1, t0                  // t0 = Z image footer address
+        jal     Render.TEXTURE_INIT_        // v0 = RAM address of texture struct
+        addiu   sp, sp, -0x0030             // allocate stack space for TEXTURE_INIT_
+        addiu   sp, sp, 0x0030              // restore stack space
+
+        lwc1    f0, 0x0020(sp)              // f0 = token's panel ulx
+        lui     at, 0x4080                  // at = 4
+        mtc1    at, f2                      // f2 = 4
+        add.s   f2, f0, f2                  // f2 = ulx for Z button
+        swc1    f2, 0x0058(v0)              // save ulx
+        lui     t0, 0x431A                  // t0 = uly
+        sw      t0, 0x005C(v0)              // save uly
+        lli     t0, 0x0201                  // t0 = render flags
+        sh      t0, 0x0024(v0)              // turn on blur
+        li      t0, 0x848484FF              // color
+        sw      t0, 0x0028(v0)              // set color
+        li      t0, 0x303030FF              // palette
+        sw      t0, 0x0060(v0)              // set palette
+
+        // Draw R button
+        lw      a0, 0x0000(s1)              // a0 = object reference
+        li      a1, Render.file_pointer_4   // a1 = file 0xC5 base address pointer
+        lw      a1, 0x0000(a1)              // a1 = file 0xC5 base address
+        lli     t0, Render.file_c5_offsets.R // t0 = R image footer offset
+        addu    a1, a1, t0                  // t0 = R image footer address
+        jal     Render.TEXTURE_INIT_        // v0 = RAM address of texture struct
+        addiu   sp, sp, -0x0030             // allocate stack space for TEXTURE_INIT_
+        addiu   sp, sp, 0x0030              // restore stack space
+
+        lwc1    f0, 0x0024(sp)              // f0 = token's panel urx
+        lui     at, 0xC188                  // at = -17
+        mtc1    at, f2                      // f2 = -17
+        add.s   f2, f0, f2                  // f2 = urx for R button
+        swc1    f2, 0x0058(v0)              // save ulx
+        lui     t0, 0x431C                  // t0 = uly
+        sw      t0, 0x005C(v0)              // save uly
+        lli     t0, 0x0201                  // t0 = render flags
+        sh      t0, 0x0024(v0)              // turn on blur
+        li      t0, 0x848484FF              // color
+        sw      t0, 0x0028(v0)              // set color
+        li      t0, 0x303030FF              // palette
+        sw      t0, 0x0060(v0)              // set palette
+
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      s0, 0x0008(sp)              // ~
+        lw      s1, 0x000C(sp)              // ~
+        lw      s2, 0x0010(sp)              // ~
+        lw      s3, 0x0014(sp)              // ~
+        lw      s4, 0x0018(sp)              // ~
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        lw      a0, 0x0000(s1)              // a0 = object reference
+        sw      r0, 0x0010(s1)              // reset timer to 0
+
+        _update_display:
+        // implements blinking arrows
+        lw      t0, 0x0010(s1)              // t0 = timer
+        addiu   t0, t0, 0x0001              // t0 = timer++
+        sltiu   t2, t0, 0x000B              // t2 = 1 if timer < 60, 0 otherwise
+        sltiu   at, t0, 0x0014              // at = 1 if timer < 90, 0 otherwise
+        beqzl   at, pc() + 8                // if timer past 90, reset
+        lli     t0, 0x0000                  // t0 = 0 to reset timer to 0
+        sw      t0, 0x0010(s1)              // update timer
+
+        lli     t1, 0x0201                  // t1 = render flags (blur)
+        beqzl   t2, pc() + 8                // if in hide state, update render flags
+        lli     t1, 0x0205                  // t1 = render flags (hide)
+
+        lw      t0, 0x0074(a0)              // t0 = left arrow image struct
+        sh      t1, 0x0024(t0)              // update render flags
+        lw      t0, 0x0008(t0)              // t0 = right arrow image struct
+        sh      t1, 0x0024(t0)              // update render flags
+
+        b       _next
+        nop
+
+        _check_destroy:
+        lw      a0, 0x0000(s1)              // a0 = object address
+        beqz    a0, _next                   // if there's not an object, skip destroying it
+        nop
+
+        lw      a0, 0x0000(s1)              // a0 = object address
+        jal     Render.DESTROY_OBJECT_      // destroy object
+        sw      r0, 0x0000(s1)              // clear out reference
+
+        _next:
+        sltiu   t0, s0, 0x0003              // t0 = 0 if we just processed p4
+        beqz    t0, _end                    // if we just processed p4, then we're done
+        lli     at, 0x0004                  // at = offset for 1P
+        beq     s3, at, _end                // don't loop if 1P
+        addiu   s0, s0, 0x0001              // s0++
+        lli     at, 0x000C                  // at = offset if Bonus 1
+        beq     s3, at, _end                // don't loop if Bonus 1/2
+        lli     at, 0x0010                  // at = offset if Bonus 2
+        beq     s3, at, _end                // don't loop if Bonus 1/2
+        addiu   s1, s1, 0x0004              // s1++
+        beqzl   s3, _loop                   // if VS, loop and increment panel struct
+        addiu   s2, s2, 0x00BC              // s2++
+        b       _loop                       // if here, it's Training, so loop and increment panel struct
+        addiu   s2, s2, 0x00B8              // s2++
+
+        _end:
+        OS.restore_registers()
+        jr      ra
+        nop
+    }
+
     // @ Description
     // New table for sound fx (for each character)
     fgm_table:
@@ -2178,21 +2884,20 @@ scope CharacterSelect {
     // other sound fx
     dh FGM.announcer.names.MASTERHAND             // Master Hand
     dh FGM.announcer.names.METAL_MARIO            // Metal Mario
-    // TODO: better announcer FGMs for polygons
-    dh FGM.announcer.names.POLYGON_MARIO          // Polygon Mario
-    dh FGM.announcer.names.POLYGON_FOX            // Polygon Fox
-    dh FGM.announcer.names.POLYGON_DONKEY_KONG    // Polygon Donkey Kong
-    dh FGM.announcer.names.POLYGON_SAMUS          // Polygon Samus
-    dh FGM.announcer.names.POLYGON_LUIGI          // Polygon Luigi
-    dh FGM.announcer.names.POLYGON_LINK           // Polygon Link
-    dh FGM.announcer.names.POLYGON_YOSHI          // Polygon Yoshi
-    dh FGM.announcer.names.POLYGON_CAPTAIN_FALCON // Polygon Captain Falcon
-    dh FGM.announcer.names.POLYGON_KIRBY          // Polygon Kirby
-    dh FGM.announcer.names.POLYGON_PIKACHU        // Polygon Pikachu
-    dh FGM.announcer.names.POLYGON_JIGGLYPUFF     // Polygon Jigglypuff
-    dh FGM.announcer.names.POLYGON_NESS           // Polygon Ness
+    dh FGM.announcer.names.NFIGHTER               // Polygon Mario
+    dh FGM.announcer.names.NFIGHTER               // Polygon Fox
+    dh FGM.announcer.names.NFIGHTER               // Polygon Donkey Kong
+    dh FGM.announcer.names.NFIGHTER               // Polygon Samus
+    dh FGM.announcer.names.NFIGHTER               // Polygon Luigi
+    dh FGM.announcer.names.NFIGHTER               // Polygon Link
+    dh FGM.announcer.names.NFIGHTER               // Polygon Yoshi
+    dh FGM.announcer.names.NFIGHTER               // Polygon Captain Falcon
+    dh FGM.announcer.names.NFIGHTER               // Polygon Kirby
+    dh FGM.announcer.names.NFIGHTER               // Polygon Pikachu
+    dh FGM.announcer.names.NFIGHTER               // Polygon Jigglypuff
+    dh FGM.announcer.names.NFIGHTER               // Polygon Ness
     dh FGM.announcer.names.GDK                    // Giant Donkey Kong
-    dh FGM.announcer.names.MARIO                  // (Placeholder)
+    dh FGM.announcer.names.RANDOM                 // Random
     dh FGM.announcer.names.MARIO                  // None (Placeholder)
 
     // add space for new characters
@@ -2275,6 +2980,8 @@ scope CharacterSelect {
     // The size of each block is 0x860, so Mario's flash would be at portrait_offsets.MARIO + 0x860 for example.
     scope portrait_offsets: {
         constant NONE(0x00000818)
+        constant BONUS_BOOKEND(0x00003B28)
+        constant RANDOM_BOOKEND(0x000053E8)
         // original
         constant MARIO(0x00001078)
         constant FOX(0x00002138)
@@ -2319,10 +3026,12 @@ scope CharacterSelect {
         constant NGOEMON(0x00023938)
         constant NCONKER(0x0001B338)
         constant NBANJO(0x00026B68 + 0x10)
+        constant NPEACH(0x0002BF10 + 0x10)
+        constant NCRASH(0x0002AE58 + 0x10)
         // special
         constant METAL(0x00015F78)
         constant GDONKEY(0x00017038)
-		constant GBOWSER(0x000180F8)
+        constant GBOWSER(0x000180F8)
         constant PIANO(0x000191B8)
         constant SSONIC(0x0001F638)
         constant PEPPY(0x000249E8 + 0x10)
@@ -2350,6 +3059,11 @@ scope CharacterSelect {
         constant DEDEDE(0x00022878)
         constant GOEMON(0x00023938)
         constant BANJO(0x00026B68 + 0x10)
+        constant CRASH(0x0002AE58 + 0x10)
+        constant PEACH(0x0002BF10 + 0x10)
+        constant ROY(0x0002CFC8 + 0x10)
+        constant DRL(0x0002E080 + 0x10)
+        constant LANKY(0x0002F138 + 0x10)
         // j
         constant JMARIO(0x00001078)
         constant JFOX(0x00002138)
@@ -2410,6 +3124,9 @@ scope CharacterSelect {
         constant SHANTAE(34)
         constant DOOM(35)
         constant SNOWBOARDKIDS(36)
+        constant CRASH(37)
+        constant DINOPLANET(38)
+        constant SNP(39)
 
         scope offset {
             constant NONE(0)
@@ -2449,6 +3166,9 @@ scope CharacterSelect {
             constant SHANTAE(0x0000D860)
             constant DOOM(0x0000DEB8)
             constant SNOWBOARDKIDS(0xE510)
+            constant CRASH(0xEB68)
+            constant DINOPLANET(0xF1C0)
+            constant SNP(0xF818)
         }
 
         // @ Description
@@ -2528,6 +3248,12 @@ scope CharacterSelect {
             constant Y_DOOM(0x419C0000)
             constant X_SNOWBOARDKIDS(0x40000000)
             constant Y_SNOWBOARDKIDS(0x419C0000)
+            constant X_CRASH(0x40400000)
+            constant Y_CRASH(0x41980000)
+            constant X_DINOPLANET(0x40400000)
+            constant Y_DINOPLANET(0x41980000)
+            constant X_SNP(0x40000000)
+            constant Y_SNP(0x419C0000)
         }
 
         table:
@@ -2570,6 +3296,9 @@ scope CharacterSelect {
         dw offset.SHANTAE,          position.X_SHANTAE,          position.Y_SHANTAE
         dw offset.DOOM,             position.X_DOOM,             position.Y_DOOM
         dw offset.SNOWBOARDKIDS,    position.X_SNOWBOARDKIDS,    position.Y_SNOWBOARDKIDS
+        dw offset.CRASH,            position.X_CRASH,            position.Y_CRASH
+        dw offset.DINOPLANET,       position.X_DINOPLANET,       position.Y_DINOPLANET
+        dw offset.SNP,              position.X_SNP,              position.Y_SNP
     }
 
     // @ Description
@@ -2603,7 +3332,7 @@ scope CharacterSelect {
     dw series_logo.offset.SMASH
     dw series_logo.offset.SMASH
     dw series_logo.offset.DONKEY_KONG
-    dw 0x00000000
+    dw series_logo.offset.REMIX
     dw 0x00000000
     // add space for new characters
     fill (series_logo_offset_table + (Character.NUM_CHARACTERS * 0x4)) - pc()
@@ -2676,6 +3405,11 @@ scope CharacterSelect {
         constant MLUIGI(0x00021358)
         constant DRAGONKING(0x00023A28 + 0x10)
         constant EPUFF(0x00024CE0 + 0x10)
+        constant CRASH(0x000251B8  + 0x10)
+        constant PEACH(0x00025B68 + 0x10)
+        constant ROY(0x00026840 + 0x10)
+        constant DRL(0x00026C58 + 0x10)
+        constant LANKY(0x00027130 + 0x10)
         // POLYGONS
         constant NWARIO(0x0001CB28)
         constant NLUCAS(0x0001D008)
@@ -2695,7 +3429,10 @@ scope CharacterSelect {
         constant NGOEMON(0x000243E0 + 0x10)
         constant NCONKER(0x00023F00 + 0x10)
         constant NBANJO(0x000248C0 + 0x10)
+        constant NPEACH(0x00027608 + 0x10)
+        constant NCRASH(0x00025690  + 0x10)
         constant BLANK(0x0)
+        constant RANDOM(0x00026518 + 0x10)
     }
 
     name_texture_table:
@@ -2727,23 +3464,40 @@ scope CharacterSelect {
     dw name_texture.NJIGGLY                 // Polygon Jigglypuff
     dw name_texture.NNESS                   // Polygon Ness
     dw name_texture.GDONKEY                 // Giant Donkey Kong
-    dw name_texture.BLANK                   // (Placeholder)
+    dw name_texture.RANDOM                  // Random
     dw name_texture.BLANK                   // None (Placeholder)
     // add space for new characters
     fill (name_texture_table + (Character.NUM_CHARACTERS * 0x4)) - pc()
 
-    constant START_X(14)
-    constant START_Y(29)
+    constant START_X(29)
+    constant START_Y(34)
     constant START_VISUAL(10)
     constant NUM_ROWS(3)
     constant NUM_COLUMNS(10)
     constant NUM_PORTRAITS(NUM_ROWS * NUM_COLUMNS)
+    constant BOOKEND_BONUS_PORTRAIT(NUM_PORTRAITS)
+    constant BOOKEND_RANDOM_PORTRAIT(NUM_PORTRAITS + 1)
     constant PORTRAIT_WIDTH_FILE(32)
     constant PORTRAIT_HEIGHT_FILE(32)
-    constant PORTRAIT_SCALE(0x3F70)     // float 0.9375
-    constant PORTRAIT_WIDTH(27)         // screen pixels
-    constant PORTRAIT_HEIGHT(27)        // screen pixels
-
+    constant PORTRAIT_SCALE(0x3F50)     // float 0.8125
+    constant PORTRAIT_WIDTH(24)         // screen pixels
+    constant PORTRAIT_HEIGHT(24)        // screen pixels
+    constant PORTRAIT_WIDTH_FLOAT(0x41C0)  // float 24
+    constant PORTRAIT_HEIGHT_FLOAT(0x41C0) // float 24
+    constant BOOKEND_WIDTH(15)          // screen pixels
+    constant TOKEN_X_OFFSET(0x4140)     // float 12
+    constant TOKEN_Y_OFFSET(0xC120)     // float -10
+    constant BONUS_TOKEN_X(0x41A8)      // float 21
+    constant RANDOM_TOKEN_X(0x438B)     // float 278
+    constant BOOKEND_TOKEN_Y(0x428C)    // float 70
+    constant RANDOM_TOKEN_X_INT(279)    // screen pixels
+    constant BOOKEND_TOKEN_Y_INT(70)    // screen pixels
+    constant BOOKEND_WIDTH_FLOAT(0x4170)  // float 15
+    constant BOOKEND_HEIGHT_FLOAT(0x4290) // float 72
+    constant TOKEN_OFFSET_X(0)          // accounts for scaled token center
+    constant TOKEN_OFFSET_Y(-1)          // accounts for scaled token center
+    constant AUTO_POSITION_OFFSET_X(12)  // adjust this if the CPU token is getting stuck
+    constant AUTO_POSITION_OFFSET_Y(12)  // ^
 
     // @ Description
     // CHARACTER SELECT SCREEN LAYOUT
@@ -2775,9 +3529,9 @@ scope CharacterSelect {
 
         // row 3
         define slot_21(GOEMON)
-        define slot_22(DSAMUS)
+        define slot_22(CRASH)
         define slot_23(WARIO)
-        define slot_24(LUCAS)
+        define slot_24(PEACH)
         define slot_25(BOWSER)
         define slot_26(WOLF)
         define slot_27(CONKER)
@@ -2919,6 +3673,43 @@ scope CharacterSelect {
         bne     s0, s1, _loop               // if not finished drawing all slots, loop
         lw      a0, 0x0008(sp)              // restore a0
 
+        bnez    a0, _end                    // skip if 12cb mode
+        nop
+
+        // draw bookends
+        Render.draw_texture_at_offset(0x1B, 0x12, Render.file_pointer_2, portrait_offsets.BONUS_BOOKEND, Render.NOOP, 0xC1A00000, 0x42300000, 0xFFFFFFFF, 0x00000000, PORTRAIT_SCALE<<16)
+        lw      t0, 0x0074(v0)
+        lui     a0, 0x3F70
+        sw      a0, 0x0018(t0) // for now, override x scale
+        lui     a0, 0x3F42
+        sw      a0, 0x001C(t0) // for now, override y scale
+        lli     t0, NUM_COLUMNS             // t0 = column index
+        sw      t0, 0x0084(v0)              // save column index in object struct
+        addiu   sp, sp, -0x0030             // move stack pointer (0x80008188 is not safe)
+        addu    a0, r0, v0                  // a0 = object struct
+        addu    a1, r0, s6                  // a1 = animation slide in routine
+        lli     a2, 0x0001                  // a2 = 1
+        jal     0x80008188
+        lli     a3, 0x0001                  // a3 = 1
+        addiu   sp, sp, 0x0030              // restore stack pointer
+
+        Render.draw_texture_at_offset(0x1B, 0x12, Render.file_pointer_2, portrait_offsets.RANDOM_BOOKEND, Render.NOOP, 0x439B0000, 0x42300000, 0xFFFFFFFF, 0x00000000, PORTRAIT_SCALE<<16)
+        lw      t0, 0x0074(v0)
+        lui     a0, 0x3F70
+        sw      a0, 0x0018(t0) // for now, override x scale
+        lui     a0, 0x3F42
+        sw      a0, 0x001C(t0) // for now, override y scale
+        lli     t0, NUM_COLUMNS + 1         // t0 = column index
+        sw      t0, 0x0084(v0)              // save column index in object struct
+        addiu   sp, sp, -0x0030             // move stack pointer (0x80008188 is not safe)
+        addu    a0, r0, v0                  // a0 = object struct
+        addu    a1, r0, s6                  // a1 = animation slide in routine
+        lli     a2, 0x0001                  // a2 = 1
+        jal     0x80008188
+        lli     a3, 0x0001                  // a3 = 1
+        addiu   sp, sp, 0x0030              // restore stack pointer
+
+        _end:
         lw      ra, 0x0004(sp)              // restore ra
         addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra
@@ -2995,7 +3786,6 @@ scope CharacterSelect {
 
     // @ Description
     // This table holds the final X position for portraits
-    // This could just be based on column, but it is set for each portrait to make code simpler
     portrait_x_position:
     evaluate n(0)
     while NUM_COLUMNS > {n} {
@@ -3003,10 +3793,13 @@ scope CharacterSelect {
         float32 {x}
         evaluate n({n} + 1)
     }
+    evaluate x(START_VISUAL + START_X - BOOKEND_WIDTH)
+    float32 {x}
+    evaluate x(START_VISUAL + START_X + PORTRAIT_WIDTH * NUM_COLUMNS)
+    float32 {x}
 
     // @ Description
     // This table holds the velocity for portrait slide in animations
-    // This could just be based on column, but it is set for each portrait to permit finer control
     // The custom characters' portraits slide in slower then the original cast's portraits
     portrait_velocity:
     float32 1.9                               // column 1
@@ -3014,11 +3807,13 @@ scope CharacterSelect {
     float32 7.8                               // column 3
     float32 11.8                              // column 4
     float32 13.8                              // column 5
-    float32 -11.8                             // column 6
-    float32 -7.8                              // column 7
-    float32 -3.8                              // column 8
-    float32 -1.8                              // column 9
-    float32 -0.9                              // column 10
+    float32 -13.8                             // column 6
+    float32 -11.8                              // column 7
+    float32 -7.8                              // column 8
+    float32 -3.9                              // column 9
+    float32 -1.9                              // column 10
+    float32 1.1                               // left bookend
+    float32 -0.9                               // right bookend
 
     // @ Description
     // Pointer to id_table
@@ -3048,6 +3843,8 @@ scope CharacterSelect {
         evaluate n({n} + 1)
         dw portrait_offsets.{layout.slot_{n}}
     }
+    dw portrait_offsets.BONUS_BOOKEND
+    dw portrait_offsets.RANDOM_BOOKEND
     OS.align(4)
 
     // @ Description
@@ -3095,8 +3892,8 @@ scope CharacterSelect {
     // CSS portraits IDs in order of character ID
     portrait_id_table:
     constant portrait_id_table_origin(origin())
-    // fill table with empty slots
-    fill Character.NUM_CHARACTERS
+    // fill table with empty slots that default to bonus bookend
+    fill Character.NUM_CHARACTERS, BOOKEND_BONUS_PORTRAIT
     OS.align(4)
     pushvar origin, base
     evaluate n(0)
@@ -3125,6 +3922,9 @@ scope CharacterSelect {
             db {n} - 1
         }
     }
+    // Character.id.PLACEHOLDER is set for random
+    origin portrait_id_table_origin + Character.id.PLACEHOLDER
+    db BOOKEND_RANDOM_PORTRAIT
     // Always return 0 for Character.id.NONE (the game does this)
     origin portrait_id_table_origin + Character.id.NONE
     db 0x00
@@ -3179,12 +3979,15 @@ scope CharacterSelect {
     // @ Description
     // Holds dynamic CSS related fields
     scope dynamic_css {
+        constant HEAP_SIZE(0x0001A000)
+        constant BUFFER(0x00010000) // for non-model objects that get created
+
         macro create_heap_slot(slot) {
             scope heap_slot_{slot}: {
                 heap_pointer:; dw heap_struct_{slot}
                 character_id:; dw Character.id.NONE
-                unused_1:; dw 0x0
-                unused_2:; dw 0x0
+                additional_char_ids:; db Character.id.NONE, Character.id.NONE, Character.id.NONE, Character.id.NONE
+                file_count:; dw 0x0
             }
         }
 
@@ -3270,8 +4073,16 @@ scope CharacterSelect {
         addiu   v0, r0, -0x0001            // v0 = -1
         _loop:
         lw      t1, 0x0004(at)             // t1 = heap slot X character_id
-        beq     a0, t1, _end               // if char_id is assigned, use this
         addiu   v0, v0, 0x0001             // v0++
+        beq     a0, t1, _end               // if char_id is assigned, use this
+        lb      t1, 0x0008(at)             // t1 = heap slot X additional_char_ids[0]
+        beq     a0, t1, _end               // if char_id is assigned, use this
+        lb      t1, 0x0009(at)             // t1 = heap slot X additional_char_ids[1]
+        beq     a0, t1, _end               // if char_id is assigned, use this
+        lb      t1, 0x000A(at)             // t1 = heap slot X additional_char_ids[2]
+        beq     a0, t1, _end               // if char_id is assigned, use this
+        lb      t1, 0x000B(at)             // t1 = heap slot X additional_char_ids[3]
+        beq     a0, t1, _end               // if char_id is assigned, use this
         addiu   at, at, 0x0010             // at = next heap_slot character_id address
         bnez    t2, _loop                  // loop until t2 is 0
         addiu   t2, t2, -0x0001            // t2--
@@ -3388,29 +4199,29 @@ scope CharacterSelect {
         // if here, then the slot is unused! (maybe)
         // but we need to check if it's a slot used just prior to prevent a console crash
         li      at, dynamic_css.slot_used_by_port
-        lbu     t1, 0x0000(at)             // t1 = heap slot previously used for p1
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0000(at)             // a0 = heap slot previously used for p1
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0001(at)             // t1 = heap slot previously used for p2
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0001(at)             // a0 = heap slot previously used for p2
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0002(at)             // t1 = heap slot previously used for p3
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0002(at)             // a0 = heap slot previously used for p3
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0003(at)             // t1 = heap slot previously used for p4
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0003(at)             // a0 = heap slot previously used for p4
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0004(at)             // t1 = heap slot currently used for p1
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0004(at)             // a0 = heap slot currently used for p1
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0005(at)             // t1 = heap slot currently used for p2
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0005(at)             // a0 = heap slot currently used for p2
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0006(at)             // t1 = heap slot currently used for p3
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0006(at)             // a0 = heap slot currently used for p3
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
-        lbu     t1, 0x0007(at)             // t1 = heap slot currently used for p4
-        beql    v0, t1, _loop              // if port is using this slot, skip
+        lbu     a0, 0x0007(at)             // a0 = heap slot currently used for p4
+        beql    v0, a0, _loop              // if port is using this slot, skip
         addiu   t0, t0, 0x0010             // t0 = next heap slot address
 
         // if here, then the slot is *definitely* unused! (I hope)
@@ -3455,13 +4266,50 @@ scope CharacterSelect {
         lw      t0, 0x0004(v0)             // t0 = previously loaded character_id
         lli     t1, Character.id.NONE
         sw      t1, 0x0004(v0)             // clear character_id
+
+        _get_main_file:
         li      t1, 0x80116E10             // t1 = character struct table
         sll     t0, t0, 0x0002             // t0 = offset in character struct table
         addu    t1, t1, t0                 // t1 = pointer to character struct
         lw      t1, 0x0000(t1)             // t1 = character struct
         lw      t0, 0x0028(t1)             // t0 = main file pointer
-        jr      ra
+
+        OS.read_word(VsRemixMenu.vs_mode_flag, t1) // t1 = vs_mode_flag
+        lli     t2, VsRemixMenu.mode.TAG_TEAM
+        bnel    t1, t2, _end               // if not Tag Team, always clear main file
         sw      r0, 0x0000(t0)             // clear out main file pointer
+
+        // If Tag Team, only clear if not a preload file
+        lw      t4, 0x0000(t0)             // t4 = main file address
+        lw      t1, 0x0000(v0)             // t1 = heap struct
+        lw      t2, 0x0004(t1)             // t2 = initial floor of heap
+        blt     t4, t2, _check_variants    // if outside heap, don't clear
+        lw      t2, 0x0008(t1)             // t2 = initial ceiling of heap
+        bltl    t4, t2, _check_variants    // if inside heap, clear
+        sw      r0, 0x0000(t0)             // clear out main file pointer
+
+        // Need to also clear out the additional char_ids loaded
+        _check_variants:
+        lli     t1, Character.id.NONE
+        lbu     t0, 0x0008(v0)             // t0 = additional_char_ids[0]
+        bne     t0, t1, _get_main_file     // if there is one to clear, clear it!
+        sb      t1, 0x0008(v0)             // clear additional_char_ids[0]
+
+        lbu     t0, 0x0009(v0)             // t0 = additional_char_ids[1]
+        bne     t0, t1, _get_main_file     // if there is one to clear, clear it!
+        sb      t1, 0x0009(v0)             // clear additional_char_ids[1]
+
+        lbu     t0, 0x000A(v0)             // t0 = additional_char_ids[2]
+        bne     t0, t1, _get_main_file     // if there is one to clear, clear it!
+        sb      t1, 0x000A(v0)             // clear additional_char_ids[2]
+
+        lbu     t0, 0x000B(v0)             // t0 = additional_char_ids[3]
+        bne     t0, t1, _get_main_file     // if there is one to clear, clear it!
+        sb      t1, 0x000B(v0)             // clear additional_char_ids[3]
+
+        _end:
+        jr      ra
+        nop
     }
 
     // @ Description
@@ -3478,7 +4326,7 @@ scope CharacterSelect {
         lw      a1, 0x0000(a0)              // a1 = debug ID
         li      at, 0x800465E8              // at = main heap struct
         lw      a2, 0x000C(at)              // a2 = current free memory address = initial floor of heap
-        li      a3, 0x00015000              // a3 = size of heap
+        li      a3, dynamic_css.HEAP_SIZE   // a3 = size of heap
         addu    t0, a2, a3                  // t0 = new main heap struct free memory address
         jal     0x80006D54                  // reset heap
         sw      t0, 0x000C(at)              // update main heap struct free memory address
@@ -3492,7 +4340,11 @@ scope CharacterSelect {
         lli     t0, Character.id.NONE
         lli     s2, 0x0008                  // s2 = loop index
         _loop_2:
-        sw      t0, 0x0000(at)              // save NONE for slot 0 char_id
+        sw      t0, 0x0000(at)              // save NONE for slot X char_id
+        sb      t0, 0x0004(at)              // save NONE for slot X additional_char_ids[0]
+        sb      t0, 0x0005(at)              // save NONE for slot X additional_char_ids[1]
+        sb      t0, 0x0006(at)              // save NONE for slot X additional_char_ids[2]
+        sb      t0, 0x0007(at)              // save NONE for slot X additional_char_ids[3]
 
         addiu   s2, s2, -0x0001             // s2 = loop index++
         bnez    s2, _loop_2                 // loop until all custom heap slots initialized
@@ -3506,6 +4358,7 @@ scope CharacterSelect {
         // This routine will run after characters load and update slot_used_by_port
         Render.register_routine(sync_slot_used_by_port, 0x001C, 0x8000)
 
+        _end:
         lw      ra, 0x0004(sp)              // restore registers
         jr      ra
         addiu   sp, sp, 0x0030              // deallocate stack space
@@ -3598,6 +4451,15 @@ scope CharacterSelect {
         li      t1, portrait_x_position
         sw      t1, 0x0000(t0)
 
+        li      t0, bonus_char_index_pointer
+        li      t1, bonus_char_index_vs
+        sltiu   t2, a0, 0x0010              // t2 = 0 if bonus 2, else 1
+        xori    t2, t2, 0x0001              // t2 = 1 if bonus 2, else 0
+        sll     t2, t2, 0x0002              // t2 = 4 if bonus 2, else 0
+        subu    t2, a0, t2                  // t2 = offset to correct table
+        addu    t1, t1, t2                  // t1 = address of correct table
+        sw      t1, 0x0000(t0)              // correct table set
+
         li      t2, Training.special_model_display
         lw      t0, 0x0000(t2)              // t0 = Training's initialized special model display
         li      t1, Toggles.entry_special_model
@@ -3628,6 +4490,7 @@ scope CharacterSelect {
         Render.load_file(File.CHARACTER_PORTRAITS, Render.file_pointer_1) // load character portraits into file_pointer_1
         Render.load_file(File.CSS_IMAGES, Render.file_pointer_2)          // load CSS images into file_pointer_2
         Render.load_file(0x0024, Render.file_pointer_3)                   // load file with "x" image into file_pointer_3
+        Render.load_file(0x00C5, Render.file_pointer_4)                   // load file with button images into file_pointer_4
 
         // add a room for our indicators that shows up on top of the panels
         lli     a0, 0x38                    // a0 = room
@@ -3770,8 +4633,22 @@ scope CharacterSelect {
         jal     draw_portraits_
         lli     a0, OS.FALSE                // a0 = 12cb mode flag
 
-        jal     initialize_dynamic_css_
-        nop
+        Render.register_routine(draw_bonus_scroll_indicators_)
+        sw      r0, 0x0030(v0)              // clear p1 object pointer
+        sw      r0, 0x0034(v0)              // clear p2 object pointer
+        sw      r0, 0x0038(v0)              // clear p3 object pointer
+        sw      r0, 0x003C(v0)              // clear p4 object pointer
+        sw      r0, 0x0040(v0)              // clear p1 timer
+        sw      r0, 0x0044(v0)              // clear p2 timer
+        sw      r0, 0x0048(v0)              // clear p3 timer
+        sw      r0, 0x004C(v0)              // clear p4 timer
+        li      t0, CharacterSelect.render_control_object
+        lw      t0, 0x0000(t0)              // t0 = render control object
+        sw      v0, 0x0050(t0)              // save custom portrait indicators object
+        lw      t1, 0x0040(t0)              // t1 = CSS struct start
+        sw      t1, 0x0070(v0)              // save CSS struct address in object
+        lw      a0, 0x0008(sp)              // a0 = offset in css_player_structs
+        sw      a0, 0x0050(v0)              // save offset in css_player_structs
 
         jal     CharacterSelectDebugMenu.init_debug_menu_
         lw      a0, 0x0008(sp)              // a0 = offset in css_player_structs
@@ -3822,6 +4699,16 @@ scope CharacterSelect {
         sw      v0, 0x0044(t1)              // save stock icon and count indicators control object
 
         _return:
+        // This is a little sloppy but I don't care!
+        // Calling this routine to load more now that we've initialized the heap slots
+        addiu   sp, sp, -0x0008             // allocate stack space (required for routine)
+        li      ra, _load_additional_characters_return
+        sw      ra, 0x0004(sp)              // save ra (required for routine)
+        lli     s0, Character.id.NONE + 1   // s0 = first character
+        jal     load_additional_characters_._loop
+        lli     s1, 0x0001                  // s1 = 1 = indicates 2nd time through the loop
+        _load_additional_characters_return:
+
         lw      ra, 0x0004(sp)              // restore registers
         addiu   sp, sp, 0x0030              // deallocate stack space
 
@@ -4110,6 +4997,9 @@ scope CharacterSelect {
         constant MLUIGI(0x2A88 + 0x10)
         constant EBI(0x2B60 + 0x10)
         constant DRAGONKING(0x2C38 + 0x10)
+        constant DSAMUS(0x2D10 + 0x10)
+        constant LUCAS(0x2DE8 + 0x10)
+        constant ROY(0x2EC0 + 0x10)
     }
 
     // @ Description
@@ -4183,6 +5073,15 @@ scope CharacterSelect {
         lli     t2, Character.id.DRAGONKING
         beql    a1, t2, _draw_icon          // If DRAGONKING, then draw DRAGONKING stock icon
         addiu   a1, at, VARIANT_ICON_OFFSET.DRAGONKING // a1 = DRAGONKING footer struct
+        lli     t2, Character.id.DSAMUS
+        beql    a1, t2, _draw_icon          // If DSAMUS, then draw DSAMUS stock icon
+        addiu   a1, at, VARIANT_ICON_OFFSET.DSAMUS // a1 = DSAMUS footer struct
+        lli     t2, Character.id.LUCAS
+        beql    a1, t2, _draw_icon          // If LUCAS, then draw LUCAS stock icon
+        addiu   a1, at, VARIANT_ICON_OFFSET.LUCAS // a1 = LUCAS footer struct
+        lli     t2, Character.id.ROY
+        beql    a1, t2, _draw_icon          // If ROY, then draw ROY stock icon
+        addiu   a1, at, VARIANT_ICON_OFFSET.ROY // a1 = ROY footer struct
         lli     t2, Character.id.BOSS
         bne     a1, t2, _gdk                // If not Master Hand, then skip... otherwise, draw Master Hand stock icon
         addiu   a1, at, VARIANT_ICON_OFFSET.MASTER_HAND // a1 = Master Hand footer struct
@@ -4198,7 +5097,7 @@ scope CharacterSelect {
         _gdk:
         // If here, GDK. Loading stock icon from character struct
         li      t1, 0x80116E10              // t1 = main character struct table
-		lli     t2, Character.id.DK
+        lli     t2, Character.id.DK
         sll     t2, t2, 0x0002              // t2 = a1 * 4 (offset in struct table)
         // sll     t2, a1, 0x0002              // t2 = a1 * 4 (offset in struct table)
         addu    t1, t1, t2                  // t1 = pointer to character struct
@@ -4583,7 +5482,7 @@ scope CharacterSelect {
         nop
         bne     t0, a0, _handle             // if the costume_id changed this frame, then handle
         nop
-        beq     t4, t5, _update_display     // if the num_stocks hasn't changes this frame, then skip creating
+        beq     t4, t5, _update_display     // if the num_stocks hasn't changed this frame, then skip creating
         nop
 
         _handle:
@@ -4641,10 +5540,12 @@ scope CharacterSelect {
         lw      t5, 0xBD80(t5)              // t5 = stock count
         beqzl   t0, pc() + 8                // if no stocks remaining, set to global stock count
         or      t8, t5, r0                  // t8 = stock count
-        sltu    t7, t8, t5                  // t7 = 1 if stocks remaining < stocks count
-        beqzl   t7, pc() + 8                // if stocks remaining >= stock count, then set to stock count
+        sltu    t6, t8, t5                  // t6 = 1 if stocks remaining < stocks count
+        beqzl   t6, pc() + 8                // if stocks remaining >= stock count, then set to stock count
         or      t8, t5, r0                  // t8 = stock count
-        sb      t8, 0x0000(a2)              // update stocks remaining (in case it was -1)
+        lli     t6, StockMode.mode.MANUAL
+        beql    t6, t7, pc() + 8            // if stock mode is manual, then set stock count
+        sb      t8, 0x0000(a2)              // update stocks remaining
         b       _start_draw
         sw      t8, 0x0000(s4)              // store stocks remaining in our number holder address
 
@@ -4656,6 +5557,11 @@ scope CharacterSelect {
 
         _start_draw:
         // first, draw stocks remaining
+        or      a0, t3, r0                  // a0 = portrait_id
+        jal     TwelveCharBattle.was_portrait_played_
+        or      a1, s0, r0                  // a1 = port
+        sw      v0, 0x0020(sp)              // save v0 (this is t0 from os.save_registers, which isn't important)
+
         or      a2, r0, s4                  // a2 = address of number
         li      a3, arrow_state_routine_    // a3 = routine
         lw      t8, 0x0018(s2)              // t8 = panel object
@@ -4685,10 +5591,7 @@ scope CharacterSelect {
         beql    t1, t2, _set_right_padding  // if 12cb is complete, don't draw arrows
         lui     t8, 0xC080                  // t8 = right padding no arrows = -4, floating point
 
-        or      a0, t3, r0                  // a0 = portrait_id
-        jal     TwelveCharBattle.was_portrait_played_
-        or      a1, s0, r0                  // a1 = port
-        sw      v0, 0x0020(sp)              // save v0 (this is t0 from os.save_registers, which isn't important)
+        lw      v0, 0x0020(sp)              // v0 = was_portrait_played_
         bnezl   v0, _set_right_padding      // if portrait has been played, don't draw arrows
         lui     t8, 0xC080                  // t8 = right padding no arrows = -4, floating point
 
@@ -5152,6 +6055,7 @@ scope CharacterSelect {
     scope update_remaining_stocks_: {
         addiu   sp, sp,-0x0030              // allocate stack space
         sw      ra, 0x0004(sp)              // save registers
+        sw      a1, 0x000C(sp)              // ~
 
         lb      t6, 0x0000(a2)              // t6 = stocks remaining
 
@@ -5160,8 +6064,13 @@ scope CharacterSelect {
 
         li      t1, TwelveCharBattle.twelve_cb_flag
         lw      t1, 0x0000(t1)              // t1 = 1 if 12cb, 0 if not
+        bnez    t1, _compare                // if not 12cb, don't check if stocks remaining is less than 0 here
         addu    t4, t4, t1                  // t4 = (global) stock count, 1-based if 12cb
 
+        bltzl   t6, pc() + 8                // if < 0, set to global stock count
+        or      t6, t4, r0                  // set stock count to max
+
+        _compare:
         addu    t3, t6, a3                  // t3 = stocks remaining, updated
         addu    t3, t3, t1                  // t3 = stocks remaining, 1-based if 12cb
         bltzl   t3, _update_stock_count     // if < 0, set to global stock count
@@ -5173,7 +6082,9 @@ scope CharacterSelect {
 
         _update_stock_count:
         subu    t3, t3, t1                  // t3 = stocks remaining, 0-based
+        bnezl   a3, pc() + 8                // only update if incrementing/decrementing
         sb      t3, 0x0000(a2)              // update stock count
+        sw      t3, 0x0008(sp)              // save stock count
         addiu   at, r0, -0x0001             // at = -1
         sb      at, 0x0007(a0)              // set previous char selected state to -1 to trigger redraw
 
@@ -5208,11 +6119,46 @@ scope CharacterSelect {
         lli     a0, FGM.menu.TOGGLE         // a0 = FGM.menu.TOGGLE
 
         _end:
-        lw      ra, 0x0004(sp)              // restore registers
-        addiu   sp, sp, 0x0030              // deallocate stack space
+        OS.read_word(VsRemixMenu.vs_mode_flag, t0) // t0 = vs_mode_flag
+        lli     t1, VsRemixMenu.mode.TAG_TEAM
+        bne     t0, t1, _return             // if not Tag Team, skip
+        lw      a0, 0x0008(sp)              // a0 = stock count
 
-        jr      ra
+        jal     TagTeam.css.get_stock_count_
+        lw      a0, 0x000C(sp)              // a0 = port
+        or      a0, v0, r0                  // a0 = stock count
+
+        lw      a1, 0x000C(sp)              // a1 = port
+        li      at, TagTeam.current_slot
+        li      t8, TagTeam.character_queues
+        sll     t0, a1, 0x0003              // t0 = port_id * 0x08
+        sll     t1, a1, 0x0004              // t1 = port_id * 0x10
+        addu    t0, t0, t1                  // t0 = port_id * 0x18 = offset to character queue
+        addu    t8, t8, t0                  // t8 = character queue
+        addu    t1, at, a1                  // t1 = current_slot address
+        lbu     t3, 0x0000(t1)              // t3 = current slot
+        sltu    t2, a0, t3                  // t2 = 1 if we're on a too high slot
+        beqz    t2, _return                 // if we're not on a too high slot, skip
+        lui     t2, 0x1C00                  // t2 = 0x1C000000 = default slot value
+
+        sb      a0, 0x0000(t1)              // update current slot to stock count
+        _inner_loop:
+        beq     a0, t3, _update_slot        // skip if we're on the max slot
+        sll     t1, t3, 0x0002              // t1 = offset to slot to be cleared
+        addu    t1, t8, t1                  // t1 = slot to be cleared
+        sw      t2, 0x0000(t1)              // clear slot
+        addiu   t3, t3, -0x0001             // t3 = previous slot
+        bne     t3, a0, _inner_loop         // loop until we've reached the new current slot
         nop
+
+        _update_slot:
+        jal     0x80136128                  // mnBattleSyncFighterDisplay()
+        lw      a0, 0x000C(sp)              // a0 = port
+
+        _return:
+        lw      ra, 0x0004(sp)              // restore registers
+        jr      ra
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -5237,6 +6183,133 @@ scope CharacterSelect {
         _end:
         lw      t0, 0x0004(sp)              // restore registers
         lw      t1, 0x0008(sp)              // ~
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        jr      ra
+        nop
+    }
+
+    // @ Description
+    // Checks if and handles when the stock/time picker is pressed when not in Time mode
+    // a0 - cursor object
+    // a1 - ra to use if there is a press
+    scope check_picker_press_: {
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+        sw      a1, 0x000C(sp)              // ~
+        sw      a2, 0x0010(sp)              // ~
+        sw      a3, 0x0014(sp)              // ~
+        sw      r0, 0x0018(sp)              // initialize is_time_picker_only flag to FALSE
+
+        // Always allow toggling in KOTH and Smashketball
+        lli     t1, OS.TRUE
+        OS.read_word(VsRemixMenu.vs_mode_flag, at)
+        lli     t0, VsRemixMenu.mode.KOTH
+        beql    at, t0, _check_toggle       // if KOTH, allow toggling
+        sw      t1, 0x0018(sp)              // set is_time_picker_only to TRUE
+        lli     t0, VsRemixMenu.mode.SMASHKETBALL
+        beql    at, t0, _check_toggle       // if SMASHKETBALL, allow toggling
+        sw      t1, 0x0018(sp)              // set is_time_picker_only to TRUE
+
+        // In other modes, don't allow pure Time or pure Stock (12cb) to toggle
+        OS.read_byte(Global.vs.game_mode, at)
+        lli     t0, 0x0001                  // t0 = 1 = Time mode
+        beq     at, t0, _end                // if Time mode, skip
+        lli     t0, 0x0002                  // t0 = 2 = Stock mode
+        beq     at, t0, _end                // if Stock mode, skip (disables toggling in 12CB)
+        nop
+
+        _check_toggle:
+        li      a1, Toggles.shortcut_L_flag // check if we are saving values for 'L' shortcut
+        lw      a1, 0x0000(a1)              // a1 = 1 if true...
+        bnez    a1, _check_current_mode     // ...in which case, we skip checking for button press (and don't play FGM)
+        nop
+        OS.read_word(0x8013BD78, t0)        // t0 = picker object
+        lw      a1, 0x0074(t0)              // a1 = picker image struct
+        addiu   a2, r0, -0x0010             // a2 = left padding
+        jal     check_image_footer_press_   // v0 = 1 if button pressed, 0 if not
+        addiu   a3, r0, -0x0010             // a3 = right padding
+        beqz    v0, _end                    // if not pressed, skip
+        lw      at, 0x000C(sp)              // at = new ra
+
+        // stock/time button ignores already held 'A' input (no fast cycling)
+        li      a0, CharacterSelectDebugMenu.hold_a_handler_.curr_port_buffer_addr // a0 = curr_port_buffer_addr
+        lw      a0, 0x0000(a0)              // a0 = Address of current port's held buffer
+        lb      a0, 0x0000(a0)              // a0 = current port's held buffer
+        sltiu   a0, a0, 2                   // a0 = 1 if less than 2
+        beqz    a0, _end                    // if already Holding 'A', skip
+        nop
+
+        sw      at, 0x0004(sp)              // set new ra
+
+        // play FGM
+        jal     0x800269C0
+        lli     a0, FGM.menu.TOGGLE         // a0 = FGM.menu.TOGGLE
+
+        _check_current_mode:
+        // Check current mode
+        li      at, 0x8013BDAC              // at = game mode address on CSS
+        lw      t1, 0x0018(sp)              // t1 = is_time_picker_only
+        OS.read_byte(Global.vs.game_mode, t2) // t2 = initial game mode
+        li      t3, showing_time            // t3 = showing_time flag address
+        lw      t0, 0x0000(t3)              // t0 = showing_time flag
+
+        bnez    t1, _draw_time_picker       // if toggling between two time-type pickers, always draw Time picker
+        nop
+
+        beqz    t0, _draw_time_picker       // if not in Time mode, draw Time picker
+        nop
+
+        _draw_stock_picker:
+        // Draw Stock picker
+        sw      r0, 0x0000(t3)              // set showing_time to FALSE
+        jal     0x80134198
+        sw      t2, 0x0000(at)              // set game mode back to correct game mode
+
+        b       _end
+        nop
+
+        _draw_time_picker:
+        xori    t0, t0, 0x0001              // t0 = new showing_time value
+        sw      t0, 0x0000(t3)              // set showing_time to new value
+
+        bnezl   t0, pc() + 8                // if changing to Time, use Time mode
+        lli     t2, 0x0001                  // t2 = 1 = Time mode
+
+        beqz    t1, _do_draw_time_picker    // if not time-only pickers, skip
+        sw      t2, 0x0000(at)              // set game mode to Time or initial value
+
+        // Here, we need to be sure we show the toggled on value and save the toggled off value
+        li      at, 0x8013BD7C              // at = time address
+        li      t3, VsRemixMenu.global_time // t3 = global_time address
+        li      t4, saved_nontime_value     // t4 = saved_nontime_value address
+
+        bnez    t0, _change_to_time         // if changing to Time, handle differently
+        lw      t1, 0x0000(at)              // t1 = value in css time picker
+
+        // Changing from time
+        sw      t1, 0x0000(t3)              // save time
+        lw      t1, 0x0000(t4)              // t1 = saved_nontime_value
+        b       _do_draw_time_picker
+        sw      t1, 0x0000(at)              // set nontime value
+
+        _change_to_time:
+        sw      t1, 0x0000(t4)              // save nontime value
+        lw      t1, 0x0000(t3)              // t1 = time
+        sw      t1, 0x0000(at)              // set time
+
+        _do_draw_time_picker:
+        // Draw Time picker
+        jal     0x80133FAC
+        nop
+
+        _end:
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        lw      a1, 0x000C(sp)              // ~
+        lw      a2, 0x0010(sp)              // ~
+        lw      a3, 0x0014(sp)              // ~
         addiu   sp, sp, 0x0030              // deallocate stack space
 
         jr      ra
@@ -5431,6 +6504,15 @@ scope CharacterSelect {
         jal     TwelveCharBattle.update_character_panel_
         lli     a2, 0x0001                  // a2 = 1 (do play announcer)
 
+        OS.read_word(VsRemixMenu.vs_mode_flag, t0) // t0 = vs_mode_flag
+        lli     t1, VsRemixMenu.mode.TAG_TEAM
+        bne     t0, t1, _place_token        // if not Tag Team, skip
+        nop
+        lw      a0, 0x0014(sp)              // a0 = gMnBattlePanels[held_port_id]
+        jal     TagTeam.css.update_slot_
+        lw      a1, 0x0008(sp)              // a0 = port_id
+
+        _place_token:
         lw      a2, 0x0014(sp)              // a2 = panel struct
         lw      a1, 0x0048(a2)              // a1 = char_id
         li      t0, _place_token_return     // t0 = ra for place_token_from_id
@@ -5474,6 +6556,434 @@ scope CharacterSelect {
     }
 
     // @ Description
+    // Flag to keep track of random selection per port on vs
+    random_char_flag_vs:
+    db OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE
+
+    // @ Description
+    // Flag to keep track of random selection per port on training
+    random_char_flag_training:
+    db OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE
+
+    // @ Description
+    // Flag to keep track of random selection per port on 1p
+    random_char_flag_1p:
+    db OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE
+
+    // @ Description
+    // Detects if random is selected and picks a random char_id
+    scope save_random_char_: {
+        // vs
+        OS.patch_start(0x138974, 0x8013A6F4)
+        j       save_random_char_._vs
+        sb      t4, 0x0022(a0)              // original line 1
+        _return_vs:
+        OS.patch_end()
+        // training
+        OS.patch_start(0x146C08, 0x80137628)
+        j       save_random_char_._training
+        lw      t3, 0x004C(v1)              // original line 1
+        _return_training:
+        OS.patch_end()
+        // 1p
+        OS.patch_start(0x14018C, 0x80137F8C)
+        j       save_random_char_._1p
+        lw      ra, 0x0014(sp)              // original line 1
+        _return_1p:
+        jr      ra                          // original line 3
+        addiu   sp, sp, 0x0018              // original line 2
+        OS.patch_end()
+        // Bonus
+        OS.patch_start(0x14C9E8, 0x801369B8)
+        j       save_random_char_._bonus
+        sb      t6, 0x0013(v0)              // original line 1
+        _return_bonus:
+        OS.patch_end()
+
+        _vs:
+        lli     t4, Character.id.PLACEHOLDER
+        bne     t9, t4, _end_vs             // if not random, skip
+        nop
+
+        addiu   sp, sp,-0x0040              // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+        sw      s1, 0x000C(sp)              // ~
+        sw      t2, 0x0010(sp)              // ~
+        sw      t3, 0x0014(sp)              // ~
+        sw      a2, 0x0018(sp)              // ~
+        sw      t6, 0x001C(sp)              // ~
+        sw      t7, 0x0020(sp)              // ~
+        sw      t8, 0x0024(sp)              // ~
+        sw      v0, 0x0028(sp)              // ~
+        sw      v1, 0x002C(sp)              // ~
+        sw      a1, 0x0030(sp)              // ~
+        // 0x0034(sp) used below
+        sw      t1, 0x0038(sp)              // ~
+        sw      t0, 0x003C(sp)              // ~
+
+        jal     get_random_char_id_
+        or      s1, v1, r0                  // s1 = port (expected in get_random_char_id)
+
+        or      t9, v0, r0                  // t9 = char_id
+        sw      v0, 0x0034(sp)              // save char_id
+
+        OS.read_byte(Global.vs.teams, a0)   // a0 = 1 if teams
+        bnezl   a0, _get_team_costume       // if teams, skip costume randomization
+        lw      t5, 0x0018(sp)              // t5 = normal costume_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, t9, r0                  // a0 = char_id
+
+        lw      t9, 0x0034(sp)              // t9 = char_id
+        b       _finish_vs
+        or      t5, v0, r0                  // t5 = costume_id
+
+        _get_team_costume:
+        or      a0, t9, r0                  // a0 = char_id
+        jal     0x800EC104                  // v0 = team costume
+        lw      a1, 0x0018(sp)              // at = team
+
+        or      t5, v0, r0                  // t5 = costume_id
+        lw      t9, 0x0034(sp)              // t9 = char_id
+
+        // in Teams, we need to adjust shade if a teammate in a previous port has the same char_id
+        lli     a0, 0x0000                  // a0 = loop counter
+        lli     t1, 0x0000                  // t1 = shade to use
+        lw      a1, 0x0008(sp)              // a1 = Global.vs.px
+        lbu     v0, 0x0024(a1)              // v0 = team index
+        lw      v1, 0x002C(sp)              // v1 = port
+
+        _teams_loop:
+        beql    a0, v1, _finish_vs          // if we've reached our port, use the shade
+        sw      t1, 0x001C(sp)              // set shade
+        lbu     t4, -0x0051(a1)             // t4 = previous port's char_id
+        addiu   a0, a0, 0x0001              // increment loop counter
+        bne     t4, t9, _teams_next         // if not the same char_id, skip
+        lbu     t4, -0x0050(a1)             // t4 = previous port's team index
+        beql    t4, v0, _teams_next         // if the same team, increment shade
+        addiu   t1, t1, 0x0001              // t1 = next shade
+
+        _teams_next:
+        b       _teams_loop
+        addiu   a1, a1, -0x0074             // a1 = previous Global.vs.px
+
+        _finish_vs:
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        lw      s1, 0x000C(sp)              // ~
+        lw      t2, 0x0010(sp)              // ~
+        lw      t3, 0x0014(sp)              // ~
+        lw      t6, 0x001C(sp)              // ~
+        lw      t7, 0x0020(sp)              // ~
+        lw      t8, 0x0024(sp)              // ~
+        lw      v0, 0x0028(sp)              // ~
+        lw      v1, 0x002C(sp)              // ~
+        lw      a1, 0x0030(sp)              // ~
+        lw      t1, 0x0038(sp)              // ~
+        lw      t0, 0x003C(sp)              // ~
+        addiu   sp, sp, 0x0040              // deallocate stack space
+
+        li      at, random_char_flag_vs
+        addu    at, at, v1                  // at = address of random_char_flag_vs
+        lli     t4, OS.TRUE
+        sb      t4, 0x0000(at)              // set random_char_flag_vs to TRUE
+
+        _end_vs:
+        j       _return_vs
+        sb      t9, 0x0023(a0)              // original line 2
+
+        _training:
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      a0, 0x0008(sp)              // ~
+        sw      t2, 0x000C(sp)              // ~
+        sw      t3, 0x0010(sp)              // ~
+        sw      t8, 0x0014(sp)              // ~
+
+        lli     t0, Character.id.PLACEHOLDER
+        bne     t2, t0, _check_human        // if CPU is not random, skip
+        nop
+
+        jal     get_random_char_id_
+        nop
+
+        sw      v0, 0x000C(sp)              // save new CPU char_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, v0, r0                  // a0 = char_id
+
+        sw      v0, 0x0010(sp)              // save new CPU costume_id
+
+        li      v0, random_char_flag_training
+        OS.read_word(0x80138898, v1)        // v1 = cpu port
+        addu    v0, v0, v1                  // v0 = address of random_char_flag_training
+        lli     t4, OS.TRUE
+        sb      t4, 0x0000(v0)              // set random_char_flag_training to TRUE
+
+        lw      t8, 0x0014(sp)              // ~
+        lli     t0, Character.id.PLACEHOLDER
+
+        _check_human:
+        bne     t8, t0, _end_training       // if Human is not random, skip
+        nop
+
+        jal     get_random_char_id_
+        nop
+        lw      a0, 0x0008(sp)              // ~
+        sb      v0, 0x003B(a0)              // save new Human char_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, v0, r0                  // a0 = char_id
+
+        lw      a0, 0x0008(sp)              // ~
+        sb      v0, 0x003C(a0)              // save new Human costume_id
+
+        li      v0, random_char_flag_training
+        OS.read_word(0x80138894, v1)        // v1 = human port
+        addu    v0, v0, v1                  // v0 = address of random_char_flag_training
+        lli     t4, OS.TRUE
+        sb      t4, 0x0000(v0)              // set random_char_flag_training to TRUE
+
+        _end_training:
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      a0, 0x0008(sp)              // ~
+        lw      t2, 0x000C(sp)              // ~
+        lw      t3, 0x0010(sp)              // ~
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        j       _return_training
+        sb      t2, 0x003D(a0)              // original line 2
+
+        _1p:
+        lui     a0, 0x8014
+        lw      a0, 0x8F08(a0)              // a0 = char_id
+
+        lli     t4, Character.id.PLACEHOLDER
+        bne     a0, t4, _end_1p             // if not random, skip
+        nop
+
+        jal     get_random_char_id_
+        nop
+
+        lui     a0, 0x800A
+        sb      v0, 0x4AE4(a0)              // save char_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, v0, r0                  // a0 = char_id
+
+        lui     a0, 0x800A
+        sb      v0, 0x4AE5(a0)              // save costume_id
+
+        li      v0, random_char_flag_1p
+        lli     t4, OS.TRUE
+        sb      t4, 0x0000(v0)              // set random_char_flag_vs to TRUE
+
+        _end_1p:
+        j       _return_1p
+        lw      ra, 0x0014(sp)              // restore ra
+
+        _bonus:
+        lli     t4, Character.id.PLACEHOLDER
+        bne     t7, t4, _end_bonus          // if not random, skip
+        nop
+
+        addiu   sp, sp,-0x0030              // allocate stack space
+        sw      ra, 0x0004(sp)              // save registers
+        sw      v0, 0x0008(sp)              // ~
+
+        jal     get_random_char_id_
+        nop
+        sw      v0, 0x000C(sp)              // t7 = save char_id
+
+        // randomize costume
+        jal     Costumes.get_random_legal_costume_ // v0 = costume_id
+        or      a0, v0, r0                  // a0 = char_id
+
+        or      t8, v0, r0                  // t8 = costume_id
+
+        lw      ra, 0x0004(sp)              // restore registers
+        lw      v0, 0x0008(sp)              // ~
+        lw      t7, 0x000C(sp)              // ~
+        addiu   sp, sp, 0x0030              // deallocate stack space
+
+        _end_bonus:
+        j       _return_bonus
+        sb      t7, 0x0039(v0)              // original line 2
+    }
+
+    // @ Description
+    // In Training, sets up token for random when loading CSS
+    scope load_random_training_: {
+        // human
+        OS.patch_start(0x147034, 0x80137A54)
+        jal     load_random_training_._human
+        lbu     t1, 0x003B(s1)              // original line 1 - t1 = human char_id
+        OS.patch_end()
+        // cpu
+        OS.patch_start(0x147130, 0x80137B50)
+        jal     load_random_training_._cpu
+        sw      v1, 0x004C(v0)              // original line 2
+        OS.patch_end()
+
+        _human:
+        li      at, random_char_flag_training
+        addu    at, at, a0                  // at = address of random_char_flag_training for human port
+        lbu     t3, 0x0000(at)              // t3 = random_char_flag_training
+        sb      r0, 0x0000(at)              // clear random_char_flag_training
+        bnezl   t3, pc() + 8                // if random_char_flag_training is TRUE...
+        lli     t1, Character.id.PLACEHOLDER // ...then set char_id to random
+
+        sb      t1, 0x003B(s1)              // save char_id
+
+        jr      ra
+        addiu   at, r0, Character.id.NONE   // original line 2
+
+        _cpu:
+        li      at, random_char_flag_training
+        addu    at, at, a0                  // at = address of random_char_flag_training for cpu port
+        lbu     t3, 0x0000(at)              // t3 = random_char_flag_training
+        sb      r0, 0x0000(at)              // clear random_char_flag_training
+        bnezl   t3, pc() + 8                // if random_char_flag_training is TRUE...
+        lli     s0, Character.id.PLACEHOLDER // ...then set char_id to random
+
+        sb      s0, 0x003D(s1)              // save char_id
+
+        jr      ra
+        sw      s0, 0x0048(v0)              // original line 1 - save char_id
+    }
+
+    // @ Description
+    // In 1P, sets up token for random when loading CSS
+    scope load_random_1p_: {
+        OS.patch_start(0x14044C, 0x8013824C)
+        j       load_random_1p_
+        lbu     t3, 0x0015(v0)              // original line 1 - t3 = costume_id
+        _return:
+        OS.patch_end()
+
+        li      t4, random_char_flag_1p
+        lbu     t9, 0x0000(t4)              // t9 = random_char_flag_1p
+        sb      r0, 0x0000(t4)              // clear random_char_flag_1p
+        beqz    t9, _finish                 // if random_char_flag_1p is FALSE, then skip
+        nop
+
+        // if here, it's Random, so set char_id to random...
+        lli     t2, Character.id.PLACEHOLDER
+
+        // ... and force default costume to avoid issues with stock icon
+        lli     t3, 0x0000                  // t3 = 0 = costume_id
+
+        sb      t2, 0x0014(v0)              // save char_id
+        sb      t3, 0x0015(v0)              // save costume_id
+
+        _finish:
+        j       _return
+        sw      t2, 0x8FCC(at)              // original line 2
+    }
+
+    // @ Description
+    // 'Set and Forget' testing assistance
+    // Note: Salty Runback doesn't re-randomize characters, so we go through CSS
+    // Note: Pick stage ahead of time, or use Stage Select 'OFF' (see: Stages.a_)
+    scope awayMode {
+        OS.patch_start(0x138CD8, 0x8013AA58)
+        j       _handle_css
+        nop
+        OS.patch_end()
+        _handle_css:
+        li      a0, CharacterSelectDebugMenu.PlayerTag.string_table + (2 * 4)
+        lw      a0, 0x0000(a0)              // a0 = 2nd tag
+        lw      a0, 0x0000(a0)              // a0 = tag
+        li      t5, 0x61666B00
+        bne     a0, t5, _handle_css_original// branch if tag is not equal
+        nop
+        jal     0x80390804                  // check for any button held
+        addiu   a0, r0, 0xEFFF              // a0 = any button (except 'Start')
+        bnez    v0, _handle_css_original    // skip if holding any button
+        nop
+        li      a0, afk_timer               // a0 = address of afk_timer
+        lw      t5, 0x0000(a0)              // t5 = value of afk_timer
+        sltiu   t5, t5, 120                 // wait a second
+        bnez    t5, _handle_css_original
+        nop
+        sw      r0, 0x0000(a0)              // clear afk_timer
+        j       0x8013AA60                  // return to function
+        lli     v0, OS.TRUE                 // v0 = 1 (simulate 'Start' pressed)
+        _handle_css_original:
+        jal     0x8039076C                  // original line 1 (check for 'Start' press)
+        addiu   a0, r0, 0x1000              // original line 2
+        j       0x8013AA60                  // return to function
+        nop
+
+        OS.patch_start(0x138068, 0x80139DE8)
+        j       _css_ready_wait             // hook is in 'mnBattleBlinkIfReadyToFight'
+        nop
+        OS.patch_end()
+        _css_ready_wait:
+        jal     0x8013A5E4                  // original line 1 (check mnBattleIsReadyToFight)
+        sw      a0, 0x0018(sp)              // original line 2
+
+        li      v1, afk_timer               // v1 = address of afk_timer
+        beqzl   v0, _return                 // if not 'ready'...
+        sw      r0, 0x0000(v1)              // ...clear timer
+        li      a0, 0x8013BDCC
+        lw      a0, 0x0000(a0)              // a0 = gMnBattleTotalTimeTics
+        sltiu   a0, a0, 0x003D              // wait a second
+        bnezl   a0, _return                 // if we haven't waited long enough...
+        sw      r0, 0x0000(v1)              // ...clear timer
+        lw      a0, 0x0000(v1)              // a0 = value of afk_timer
+        addiu   a0, a0, 1                   // timer++
+        sw      a0, 0x0000(v1)              // update timer
+        _return:
+        j       0x80139DF0                  // return to function
+        nop
+
+        OS.patch_start(0x138D40, 0x8013AAC0)
+        j       _handle_fgm             // suppress 'FGMMenuDenied' error noise spam
+        nop
+        OS.patch_end()
+        _handle_fgm:
+        li      a0, CharacterSelectDebugMenu.PlayerTag.string_table + (2 * 4)
+        lw      a0, 0x0000(a0)              // a0 = 2nd tag
+        lw      a0, 0x0000(a0)              // a0 = tag
+        li      at, 0x61666B00
+        beq     a0, at, _handle_fgm_end     // branch if tag is equal (no sound)
+        nop
+        _handle_fgm_play:
+        jal     0x800269C0              // original line 1 (play sound)
+        addiu   a0, r0, 0x00A5          // original line 2
+        _handle_fgm_end:
+        j       0x8013AAC8              // return to function
+        nop
+
+        OS.patch_start(0x150FE0, 0x80131E40)
+        j       _handle_results         // mnVSResultsCheckStartPressed
+        nop
+        OS.patch_end()
+        _handle_results:
+        li      t9, CharacterSelectDebugMenu.PlayerTag.string_table + (2 * 4)
+        lw      t9, 0x0000(t9)              // t9 = 2nd tag
+        lw      t9, 0x0000(t9)              // t9 = tag
+        li      t0, 0x61666B00
+        bnel    t9, t0, _handle_results_end // branch if tag is not equal
+        andi    t9, t8, 0x1000              // original line 2
+        lli     t9, OS.TRUE                 // t9 = 1 (simulate 'Start' pressed)
+        _handle_results_end:
+        j       0x80131E48                  // return to function
+        lui     t0, 0x8004                  // original line 1
+
+        // @ Description
+        // It's a Flag
+        afk_timer:
+        dw 0
+    }
+
+    // @ Description
     // Adds a character to the character select screen.
     // @ Arguments
     // character - character id to add a portrait for
@@ -5508,7 +7018,8 @@ scope CharacterSelect {
         if ({portrait_id_override} != -1) {
             origin portrait_id_table_origin + {character}
             db {portrait_id_override}
-        } else {
+        }
+        if ({portrait_id_override} == -1 || {portrait_id_override} == BOOKEND_BONUS_PORTRAIT) {
             // if not a variant, we don't want the variant indicator to display, so update the variant_original table
             origin Character.variant_original.TABLE_ORIGIN + ({character} * 4)
             dw {character}
@@ -5521,20 +7032,20 @@ scope CharacterSelect {
     add_to_css(Character.id.FALCO,  FGM.announcer.names.FALCO,          1.50,         0x00010004, STARFOX,      name_texture.FALCO,          portrait_offsets.FALCO,          -1)
     add_to_css(Character.id.GND,    FGM.announcer.names.GANONDORF,      1.50,         0x00010002, ZELDA,        name_texture.GND,            portrait_offsets.GND,            -1)
     add_to_css(Character.id.YLINK,  FGM.announcer.names.YOUNG_LINK,     1.50,         0x00010002, ZELDA,        name_texture.YLINK,          portrait_offsets.YLINK,          -1)
-    add_to_css(Character.id.DRM,    FGM.announcer.names.DR_MARIO,       1.50,         0x00010001, DR_MARIO,     name_texture.DRM,            portrait_offsets.DRM,            -1)
+    add_to_css(Character.id.DRM,    FGM.announcer.names.DR_MARIO,       1.50,         0x00010002, DR_MARIO,     name_texture.DRM,            portrait_offsets.DRM,            -1)
     add_to_css(Character.id.WARIO,  FGM.announcer.names.WARIO,          1.50,         0x00010004, WARIO,        name_texture.WARIO,          portrait_offsets.WARIO,          -1)
-    add_to_css(Character.id.DSAMUS, FGM.announcer.names.DSAMUS,         1.50,         0x00010004, METROID,      name_texture.DSAMUS,         portrait_offsets.DSAMUS,         -1)
+    add_to_css(Character.id.DSAMUS, FGM.announcer.names.DSAMUS,         1.50,         0x00010004, METROID,      name_texture.DSAMUS,         portrait_offsets.DSAMUS,         BOOKEND_BONUS_PORTRAIT)
     add_to_css(Character.id.ELINK,  FGM.announcer.names.ELINK,          1.50,         0x00010001, ZELDA,        name_texture.LINK,           portrait_offsets.ELINK,          5)
     add_to_css(Character.id.JSAMUS, FGM.announcer.names.SAMUS,          1.50,         0x00010003, METROID,      name_texture.SAMUS,          portrait_offsets.JSAMUS,         6)
     add_to_css(Character.id.JNESS,  FGM.announcer.names.NESS,           1.50,         0x00010002, EARTHBOUND,   name_texture.NESS,           portrait_offsets.JNESS,          12)
-    add_to_css(Character.id.LUCAS,  FGM.announcer.names.LUCAS,          1.50,         0x00010002, EARTHBOUND,   name_texture.LUCAS,          portrait_offsets.LUCAS,          -1)
+    add_to_css(Character.id.LUCAS,  FGM.announcer.names.LUCAS,          1.50,         0x00010002, EARTHBOUND,   name_texture.LUCAS,          portrait_offsets.LUCAS,          BOOKEND_BONUS_PORTRAIT)
     add_to_css(Character.id.JLINK,  FGM.announcer.names.LINK,           1.50,         0x00010001, ZELDA,        name_texture.LINK,           portrait_offsets.JLINK,          5)
     add_to_css(Character.id.JFALCON,FGM.announcer.names.CAPTAIN_FALCON, 1.50,         0x00010001, FZERO,        name_texture.CAPTAIN_FALCON, portrait_offsets.JFALCON,        7)
     add_to_css(Character.id.JFOX,   FGM.announcer.names.JFOX,           1.50,         0x00010004, STARFOX,      name_texture.FOX,            portrait_offsets.JFOX,           15)
     add_to_css(Character.id.JMARIO, FGM.announcer.names.MARIO,          1.50,         0x00010003, MARIO_BROS,   name_texture.MARIO,          portrait_offsets.JMARIO,         3)
     add_to_css(Character.id.JLUIGI, FGM.announcer.names.LUIGI,          1.50,         0x00010001, MARIO_BROS,   name_texture.LUIGI,          portrait_offsets.JLUIGI,         2)
     add_to_css(Character.id.JDK,    FGM.announcer.names.DONKEY_KONG,    2,            0x00010001, DONKEY_KONG,  name_texture.JDK,            portrait_offsets.JDK,            4)
-    add_to_css(Character.id.EPIKA,  FGM.announcer.names.PIKACHU,        1.50,         0x00010001, POKEMON,      name_texture.PIKACHU,        portrait_offsets.EPIKA,          16)
+    add_to_css(Character.id.EPIKA,  FGM.announcer.names.EPIKA,          1.50,         0x00010001, POKEMON,      name_texture.PIKACHU,        portrait_offsets.EPIKA,          16)
     add_to_css(Character.id.JPUFF,  FGM.announcer.names.JPUFF,          1.50,         0x00010002, POKEMON,      name_texture.JPUFF,          portrait_offsets.JPUFF,          17)
     add_to_css(Character.id.EPUFF,  FGM.announcer.names.EPUFF,          1.50,         0x00010002, POKEMON,      name_texture.EPUFF,          portrait_offsets.EPUFF,          17)
     add_to_css(Character.id.JKIRBY, FGM.announcer.names.KIRBY,          1.50,         0x00010003, KIRBY,        name_texture.KIRBY,          portrait_offsets.JKIRBY,         14)
@@ -5543,45 +7054,53 @@ scope CharacterSelect {
     add_to_css(Character.id.ESAMUS, FGM.announcer.names.ESAMUS,         1.50,         0x00010003, METROID,      name_texture.SAMUS,          portrait_offsets.ESAMUS,         6)
     add_to_css(Character.id.BOWSER, FGM.announcer.names.BOWSER,         2,            0x00010002, BOWSER,       name_texture.BOWSER,         portrait_offsets.BOWSER,         -1)
     add_to_css(Character.id.GBOWSER,FGM.announcer.names.GBOWSER,        2.25,         0x00010002, BOWSER,       name_texture.GBOWSER,        portrait_offsets.GBOWSER,        24)
-    add_to_css(Character.id.PIANO,  FGM.announcer.names.PIANO,          2,            0x00010004, MARIO_BROS,   name_texture.PIANO,          portrait_offsets.PIANO,          14)
+    add_to_css(Character.id.PIANO,  FGM.announcer.names.PIANO,          2,            0x00010004, MARIO_BROS,   name_texture.PIANO,          portrait_offsets.PIANO,          BOOKEND_BONUS_PORTRAIT)
     add_to_css(Character.id.WOLF,   FGM.announcer.names.WOLF,           1.50,         0x00010004, STARFOX,      name_texture.WOLF,           portrait_offsets.WOLF,           -1)
-    add_to_css(Character.id.CONKER, FGM.announcer.names.CONKER,        	1.50,         0x00010004, CONKER,       name_texture.CONKER,         portrait_offsets.CONKER,         -1)
+    add_to_css(Character.id.CONKER, FGM.announcer.names.CONKER,         1.50,         0x00010004, CONKER,       name_texture.CONKER,         portrait_offsets.CONKER,         -1)
     add_to_css(Character.id.MTWO,   FGM.announcer.names.MEWTWO,         1.50,         0x00010004, POKEMON,      name_texture.MEWTWO,         portrait_offsets.MTWO,           -1)
     add_to_css(Character.id.MARTH,  FGM.announcer.names.MARTH,          1.50,         0x00010004, FIRE_EMBLEM,  name_texture.MARTH,          portrait_offsets.MARTH,          -1)
-    add_to_css(Character.id.SONIC,  FGM.announcer.names.SONIC,        	1.50,         0x00010004, SONIC,        name_texture.SONIC,          portrait_offsets.SONIC,          -1)
+    add_to_css(Character.id.SONIC,  FGM.announcer.names.SONIC,          1.50,         0x00010004, SONIC,        name_texture.SONIC,          portrait_offsets.SONIC,          -1)
     add_to_css(Character.id.SANDBAG,FGM.announcer.names.FALCO,          1.50,         0x00010001, ZELDA,        name_texture.JPUFF,          portrait_offsets.SANDBAG,        -1)
-    add_to_css(Character.id.SSONIC, FGM.announcer.names.SSONIC,        	1.50,         0x00010004, SONIC,        name_texture.SSONIC,         portrait_offsets.SSONIC,         9)
+    add_to_css(Character.id.SSONIC, FGM.announcer.names.SSONIC,         1.50,         0x00010004, SONIC,        name_texture.SSONIC,         portrait_offsets.SSONIC,         9)
     add_to_css(Character.id.SHEIK,  FGM.announcer.names.SHEIK,          1.50,         0x00010001, ZELDA,        name_texture.SHEIK,          portrait_offsets.SHEIK,          -1)
-    add_to_css(Character.id.MARINA, FGM.announcer.names.MARINA,        	1.50,         0x00010004, MISCHIEF_MAKERS,  name_texture.MARINA,     portrait_offsets.MARINA,         -1)
+    add_to_css(Character.id.MARINA, FGM.announcer.names.MARINA,         1.50,         0x00010004, MISCHIEF_MAKERS,  name_texture.MARINA,     portrait_offsets.MARINA,         -1)
     add_to_css(Character.id.DEDEDE, FGM.announcer.names.DEDEDE,         2,            0x00010001, KIRBY,        name_texture.DEDEDE,         portrait_offsets.DEDEDE,         -1)
     add_to_css(Character.id.GOEMON, FGM.announcer.names.GOEMON,         1.50,         0x00010001, GOEMON,       name_texture.GOEMON,         portrait_offsets.GOEMON,         -1)
-    add_to_css(Character.id.PEPPY,  FGM.announcer.names.PEPPY,          1.50,         0x00010004, STARFOX,      name_texture.PEPPY,          portrait_offsets.PEPPY,          15)
-    add_to_css(Character.id.SLIPPY, FGM.announcer.names.SLIPPY,         1.50,         0x00010004, STARFOX,      name_texture.SLIPPY,         portrait_offsets.SLIPPY,         18)
+    add_to_css(Character.id.PEPPY,  FGM.announcer.names.PEPPY,          1.50,         0x00010004, STARFOX,      name_texture.PEPPY,          portrait_offsets.PEPPY,          BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.SLIPPY, FGM.announcer.names.SLIPPY,         1.50,         0x00010004, STARFOX,      name_texture.SLIPPY,         portrait_offsets.SLIPPY,         BOOKEND_BONUS_PORTRAIT)
     add_to_css(Character.id.BANJO,  FGM.announcer.names.BANJO,          1.50,         0x00010001, BANJO_KAZOOIE, name_texture.BANJO,         portrait_offsets.BANJO,          -1)
     add_to_css(Character.id.MLUIGI, FGM.announcer.names.MLUIGI,         1.50,         0x00010001, MARIO_BROS,   name_texture.MLUIGI,         portrait_offsets.METALLUIGI,      2)
-    add_to_css(Character.id.EBI,    FGM.announcer.names.EBI,            1.50,         0x00010001, GOEMON,       name_texture.EBI,            portrait_offsets.EBI,            20)
-    add_to_css(Character.id.DRAGONKING, FGM.announcer.names.DRAGONKING, 1.50,         0x00010002, SMASH,        name_texture.DRAGONKING,     portrait_offsets.DRAGONKING,      7)
+    add_to_css(Character.id.EBI,    FGM.announcer.names.EBI,            1.50,         0x00010001, GOEMON,       name_texture.EBI,            portrait_offsets.EBI,            BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.DRAGONKING, FGM.announcer.names.DRAGONKING, 1.50,         0x00010002, SMASH,        name_texture.DRAGONKING,     portrait_offsets.DRAGONKING,     BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.CRASH,  FGM.announcer.names.CRASH,          1.50,         0x00010004, CRASH,        name_texture.CRASH,          portrait_offsets.CRASH,          -1)
+    add_to_css(Character.id.PEACH,  FGM.announcer.names.PEACH,          1.50,         0x00010004, MARIO_BROS,   name_texture.PEACH,          portrait_offsets.PEACH,          -1)
+    add_to_css(Character.id.ROY,    FGM.announcer.names.ROY,            1.50,         0x00010004, FIRE_EMBLEM,  name_texture.ROY,            portrait_offsets.ROY,            BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.DRL,    FGM.announcer.names.DRL,            1.50,         0x00010001, DR_MARIO,     name_texture.DRL,            portrait_offsets.DRL,            BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.LANKY,  FGM.announcer.names.LANKY,          2,            0x00010004, DONKEY_KONG,  name_texture.LANKY,          portrait_offsets.LANKY,          BOOKEND_BONUS_PORTRAIT)
     // ADD NEW CHARACTERS HERE
 
     // REMIX POLYGONS
-    add_to_css(Character.id.NWARIO, FGM.announcer.names.NWARIO,         1.50,         0x00010004, SMASH,        name_texture.NWARIO,         portrait_offsets.WARIO,          22)
-    add_to_css(Character.id.NLUCAS, FGM.announcer.names.NLUCAS,         1.50,         0x00010002, SMASH,        name_texture.NLUCAS,         portrait_offsets.LUCAS,          23)
-    add_to_css(Character.id.NBOWSER, FGM.announcer.names.NBOWSER,       2,            0x00010002, SMASH,        name_texture.NBOWSER,        portrait_offsets.BOWSER,         24)
-    add_to_css(Character.id.NWOLF,  FGM.announcer.names.NWOLF,          1.50,         0x00010004, SMASH,        name_texture.NWOLF,          portrait_offsets.WOLF,           25)
-    add_to_css(Character.id.NDRM,   FGM.announcer.names.NDR_MARIO,      1.50,         0x00010001, SMASH,        name_texture.NDRM,           portrait_offsets.DRM,            1)
-    add_to_css(Character.id.NSONIC, FGM.announcer.names.NSONIC,        	1.50,         0x00010004, SMASH,        name_texture.NSONIC,         portrait_offsets.SONIC,          9)
-    add_to_css(Character.id.NSHEIK, FGM.announcer.names.NSHEIK,         1.50,         0x00010001, SMASH,        name_texture.NSHEIK,         portrait_offsets.SHEIK,          19)
-    add_to_css(Character.id.NMARINA, FGM.announcer.names.NMARINA,       1.50,         0x00010001, SMASH,        name_texture.NMARINA,        portrait_offsets.MARINA,         0)
-    add_to_css(Character.id.NFALCO,  FGM.announcer.names.NFALCO,        1.50,         0x00010004, SMASH,        name_texture.NFALCO,         portrait_offsets.FALCO,          18)
-    add_to_css(Character.id.NGND, FGM.announcer.names.NGANONDORF,       1.50,         0x00010002, SMASH,        name_texture.NGND,           portrait_offsets.GND,            8)
-    add_to_css(Character.id.NDSAMUS, FGM.announcer.names.NDSAMUS,       1.50,         0x00010004, SMASH,        name_texture.NDSAMUS,        portrait_offsets.DSAMUS,         21)
-    add_to_css(Character.id.NMARTH, FGM.announcer.names.NMARTH,         1.50,         0x00010004, SMASH,        name_texture.NMARTH,         portrait_offsets.MARTH,          28)
-    add_to_css(Character.id.NMTWO, FGM.announcer.names.NMTWO,           1.50,         0x00010004, SMASH,        name_texture.NMTWO,          portrait_offsets.MTWO,           27)
-    add_to_css(Character.id.NDEDEDE, FGM.announcer.names.NDEDEDE,       2,            0x00010001, SMASH,        name_texture.NDEDEDE,        portrait_offsets.DEDEDE,         10)
-    add_to_css(Character.id.NYLINK, FGM.announcer.names.NYLINK,         1.50,         0x00010002, SMASH,        name_texture.NYLINK,         portrait_offsets.YLINK,          11)
-    add_to_css(Character.id.NGOEMON, FGM.announcer.names.NGOEMON,       1.50,         0x00010001, SMASH,        name_texture.NGOEMON,        portrait_offsets.GOEMON,         20)
-    add_to_css(Character.id.NCONKER, FGM.announcer.names.NCONKER,       1.50,         0x00010004, SMASH,        name_texture.NCONKER,        portrait_offsets.CONKER,         26)
-    add_to_css(Character.id.NBANJO, FGM.announcer.names.NBANJO,         1.50,         0x00010001, SMASH,        name_texture.NBANJO,         portrait_offsets.BANJO,          29)
+               // id                 fgm                                 circle size   action      series logo   name texture                 portrait offset                  portrait override
+    add_to_css(Character.id.NWARIO,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NWARIO,         portrait_offsets.WARIO,          22)
+    add_to_css(Character.id.NLUCAS,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010002, SMASH,        name_texture.NLUCAS,         portrait_offsets.LUCAS,          BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.NBOWSER, FGM.announcer.names.NFIGHTER,       2,            0x00010002, SMASH,        name_texture.NBOWSER,        portrait_offsets.BOWSER,         24)
+    add_to_css(Character.id.NWOLF,   FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NWOLF,          portrait_offsets.WOLF,           25)
+    add_to_css(Character.id.NDRM,    FGM.announcer.names.NFIGHTER,       1.50,         0x00010002, SMASH,        name_texture.NDRM,           portrait_offsets.DRM,            1)
+    add_to_css(Character.id.NSONIC,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NSONIC,         portrait_offsets.SONIC,          9)
+    add_to_css(Character.id.NSHEIK,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010001, SMASH,        name_texture.NSHEIK,         portrait_offsets.SHEIK,          19)
+    add_to_css(Character.id.NMARINA, FGM.announcer.names.NFIGHTER,       1.50,         0x00010001, SMASH,        name_texture.NMARINA,        portrait_offsets.MARINA,         0)
+    add_to_css(Character.id.NFALCO,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NFALCO,         portrait_offsets.FALCO,          18)
+    add_to_css(Character.id.NGND,    FGM.announcer.names.NFIGHTER,       1.50,         0x00010002, SMASH,        name_texture.NGND,           portrait_offsets.GND,            8)
+    add_to_css(Character.id.NDSAMUS, FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NDSAMUS,        portrait_offsets.DSAMUS,         BOOKEND_BONUS_PORTRAIT)
+    add_to_css(Character.id.NMARTH,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NMARTH,         portrait_offsets.MARTH,          28)
+    add_to_css(Character.id.NMTWO,   FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NMTWO,          portrait_offsets.MTWO,           27)
+    add_to_css(Character.id.NDEDEDE, FGM.announcer.names.NFIGHTER,       2,            0x00010001, SMASH,        name_texture.NDEDEDE,        portrait_offsets.DEDEDE,         10)
+    add_to_css(Character.id.NYLINK,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010002, SMASH,        name_texture.NYLINK,         portrait_offsets.YLINK,          11)
+    add_to_css(Character.id.NGOEMON, FGM.announcer.names.NFIGHTER,       1.50,         0x00010001, SMASH,        name_texture.NGOEMON,        portrait_offsets.GOEMON,         20)
+    add_to_css(Character.id.NCONKER, FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NCONKER,        portrait_offsets.CONKER,         26)
+    add_to_css(Character.id.NBANJO,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010001, SMASH,        name_texture.NBANJO,         portrait_offsets.BANJO,          29)
+    add_to_css(Character.id.NPEACH,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NPEACH,         portrait_offsets.PEACH,          23)
+    add_to_css(Character.id.NCRASH,  FGM.announcer.names.NFIGHTER,       1.50,         0x00010004, SMASH,        name_texture.NCRASH,         portrait_offsets.CRASH,          21)
 }
 
 

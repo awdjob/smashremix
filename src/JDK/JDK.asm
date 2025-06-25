@@ -23,6 +23,19 @@ scope JDK {
     dw  Action.DK.action_string_table
     OS.patch_end()
 
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JDK, 0x2)
+    dh {MIDI.id.DK_RAP}
+    OS.patch_end()
+
+    // Update variants with same model
+    Character.table_patch_start(variants_with_same_model, Character.id.JDK, 0x4)
+    db      Character.id.DONKEY
+    db      Character.id.GDONKEY
+    db      Character.id.NONE
+    db      Character.id.NONE
+    OS.patch_end()
+
     // coding for JDK's unique Spinning Kong Velocity Startup
     // the constant velocity multiplier is actually identical in all versions
     // the difference is a slight coding change at the very beginning of the move

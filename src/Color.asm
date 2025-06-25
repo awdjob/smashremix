@@ -55,6 +55,22 @@ scope Color {
         constant BLUE(0xC2C9FDFF)
         constant YELLOW(0xEBE78DFF)
     }
+
+    scope tag {
+        constant RED(0xED3636FF)
+        constant GREEN(0x4EB94EFF)
+        constant BLUE(0x4E4EE9FF)
+        constant YELLOW(0xFFDF1AFF)
+        constant GRAY(0xACACACFF)
+    }
+
+    scope damage_icon {
+        constant RED(0xFFA0A0FF)
+        constant GREEN(0xA0FFA0FF)
+        constant BLUE(0xB4B4FFFF)
+        constant YELLOW(0xE6E678FF)
+        constant GRAY(0xDCDCDCFF)
+    }
 }
 
 } // __COLOR__

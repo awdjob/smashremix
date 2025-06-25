@@ -1,4 +1,34 @@
 scope BlastZone: {
+    // Blast zone warping coded by halofactory
+
+    // This prevents hitboxes from becoming massive during warp and interpolating across the screen
+    // a0 = player obj
+    scope reset_hitbox_interpolation: {
+        OS.routine_begin(0x30)
+
+        lw      v1, 0x0084(a0)      // v1 = player obj
+        addiu   t0, v1, 0x0294      // t0 = players first hitbox
+        addiu   t1, r0, 0           // t1 = 0 (loop counter)
+        addiu   t2, r0, 4           // t2 = max loop count
+        addiu   t3, r0, 1           // t3 = value to set hitbox to if already active
+
+        _loop_start:
+        lw      v0, 0x0000(t0)
+        beqz    v0, _increment
+        nop
+
+        sw      t3, 0x0000(t0)      // overwrite value
+
+        _increment:
+        addiu   t1, t1, 1           // t1++
+        beq     t1, t2, _end
+        nop
+        b       _loop_start
+        addiu   t0, t0, 0xC4        // increase t0 by hitbox entry size
+
+        _end:
+        OS.routine_end(0x30)
+    }
 
     // a0 = player obj
     scope set_aerial_from_grounded: {
@@ -23,7 +53,7 @@ scope BlastZone: {
         lw      v1, 0x840(a0)          // v1 = obj of captured player
         bnezl    v1, _release_player
         lw      a0, 0x0004(a0)          // a0 = player obj
-        
+
         lw      a0, 0x844(a0)          // v1 = obj of capturing player
         beqz    a0, _ledge_check
         nop
@@ -31,10 +61,10 @@ scope BlastZone: {
         _release_player:
         jal     0x80149AC8                        // grab release
         nop
-        
+
         b       _end
         nop
-        
+
         _ledge_check:
         // make sure a player that is grabbing a ledge is released from it
         lw      a0, 0x0020(sp)          // restore player obj
@@ -117,6 +147,8 @@ scope BlastZone: {
         lw      a0, 0x0004(s1)      // a0 = player obj
 
         _skip_KO:
+        jal     reset_hitbox_interpolation
+        lw      a0, 0x0004(s1)                    // a0 = player obj
         j       0x8013CF44          // skip KO routine entirely
         nop
 
@@ -147,7 +179,7 @@ scope BlastZone: {
 
         jal     grab_release_check_
         addiu   a0, s1, 0           // a0 = player struct
-        
+
         addiu   t8, s1, 0           // t8 = player struct
         lw      t9, 0x014C(t8)      // t9 = kinetic state
         bnez    t9, _skip_KO        // branch if aerial
@@ -162,6 +194,8 @@ scope BlastZone: {
         lw      a0, 0x0004(s1)      // a0 = player obj
 
         _skip_KO:
+        jal     reset_hitbox_interpolation
+        lw      a0, 0x0004(s1)                    // a0 = player obj
         j        0x8013CF44         // skip KO routine entirely
         nop
 
@@ -214,6 +248,8 @@ scope BlastZone: {
         lw      a0, 0x0004(s1)      // a0 = player obj
 
         _skip_KO:
+        jal     reset_hitbox_interpolation
+        lw      a0, 0x0004(s1)                    // a0 = player obj
         j        0x8013CF44             // skip KO routine entirely
         nop
 
@@ -249,7 +285,7 @@ scope BlastZone: {
         lw      t0, 0x0004(s1)          // t0 = player obj
         lw      t0, 0x0074(t0)          // = location struct
         swc1    f4, 0x0020(t0)          // overwrite players y coordinate
-        
+
         jal     grab_release_check_
         addiu   a0, s1, 0           // a0 = player struct
 
@@ -266,6 +302,8 @@ scope BlastZone: {
         lw      a0, 0x0004(s1)      // a0 = player obj
 
         _skip_KO:
+        jal     reset_hitbox_interpolation
+        lw      a0, 0x0004(s1)                    // a0 = player obj
         j        0x8013CF44             // skip KO routine entirely
         nop
 
@@ -371,6 +409,9 @@ scope BlastZone: {
         sw      r0, 0x0010(sp)                    // argument 4 = 0
 
         _skip_KO:
+        jal     reset_hitbox_interpolation
+        lw      a0, 0x0004(s1)                    // a0 = player obj
+
         lw      a1, 0x0004(sp)                    // restore registers
         lw      a2, 0x0008(sp)                    // ~
         lw      a3, 0x000C(sp)                    // ~

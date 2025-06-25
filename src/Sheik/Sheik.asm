@@ -28,9 +28,9 @@ scope Sheik {
 
     IDLE:
     Moveset.SUBROUTINE(BLINK)                   // blink
-    dw 0x0400005A; Moveset.SUBROUTINE(BLINK)    // wait 90 frames then blink
-    dw 0x0400000A; Moveset.SUBROUTINE(BLINK)    // wait 10 frames then blink
-    dw 0x04000050; Moveset.GO_TO(IDLE)          // loop
+    dw 0x0400001E; Moveset.SUBROUTINE(BLINK)    // wait 30 frames then blink
+    dw 0x04000050; Moveset.SUBROUTINE(BLINK)    // wait 80 frames then blink
+    dw 0x04000032; Moveset.GO_TO(IDLE)          // loop
 
     insert USP_BEGIN,"moveset/USP_BEGIN.bin"
     insert USP_MOVE,"moveset/USP_MOVE.bin"
@@ -104,9 +104,7 @@ scope Sheik {
     insert JAB_LOOP_END,"moveset/JAB_LOOP_END.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Action name constants.
     scope Action {
@@ -440,7 +438,7 @@ Character.edit_action_parameters(SHEIK, Action.LandingAirX,             File.SHE
    Character.edit_action(SHEIK, 0xE0,                   -1,            0x8013DA94,                    0,                              0x8013DB2C,                    0x800DE348)   // LEFT ENTRY
    Character.edit_action(SHEIK, 0xE1,                   -1,            0x8013DA94,                    0,                              0x8013DB2C,                    0x800DE348)   // RIGHT ENTRY
 
-    Character.edit_action(SHEIK, Action.DSP_RECOIL,     0x13,            SheikDSP.recoil_main_,         0,                               SheikDSP.recoil_physics_,       0x800DE99C)
+    Character.edit_action(SHEIK, Action.DSP_RECOIL,     0x13,            SheikDSP.recoil_main_,         0,                               SheikDSP.recoil_physics_,       0x800DE978)
     // Modify Menu Action Parameters             // Action      // Animation                // Moveset Data             // Flags
 
     Character.edit_menu_action_parameters(SHEIK, 0x0,           File.SHEIK_IDLE,            -1,                         -1)
@@ -466,7 +464,7 @@ Character.edit_action_parameters(SHEIK, Action.LandingAirX,             File.SHE
     Character.add_new_action(SHEIK, DSP_Begin,          -1,             ActionParams.DSP_Begin,             0x13,           SheikDSP.main_,             0,                              SheikDSP.physics_,                  SheikDSP.air_collision_)
     Character.add_new_action(SHEIK, DSP_Attack,         -1,             ActionParams.DSP_Attack,            0x13,           0x800D94E8,                 0,                              SheikDSP.physics_,                  SheikDSP.attack_collision_)
     Character.add_new_action(SHEIK, DSP_Landing,        -1,             ActionParams.DSP_Landing,           0x13,           0x800D94C4,                 0,                              0x800D8CCC,                         0x800DDEE8)
-    Character.add_new_action(SHEIK, DSP_Recoil,         -1,             ActionParams.DSP_Recoil,            0x13,           SheikDSP.recoil_main_,      0,                              SheikDSP.recoil_physics_,           0x800DE99C)
+    Character.add_new_action(SHEIK, DSP_Recoil,         -1,             ActionParams.DSP_Recoil,            0x13,           SheikDSP.recoil_main_,      0,                              SheikDSP.recoil_physics_,           0x800DE978)
 
 
      // Set action strings
@@ -557,30 +555,10 @@ Character.edit_action_parameters(SHEIK, Action.LandingAirX,             File.SHE
     dw      Character.id.SHEIK // set Sheik as original character (not Captain Falcon, who NSHEIK is a clone of)
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.SHEIK, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.SHEIK, 0x2)
+    dh {MIDI.id.BRAWL_OOT}
     OS.patch_end()
-
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.SHEIK, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.NONE
-    OS.patch_end()
-
-	// Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.SHEIK, 0x4)
-    dw    	AI.LONG_RANGE.ROUTINE.NSP_SHOOT
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // Most of Sheiks attacks were manually updated with hex-edits.
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  -1,  -1,  250, 500, -500, -250)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  -1,  -1,  500, 1500, 200, 445)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,   0,   0,    0,    0,   0,   0) // no attack with Up Special
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  -1,  -1,    0,    0,   0,   0) // no attack with Up Special
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  -1,  -1,  180, 850, 100, 400)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  -1,  -1,  180, 850, 100, 400)
 
     // an associated moveset command: b0bc0000 removes the white flicker, this is identical to Samus
     // @ Description

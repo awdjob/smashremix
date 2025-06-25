@@ -15,27 +15,32 @@ scope StockMode {
     // Holds stock count when in manual stock mode for players 1-4
     // Initialize for 4 stocks
     stock_count_table:
-    db 3, 3, 3, 3                           // stock count override for p1 through p4
+    db -1, -1, -1, -1                       // stock count override for p1 through p4
 
     // @ Description
     // Holds previous stock count for players 1-4
-    // Initialize for 4 stocks
     previous_stock_count_table:
-    db 3, 3, 3, 3                           // previous stock count override for p1 through p4
+    db -1, -1, -1, -1                       // previous stock count override for p1 through p4
 
     // @ Description
     // Holds initial stock count for the match for players 1-4, for all stock modes.
     // This is helpful when scoring on the results screen.
     // Initialize for 4 stocks
     initial_stock_count_table:
-    db 3, 3, 3, 3                           // initial stock count for p1 through p4
+    db -1, -1, -1, -1                       // initial stock count for p1 through p4
+
+    // @ Description
+    // Holds initial previous stock count for the match for players 1-4
+    // This is necessary for salty runback.
+    initial_previous_stock_count_table:
+    db -1, -1, -1, -1                       // initial previous stock count override for p1 through p4
 
     // @ Description
     // Mode constants
     scope mode {
-    	constant DEFAULT(0)
-    	constant LAST(1)
-    	constant MANUAL(2)
+        constant DEFAULT(0)
+        constant LAST(1)
+        constant MANUAL(2)
     }
 
     // @ Description
@@ -66,7 +71,10 @@ scope StockMode {
 
         li      a0, stock_count_table       // a0 = stock count table
         addu    a0, a0, s0                  // a0 = address of port's stock count
-        lbu     t8, 0x0000(a0)              // t8 = stock count
+        lbu     a0, 0x0000(a0)              // a0 = stock count
+        sltu    a1, a0, t8                  // a1 = 0 if too high
+        bnezl   a1, _end                    // if not too high, use manual stock count
+        or      t8, a0, r0                  // t8 = manual stock count
 
         b       _end
         nop
@@ -75,10 +83,14 @@ scope StockMode {
         li      a0, previous_stock_count_table // a0 = previous stock count table
         addu    a0, a0, s0                  // a0 = address of port's previous stock count
         lb      a1, 0x0000(a0)              // a1 = previous stock count
+        addiu   t0, a0, initial_previous_stock_count_table - previous_stock_count_table
+        sb      a1, 0x0000(t0)              // update initial previous stock count
         bltzl   a1, _end                    // if a1 < 0 then keep t8 and update previous stock count value
         sb      t8, 0x0000(a0)              // update previous stock count
 
         // otherwise, use previous stock count value
+        sltu    a0, a1, t8                  // a0 = 0 if too high
+        bnezl   a0, _end                    // if not too high, use manual stock count
         or      t8, a1, r0                  // t8 = previous stock count
 
         _end:

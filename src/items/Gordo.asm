@@ -1,3 +1,5 @@
+// Coded by HaloFactory
+// Uses code from Fray's Conker Grenade
 // @ Description
 // These constants must be defined for an item.
 constant SPAWN_ITEM(stage_setting_)
@@ -21,7 +23,7 @@ scope gordo_attributes {
 	constant DAMAGE_IDLE(0x001C)
 
 	struct:
-	dw 160                              // 0x0000 - duration (int)
+	dw 220                              // 0x0000 - duration (int)
 	float32 2.0                         // 0x0004 - gravity
 	float32 48                          // 0x0008 - max speed
 	float32 0.95                        // 0x000C - bounce multiplier

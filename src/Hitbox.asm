@@ -188,6 +188,59 @@ scope Hitbox {
     }
 
     // @ Description
+    // Force Grab immunity under certain circumstances.
+    // Makes Giga Bowser CPU immune to grab in Remix 1P
+    // Makes Crash immune to grab during DSP.
+    scope force_grab_immunity_: {
+        OS.patch_start(0x61864, 0x800E6064)
+        j       force_grab_immunity_
+        nop
+        _return:
+        OS.patch_end()
+
+        // s0 = player struct
+        lw      t6, 0x0008(s0)              // t6 = character id
+        lli     at, Character.id.GBOWSER    // at = id.GBOWSER
+        beq     t6, at, _giga               // branch if GIGA
+        lli     at, Character.id.CRASH      // at = id.Crash
+        beq     t6, at, _crash              // branch if Crash
+        nop
+        b       _original
+        nop
+
+        _giga:
+        lli     at, SinglePlayerModes.REMIX_1P_ID // at = REMIX_1P_ID
+        li      t6, SinglePlayerModes.singleplayer_mode_flag  // t6 = Single Player Mode Flag address
+        lw      t6, 0x0000(t6)              // t6 = 4 if remix 1p
+        bne     at, t6, _original           // skip if not Remix 1P
+        //lbu     at, 0x0023(s0)              // at = player type
+        //beqz    at, _original               // skip if player type = hmn
+        nop
+        // if Giga Bowser is being controlled by a CPU in Remix 1P
+        b       _j_0x800E60A0               // force non-grabbable
+        nop
+
+        _crash:
+        lw      t6, 0x0024(s0)              // t6 = current action
+        lli     at, Crash.Action.DSPWait    // at = Action.DSPWait
+        beq     at, t6, _j_0x800E60A0       // force non-grabbable if Action = DSPWait
+        lli     at, Crash.Action.DSPTurn    // at = Action.DSPTurn
+        beq     at, t6, _j_0x800E60A0       // force non-grabbable if Action = DSPTurn
+        nop
+
+        _original:
+        beqzl   t3, _j_0x800E60A0           // original branch
+        addiu   s1, s1, 0x002C              // ~
+
+        _end:
+        j       _return                     // return
+        nop
+
+        _j_0x800E60A0:
+        j       0x800E60A0                  // jump
+    }
+
+    // @ Description
     // Makes hurtboxes transparent in hitbox+model mode.
     scope make_hurtboxes_transparent_: {
         // players
@@ -652,6 +705,8 @@ scope Hitbox {
     // This makes it so the hitbox display is positioned correctly on the CSS screens and the VS results screen.
     // I am doing it this way because I don't know if the positioning is important on other screens.
     // See https://github.com/tehzz/SSB64-Notes/blob/master/Universal/Model%20Display/Routine%20800F293C%20-%20renderCharModel.md#hurtbox-mooring
+    // Update:
+    // This is a check on the camera ID
     scope fix_hitbox_position_: {
         OS.patch_start(0x6EB10, 0x800F3310)
         j       fix_hitbox_position_
@@ -675,17 +730,18 @@ scope Hitbox {
         lb      at, 0x0000(at)              // at = screen id
 
         // css screen ids: vs - 0x10, 1p - 0x11, training - 0x12, bonus1 - 0x13, bonus2 - 0x14
+        addiu   t5, r0, Global.screen.TITLE_AND_1P // t5 = 1p screen ids, including continue screen
+        beq     t5, at, _fix_1p             // if (screen id = 1p screens) then apply the fix
+        addiu   t5, r0, Global.screen._1P_LOADING_SCREEN  // t5 = 1p vs screen id
+        beq     t5, at, _fix                // if (screen id = 1p vs) then apply the fix
         slti    t5, at, 0x0010              // if (screen id < 0x10)...
         bnez    t5, _original               // ...then branch to original (not on a CSS)
-        nop
         slti    t5, at, 0x0015              // if (screen id is between 0x10 and 0x14)...
         bnez    t5, _fix                    // ...then we're on a CSS
-        nop
         addiu   t5, r0, 0x0018              // t5 = results screen id
         beq     t5, at, _fix                // if (screen id = results) then apply the fix
-        nop
         addiu   t5, r0, 0x0030              // t5 = 1p leave in room screen id
-        beq     t5, at, _fix                // if (screen id = results) then apply the fix
+        beq     t5, at, _fix                // if (screen id = 1p leave in room) then apply the fix
         nop                                 // ...otherwise just do the original:
 
         _original:
@@ -693,6 +749,13 @@ scope Hitbox {
         lw      t5, 0x0000(t7)              // original line 2
         j       _fix_hitbox_position_return  // return
         nop
+
+        _fix_1p:
+        OS.read_word(Global.files_loaded, at) // at = address of loaded files list
+        lw      at, 0x0000(at)              // at = first loaded file
+        lli     t5, 0x004F                  // t5 = 0x4F
+        bne     at, t5, _original           // if (first file loaded != 0x4F Continue Image), we're not on continue screen
+        nop                                 // ...but on the continue screen apply the fix:
 
         _fix:
         addiu   at, r0, 0x03EA              // original line 1 - this is the key "mooring" value

@@ -17,9 +17,6 @@ scope NMarina {
     insert STUNLOOP,"moveset/STUNLOOP.bin"; Moveset.GO_TO(STUNLOOP)  //loops
     insert SLEEP,"moveset/SLEEP.bin"; Moveset.GO_TO(SLEEP)  //loops
     insert TAUNT,"moveset/TAUNT.bin"
-	NO_COMMAND:
-	dw 0
-
 
     // @ Description
     // Marina's extra actions
@@ -150,7 +147,7 @@ scope NMarina {
     Character.edit_action_parameters(NMARINA, Action.CliffEscapeSlow1,       File.MARINA_CLF_ESC_S_1,            -1,                         -1)
     Character.edit_action_parameters(NMARINA, Action.CliffEscapeSlow2,       File.MARINA_CLF_ESC_S_2,            -1,                         -1)
     Character.edit_action_parameters(NMARINA, Action.LightItemPickup,        File.MARINA_L_ITM_PICKUP,           -1,                         -1)
-    Character.edit_action_parameters(NMARINA, Action.HeavyItemPickup,        File.MARINA_NSPG_PULL,              -1,                         -1)
+    Character.edit_action_parameters(NMARINA, Action.HeavyItemPickup,        File.MARINA_HEAVY_ITM_PICKUP,       -1,                         -1)
     Character.edit_action_parameters(NMARINA, Action.ItemDrop,               File.MARINA_ITM_DROP,               -1,                         -1)
     Character.edit_action_parameters(NMARINA, Action.ItemThrowDash,          File.MARINA_ITM_THROW_DASH,         -1,                         -1)
     Character.edit_action_parameters(NMARINA, Action.ItemThrowF,             File.MARINA_ITM_THROW_F,            -1,                         -1)
@@ -355,10 +352,10 @@ scope NMarina {
 
     // Modify Menu Action Parameters              // Action     // Animation                // Moveset Data             // Flags
     Character.edit_menu_action_parameters(NMARINA, 0x0,          File.MARINA_IDLE,           Marina.IDLE,                -1)
-    Character.edit_menu_action_parameters(NMARINA, 0x1,          File.MARINA_VICTORY_1,      NO_COMMAND,                 -1)
-    Character.edit_menu_action_parameters(NMARINA, 0x2,          File.MARINA_VICTORY_2,      NO_COMMAND,                 -1)
-    Character.edit_menu_action_parameters(NMARINA, 0x3,          File.MARINA_VICTORY_3,      NO_COMMAND,                 -1)
-    Character.edit_menu_action_parameters(NMARINA, 0x4,          File.MARINA_VICTORY_1,      NO_COMMAND,                 -1)
+    Character.edit_menu_action_parameters(NMARINA, 0x1,          File.MARINA_VICTORY_1,      Marina.CSS,                 -1)
+    Character.edit_menu_action_parameters(NMARINA, 0x2,          File.MARINA_VICTORY_2,      0x80000000,                 -1)
+    Character.edit_menu_action_parameters(NMARINA, 0x3,          File.MARINA_VICTORY_3,      0x80000000,                 -1)
+    Character.edit_menu_action_parameters(NMARINA, 0x4,          File.MARINA_VICTORY_1,      Marina.CSS,                 -1)
     Character.edit_menu_action_parameters(NMARINA, 0x5,          File.MARINA_CLAP,           Marina.CLAP,                -1)
     Character.edit_menu_action_parameters(NMARINA, 0x9,          File.MARINA_CONTINUE_FALL,  -1,                         -1)
     Character.edit_menu_action_parameters(NMARINA, 0xA,          File.MARINA_CONTINUE_UP,    -1,                         -1)

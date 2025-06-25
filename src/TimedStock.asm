@@ -92,6 +92,13 @@ scope TimedStock {
 
         _time:
         sll     v1, a0, 0x0002              // (original) v1 = offset = player * 4
+
+        // check mode
+        OS.read_word(VsRemixMenu.vs_mode_flag, t6) // t6 = vs_mode_flag
+        lli     t7, VsRemixMenu.mode.KOTH
+        beq     t6, t7, _koth               // if King of the Hill, use custom logic
+        lli     t7, VsRemixMenu.mode.SMASHKETBALL
+        beq     t6, t7, _smaskhetball       // if Smashketball, use custom logic
         lui     t6, 0x8014                  // (original) t6 = address of ?
         addu    t6, t6, v1                  // (original) t6 = address of ? + offset
         lw      t7, 0x9B90(t6)              // (original) t7 = deaths
@@ -101,6 +108,18 @@ scope TimedStock {
         _end:
         jr      ra
         nop
+
+        _koth:
+        li      t6, KingOfTheHill.scores
+        addu    t6, t6, v1                  // t6 = score address
+        jr      ra
+        lw      v0, 0x0000(t6)              // v0 = score = time on hill
+
+        _smaskhetball:
+        li      t6, Smashketball.winner_scores
+        addu    t6, t6, v1                  // t6 = score address
+        jr      ra
+        lw      v0, 0x0000(t6)              // v0 = score = shots made
     }
 
     // @ Description
@@ -127,11 +146,46 @@ scope TimedStock {
         nop
     }
 
-    // Prevent sudden death when not Time mode [bit]
-    OS.patch_start(0x10A4F8, 0x8018D608)
-    lli     t7, 0x0001                  // t7 = 1 for time
-    beq     t6, t7, 0x8018D61C          // take time branch if in Time mode
-    OS.patch_end()
+    // Prevent sudden death when not Time mode or some special VS modes
+    scope prevent_sudden_death_: {
+        OS.patch_start(0x10A4F4, 0x8018D604)
+        j       prevent_sudden_death_
+        lli     t7, 0x0001                  // t7 = 1 for time
+        _return:
+        beq     t6, t7, 0x8018D61C          // take time branch if in Time mode
+        OS.patch_end()
+
+        OS.read_word(VsRemixMenu.vs_mode_flag, t8)
+        lli     v0, VsRemixMenu.mode.KOTH
+        beq     t8, v0, _no_sudden_death    // if King of the Hill, do not continue
+        lli     v0, VsRemixMenu.mode.SMASHKETBALL
+        bne     t8, v0, _normal             // if not Smashketball, continue normally
+        nop
+
+        // if here, Smashketball can have a Sudden Death mode if the scores are tied
+        OS.read_word(Smashketball.scoreboard, v0) // v0 = scoreboard object
+        lw      t8, 0x0060(v0)              // t8 = address of Home score
+        lw      t8, 0x0000(t8)              // t8 = Home score
+        lw      v0, 0x0064(v0)              // v0 = address of Away score
+        lw      v0, 0x0000(v0)              // v0 = Away score
+        bne     t8, v0, _no_sudden_death    // if the scores aren't tied, no sudden death
+        lli     v0, 0x0064                  // v0 = infinity
+
+        li      t8, Global.vs.time          // t8 = time
+        sb      v0, 0x0000(t8)              // set time to infinity
+
+        lui     at, 0x0800A                 // at = upper half of is_suddendeath flag
+        j       0x8018DE00                  // skip score calculation for time mode, and set sudden death flag
+        lli     t4, OS.TRUE                 // t4 = TRUE for is_suddendeath flag
+
+        _normal:
+        j       _return
+        addiu   a0, a0, 0x4EF8              // original line 1
+
+        _no_sudden_death:
+        j       0x8018DE08                  // skip score calculation for time mode
+        lli     v0, OS.FALSE                // and return FALSE (no sudden death)
+    }
 
     // Allows always viewing full (KOs & TKOs) results screen
     scope show_full_results_: {

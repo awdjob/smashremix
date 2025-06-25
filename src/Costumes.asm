@@ -368,10 +368,26 @@ scope Costumes {
     // @ Arguments
     // char_id - character ID
     macro register_extra_costumes_for_char(char_id) {
+        evaluate char({char_id})
+
+        if {defined chars} {
+            global evaluate chars({chars} + 1)
+        } else {
+            global evaluate chars(1)
+        }
+
+        stock_icon_palette_array_{chars}:
+        fill NUM_COSTUMES * 4
+        constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN_{chars}(origin())
+        fill NUM_EXTRA_COSTUMES * 4
+
         pushvar base, origin
 
         origin EXTRA_COSTUMES_TABLE_ORIGIN + ({char_id} * 4)
         dw parts_table
+
+        origin STOCK_ICON_PALETTE_ARRAY_TABLE_ORIGIN + ({char_id} * 4)
+        dw stock_icon_palette_array_{chars}
 
         pullvar origin, base
     }
@@ -585,8 +601,12 @@ scope Costumes {
 
         pushvar base, origin
 
-        origin EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN + ({extra_costume_id} * 4)
-        dw costume_{extra_costume_id}_stock_icon_palette
+        define n(1)
+        while {n} <= {chars} {
+            origin EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN_{n} + ({extra_costume_id} * 4)
+            dw costume_{extra_costume_id}_stock_icon_palette
+            evaluate n({n}+1)
+        }
 
         pullvar origin, base
     }
@@ -947,15 +967,15 @@ scope Costumes {
         db 0x00                             // (Placeholder)
         db 0x00                             // None (Placeholder)
         db 0x05                             // Falco
-        db 0x05                             // Ganondorf
+        db 0x06                             // Ganondorf
         db 0x05                             // Young Link
         db 0x05                             // Dr. Mario
         db 0x05                             // Wario
-        db 0x05                             // Dark Samus
+        db 0x07                             // Dark Samus
         db 0x03                             // E Link
         db 0x04                             // J Samus
         db 0x03                             // J Ness
-        db 0x05                             // Lucas
+        db 0x06                             // Lucas
         db 0x03                             // J Link
         db 0x05                             // J Falcon
         db 0x03                             // J Fox
@@ -969,10 +989,10 @@ scope Costumes {
         db 0x05                             // J Yoshi
         db 0x03                             // J Pikachu
         db 0x04                             // E Samus
-		db 0x05                             // Bowser
-		db 0x05                             // Giga Bowser
+        db 0x05                             // Bowser
+        db 0x05                             // Giga Bowser
         db 0x05                             // Piano
-		db 0x05                             // Wolf
+        db 0x05                             // Wolf
         db 0x05                             // Conker
         db 0x05                             // Mewtwo
         db 0x05                             // Marth
@@ -989,6 +1009,11 @@ scope Costumes {
         db 0x05                             // Metal Luigi
         db 0x06                             // Ebisumaru
         db 0x05                             // Dragon King
+        db 0x06                             // Crash Bandicoot
+        db 0x06                             // Princess Peach
+        db 0x05                             // Roy
+        db 0x07                             // Dr. Luigi
+        db 0x07                             // Lanky Kong
         // Polygons
         db 0x05                             // Polygon Wario
         db 0x05                             // Polygon Lucas
@@ -1008,6 +1033,8 @@ scope Costumes {
         db 0x05                             // Polygon Goemon
         db 0x05                             // Polygon Conker
         db 0x05                             // Polygon Banjo
+        db 0x05                             // Polygon Peach
+        db 0x05                             // Polygon Crash Bandicoot
         OS.align(4)
 
         functions:
@@ -1175,6 +1202,19 @@ scope Costumes {
         andi    a1, a1, 0x00FF              // original line 1
         OS.patch_end()
 
+        // Ignore Model Display on certain screens
+        li      t9, Global.current_screen   // t9 = address of current_screen
+        lbu     t9, 0x0000(t9)              // t9 = current screen
+        lli     t2, Global.screen.HOW_TO_PLAY
+        beq     t9, t2, _return             // branch if HTP
+        lli     t2, Global.screen.DEMO_FIGHT
+        beq     t9, t2, _return             // branch if Demo
+        sltiu   t2, t9, Global.screen.N64_LOGO
+        bnez    t2, _check_toggle           // branch if not an intro screen
+        sltiu   t2, t9, Global.screen.INTRO_19 + 1
+        bnez    t2, _return                 // branch if an intro screen
+        nop
+        _check_toggle:
         // First apply universal model display setting
         li      t9, Toggles.entry_model_display
         lw      t9, 0x0004(t9)              // t9 = 1 if always high, 2 if always low, 0 if default
@@ -1190,11 +1230,25 @@ scope Costumes {
         bnezl   t9, pc() + 8                // if not set to default, use t9 as a0 (1 = high poly, 2 = low poly)
         or      a0, r0, t9                  // a0 = forced hi/lo
 
+        _return:
         sb      a0, 0x000F(v0)              // original line 1
         jr      ra
         sb      a0, 0x000E(v0)              // original line 2
 
         _swap:
+        // Ignore Model Display on certain screens
+        li      t6, Global.current_screen   // t6 = address of current_screen
+        lbu     t6, 0x0000(t6)              // t6 = current screen
+        lli     t7, Global.screen.HOW_TO_PLAY
+        beq     t6, t7, _swap_return        // branch if HTP
+        lli     t7, Global.screen.DEMO_FIGHT
+        beq     t6, t7, _swap_return        // branch if Demo
+        sltiu   t7, t6, Global.screen.N64_LOGO
+        bnez    t7, _swap_check_toggle      // branch if not an intro screen
+        sltiu   t7, t6, Global.screen.INTRO_19 + 1
+        bnez    t7, _swap_return            // branch if an intro screen
+        nop
+        _swap_check_toggle:
         // First apply universal model display setting
         li      t6, Toggles.entry_model_display
         lw      t6, 0x0004(t6)              // t6 = 1 if always high, 2 if always low, 0 if default
@@ -1210,6 +1264,7 @@ scope Costumes {
         bnezl   t6, pc() + 8                // if not set to default, use t6 as a0 (1 = high poly, 2 = low poly)
         or      a1, r0, t6                  // a1 = forced hi/lo
 
+        _swap_return:
         jr      ra
         or      s5, a0, r0                  // original line 2
     }
@@ -1558,7 +1613,9 @@ scope Costumes {
         lbu     t5, 0x0000(t5)                  // t5 = character's original costume count
         lbu     t4, 0x0003(t3)                  // t3 = skipped costumes
         addu    t4, t4, t5                      // t4 = total costumes to copy, 0-based
-        lw      t3, -0x0004(t3)                 // t3 = new palette array address
+        li      t3, stock_icon_palette_array_table
+        addu    t3, t3, t0                      // t3 = character stock icon pallet array address
+        lw      t3, 0x0000(t3)                  // t3 = character stock icon pallet array
         sw      t3, 0x0004(t1)                  // override palette array address
 
         _loop:
@@ -1575,8 +1632,66 @@ scope Costumes {
         addiu   sp, sp, 0x0028                  // deallocate stack space + original line 1
     }
 
+    // @ Description
+    // Returns a random costume_id for the given character, excluding "illegal" ones
+    // @ Arguments
+    // a0 - char_id
+    // @ Returns
+    // v0 - legal costume_id
+    scope get_random_legal_costume_: {
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      t0, 0x0004(sp)              // save registers
+        sw      t1, 0x0008(sp)              // ~
+        sw      t2, 0x000C(sp)              // ~
+        sw      ra, 0x001C(sp)              // ~
+
+        sw      r0, 0x0014(sp)              // initialize number of costumes to skip (illegal)
+
+        li      t0, Costumes.select_.num_costumes
+        add     t0, t0, a0                  // t0 = num_costumes + offset
+        lb      t0, 0x0000(t0)              // t0 = number of original costumes char has (0-based)
+        sw      t0, 0x0010(sp)              // save original max costume ID
+        li      t1, Costumes.extra_costumes_table
+        sll     t2, a0, 0x0002              // t2 = offset in extra_costumes_table
+        addu    t1, t1, t2                  // t1 = extra_costumes_table + offset
+        lw      t1, 0x0000(t1)              // t1 = extra costumes table, or 0
+        beqzl   t1, _get_random_costume     // if no extra costumes parts table exists, skip getting number of extra costumes
+        or      v0, t0, r0                  // v0 = max costume ID
+        lbu     t2, 0x0003(t1)              // t2 = costumes to skip
+        sw      t2, 0x0014(sp)              // save costumes to skip
+        lbu     t1, 0x0000(t1)              // t1 = number of extra costumes
+        addu    t1, t1, t2                  // t1 = number of extra costumes + costumes to skip
+        addu    v0, t0, t1                  // v0 = original max costume ID + number of extra costumes + costumes to skip
+
+        _get_random_costume:
+        sw      v0, 0x0018(sp)              // save max costume ID
+        jal     Global.get_random_int_safe_ // v0 = random number between 0 and max costume ID
+        or      a0, v0, r0                  // a0 = max costume ID
+
+        lw      t0, 0x0010(sp)              // t0 = original max costume ID
+        sltu    t2, t0, v0                  // t2 = 1 if costume_id > max vanilla costume ID
+        beqz    t2, _return                 // if costume <= max vanilla costume ID, then ok!
+        lw      t1, 0x0014(sp)              // t1 = costumes to skip
+        addu    t0, t0, t1                  // t0 = max illegal costume ID
+        sltu    t2, t0, v0                  // t2 = 1 if costume_id > max illegal costume ID
+        beqzl   t2, _get_random_costume     // if costume is an illegal costume, try again
+        lw      v0, 0x0018(sp)              // v0 = max costume ID
+
+        _return:
+        lw      t0, 0x0004(sp)              // restore registers
+        lw      t1, 0x0008(sp)              // ~
+        lw      t2, 0x000C(sp)              // ~
+        lw      ra, 0x001C(sp)              // ~
+        jr      ra
+        addiu   sp, sp, 0x0020              // deallocate stack space
+    }
+
     extra_costumes_table:
     constant EXTRA_COSTUMES_TABLE_ORIGIN(origin())
+    fill Character.NUM_CHARACTERS * 4
+
+    stock_icon_palette_array_table:
+    constant STOCK_ICON_PALETTE_ARRAY_TABLE_ORIGIN(origin())
     fill Character.NUM_CHARACTERS * 4
 
     include "costumes/Mario.asm"
@@ -1592,12 +1707,11 @@ scope Costumes {
     include "costumes/Pikachu.asm"
     include "costumes/Jigglypuff.asm"
 
-    include "costumes/Ganondorf.asm"
     include "costumes/YoungLink.asm"
-    include "costumes/DarkSamus.asm"
     include "costumes/Wolf.asm"
     include "costumes/Conker.asm"
     include "costumes/Sheik.asm"
+    include "costumes/Marina.asm"
     include "costumes/Goemon.asm"
     include "costumes/Slippy.asm"
 
@@ -1631,6 +1745,8 @@ scope Costumes {
     include "costumes/NConker.asm"
     include "costumes/NGoemon.asm"
     include "costumes/NBanjo.asm"
+    include "costumes/NPeach.asm"
+    include "costumes/NCrash.asm"
 
     // @ Description
     // Revises attribute location within main file to adjust for Polygon Characters and Metal Mario's new costumes
@@ -1710,7 +1826,7 @@ scope Costumes {
     // Polygon Kirby
     pushvar origin, base
     origin 0x9FADC
-    dw 0x000002D8
+    dw 0x000002F8
     pullvar base, origin
 
     // Set default costumes
@@ -1728,7 +1844,7 @@ scope Costumes {
     // Polygon Jigglypuff
     pushvar origin, base
     origin 0xA242C
-    dw 0x000002B8
+    dw 0x000002E8
     pullvar base, origin
 
     // Set default costumes
@@ -1750,8 +1866,7 @@ scope Costumes {
     pullvar base, origin
 
     // Set default costumes
+    Character.set_default_costumes(Character.id.BOSS, 0, 0, 0, 0, 0, 0, 0)
     Character.set_default_costumes(Character.id.METAL, 0, 1, 4, 5, 1, 3, 2)
-
-
 
 } // __COSTUMES__

@@ -21,4 +21,9 @@ scope JMario {
     Character.table_patch_start(action_string, Character.id.JMARIO, 0x4)
     dw  Action.MARIO.action_string_table
     OS.patch_end()
+    
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.JMARIO, 0x2)
+    dh {MIDI.id.SMW_TITLECREDITS}
+    OS.patch_end()
 }

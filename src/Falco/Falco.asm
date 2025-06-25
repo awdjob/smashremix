@@ -51,11 +51,14 @@ scope Falco {
     insert POSE_1P, "moveset/POSE_1P.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
+	Character.edit_action_parameters(FALCO, Action.Idle,             File.FALCO_IDLE,           -1,                         -1)
+    Character.edit_action_parameters(FALCO, Action.ReviveWait,       File.FALCO_IDLE,           -1,                         -1)
+    Character.edit_action_parameters(FALCO, Action.EggLay,           File.FALCO_IDLE,           -1,                         -1)
+    Character.edit_action_parameters(FALCO, 0x006,                   File.FALCO_IDLE,           -1,                         -1)
+    Character.edit_action_parameters(FALCO, Action.Entry,            File.FALCO_IDLE,           -1,                         -1)
     Character.edit_action_parameters(FALCO, Action.Run,              -1,                        RUN,                        -1)
     Character.edit_action_parameters(FALCO, Action.Dash,             -1,                        DASH,                       -1)
     Character.edit_action_parameters(FALCO, Action.JumpAerialF,      -1,                        JUMP2,                      -1)
@@ -99,6 +102,7 @@ scope Falco {
     Character.edit_action(FALCO, 0xE2,              -1,             0x8015C750,                 Phantasm.air_subroutine_,       Phantasm.air_physics_,          Phantasm.air_collision_)
 
     // Modify Menu Action Parameters             // Action          // Animation                // Moveset Data             // Flags
+    Character.edit_menu_action_parameters(FALCO, 0x0,              File.FALCO_IDLE,            -1,                         -1)
     Character.edit_menu_action_parameters(FALCO, 0x1,               -1,                         VICTORY_POSE_1,             -1)
     Character.edit_menu_action_parameters(FALCO, 0x2,               File.FALCO_SELECT,          VICTORY_POSE_2,             -1)
     Character.edit_menu_action_parameters(FALCO, 0x3,               -1,                         VICTORY_POSE_3,             -1)
@@ -108,7 +112,7 @@ scope Falco {
     Character.edit_menu_action_parameters(FALCO, 0xE,               File.FALCO_CPU_POSE,        POSE_1P,                    -1)
 
     Character.table_patch_start(variants, Character.id.FALCO, 0x4)
-    db      Character.id.SLIPPY // set Slippy as SPECIAL variant for FALCO
+    db      Character.id.NONE
     db      Character.id.NFALCO // set as POLYGON variant for FALCO
     db      Character.id.NONE
     db      Character.id.NONE
@@ -136,41 +140,10 @@ scope Falco {
     // Shield colors for costume matching
     Character.set_costume_shield_colors(FALCO, WHITE, RED, BLUE, GREEN, BLACK, ORANGE, NA, NA)
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.FALCO, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.FALCO, 0x2)
+    dh {MIDI.id.CORNERIA}
     OS.patch_end()
-
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.FALCO, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.FALCO_NSP
-    OS.patch_end()
-
-	// Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.FALCO, 0x4)
-    dw    	AI.LONG_RANGE.ROUTINE.NONE
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  14,   22,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,   -1,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  -1,   -1,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  17,   20,  50, 700, 35, 200)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  17,   20,  50, 700, 35, 200)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  43,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  43,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  -1,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  -1,   -1,  -1, -1, -1, -1)
 
     // @ Description
     // Falco's extra actions

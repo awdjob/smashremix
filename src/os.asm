@@ -20,30 +20,36 @@ scope OS {
         pushvar origin, base
         origin  {origin}
         base    {base}
+        if {defined DEBUG} {
+            print "OS.patch_start origin 0x"; OS.print_hex(origin()); print " pc 0x"; OS.print_hex(pc()); print "\n";
+        }
     }
 
     macro patch_end() {
+        if {defined DEBUG} {
+            print "OS.patch_end origin 0x"; OS.print_hex(origin()); print " pc 0x"; OS.print_hex(pc()); print "\n";
+        }
         pullvar base, origin
     }
 
     macro print_hex(variable value) {
-    if value > 15 {
-    OS.print_hex(value >> 4)
-    }
-    value = value & 15
-    putchar(value < 10 ? '0' + value : 'A' + value - 10)
+        if value > 15 {
+            OS.print_hex(value >> 4)
+        }
+        value = value & 15
+        putchar(value < 10 ? '0' + value : 'A' + value - 10)
     }
 
     macro copy_segment(offset, length) {
-    insert  "../roms/original.z64", {offset}, {length}
+        insert  "../roms/original.z64", {offset}, {length}
     }
 
     macro move_segment(offset, length) {
-    OS.copy_segment({offset}, {length})
-    pushvar origin, base
-    origin  {offset}
-    fill    {length}, 0x00
-    pullvar base, origin
+        OS.copy_segment({offset}, {length})
+        pushvar origin, base
+        origin  {offset}
+        fill    {length}, 0x00
+        pullvar base, origin
     }
 
     macro routine_begin(allocation_space) {
@@ -280,6 +286,24 @@ scope OS {
         }
         lui    {register}, {firstHalf}      // register = first half of address
         lb     {register}, {secondHalf}({register}) // register = value from address
+    }
+
+    // Reads a byte
+    // label - RAM address to read from
+    // register - register to load value into
+    macro read_byte_unsigned(label, register) {
+        define firstHalf(0x0000)
+        define secondHalf(0x0000)
+        define firstHalfUnsigned(0x00000000)
+        evaluate firstHalf({label} >> 16)
+        evaluate firstHalfUnsigned({firstHalf} << 16)
+        evaluate secondHalf({label} - {firstHalfUnsigned})
+
+        if ({secondHalf} > 0x7FFF) {
+            evaluate firstHalf({firstHalf} + 0x0001) // modify address if value is negative
+        }
+        lui    {register}, {firstHalf}      // register = first half of address
+        lbu    {register}, {secondHalf}({register}) // register = value from address
     }
 
     // @ Description

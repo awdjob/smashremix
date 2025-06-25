@@ -128,7 +128,8 @@ scope Command {
             lbu     t1, 0x000D(t3)          // t1 = port
             sll     t1, t1, 0x0002          // t1 = offset
             addu    t0, t0, t1              // t0 = action control object, offset for port
-            sw      r0, 0x0030(t0)          // clear previous action, which will trigger a frame count reset
+            addiu   t3, r0, -0x0001         // t3 = -1
+            sh      t3, 0x0030(t0)          // clear previous action, which will trigger a frame count reset
 
             _end:
         }
@@ -361,12 +362,10 @@ scope Command {
         constant VFX(0x1)
         constant COMMAND_LENGTH(0x8)
 
-        // s1 = attacking player struct
-
         addiu   sp, sp,-0x0020              // allocate stack space
 
         // Check if SFX should be played for this character
-        lw      t0, 0x0190(s1)              // t0 = bit field
+        lw      t0, 0x0190(s2)              // t0 = bit field
         sll     t0, t0, 0x0004              // t0 = negative if should not be played
         bltz    t0, _end
         sw      ra, 0x0008(sp)              // store ra

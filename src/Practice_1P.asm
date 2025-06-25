@@ -1,4 +1,5 @@
-// Practice_1P.asm
+// Practice_1P.asm (code by goombapatrol)
+// Additional help from MarioReincarnate
 if !{defined __PRACTICE_1P__} {
 define __PRACTICE_1P__()
 print "included Practice_1P.asm\n"
@@ -84,6 +85,38 @@ scope Practice_1P {
     }
 
     // @ Description
+    // Prevents Masterhand softlock when switching ports between final stage practice attempts
+    scope prevent_masterhand_softlock_: {
+        OS.patch_start(0x110F60, 0x80192700)
+        lli     v1, 0x010C                  // a0 = CPU | Character.id.BOSS
+        OS.patch_end()
+
+        OS.patch_start(0x110F68, 0x80192708)
+        lh      t6, 0x0022(v0)              // get port type and char_id
+        OS.patch_end()
+
+        OS.patch_start(0x110F80, 0x80192720)
+        lh      t7, 0x0096(v0)              // get port type and char_id
+        OS.patch_end()
+
+        OS.patch_start(0x110F8C, 0x8019272C)
+        lh      t9, 0x010A(v0)              // get port type and char_id
+        OS.patch_end()
+
+        OS.patch_start(0x110F94, 0x80192734)
+        lh      t9, 0x010A(v0)              // get port type and char_id
+        OS.patch_end()
+
+        OS.patch_start(0x110FA0, 0x80192740)
+        lh      t1, 0x017E(v0)              // get port type and char_id
+        OS.patch_end()
+
+        OS.patch_start(0x110FA8, 0x80192748)
+        lh      t1, 0x017E(v0)              // get port type and char_id
+        OS.patch_end()
+    }
+
+    // @ Description
     // Runs while GAME SET is displayed in 1P mode and allows retrying during Practice
     // Also allows retrying in Bonus 1/2 and various Remix modes (with 'L: Retry')
     scope hold_l_to_retry_: {
@@ -165,6 +198,13 @@ scope Practice_1P {
         lli     t1, 0x0001                  // t1 = 1
         li      t0, SinglePlayerModes.reset_flag // load reset flag location
         sw      t1, 0x0000(t0)              // set reset flag
+
+        // Reset camera (fixes bug when Scene camera on Remix 1P Giga Bowser fight
+        li      t0, Camera.camera_struct
+        sw      r0, 0x008C(t0)
+        sw      r0, 0x0090(t0)
+        sw      r0, 0x0094(t0)
+
         li      t0, Global.screen_interrupt
         j       0x801147B4                  // exit GAME SET count down routine
         sw      t1, 0x0000(t0)              // force screen interrupt

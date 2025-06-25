@@ -6,8 +6,8 @@ scope Peppy {
 
     OS.align(4)
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
+    include "AI/Attacks.asm"
+
     OS.align(16)
 
     // @ Description
@@ -152,6 +152,9 @@ scope Peppy {
     insert BAIR,"moveset/BAIR.bin"
     insert UAIR,"moveset/UAIR.bin"
     insert DAIR,"moveset/DAIR.bin"
+	
+	CLIFF_CATCH:; insert "moveset/CLIFF_CATCH.bin"
+	CLIFF_WAIT:; insert "moveset/CLIFF_WAIT.bin"
 
     insert SPARKLE,"moveset/SPARKLE.bin"; Moveset.GO_TO(SPARKLE)                    // loops
     insert SHIELD_BREAK,"moveset/SHIELD_BREAK.bin"; Moveset.GO_TO(SPARKLE)          // loops
@@ -227,6 +230,8 @@ scope Peppy {
     Character.edit_action_parameters(PEPPY, 0xEF,                   File.PEPPY_DSP_IGNITE_GROUND, DSP_DETONATE,     0x00000000)
     Character.edit_action_parameters(PEPPY, 0xF1,                   File.PEPPY_DSP_AIR,         DSP_GROUND,                 -1)
     Character.edit_action_parameters(PEPPY, 0xF5,                   File.PEPPY_DSP_IGNITE_AIR,  DSP_DETONATE,       0x00000000)
+	Character.edit_action_parameters(PEPPY, Action.CliffCatch,      -1,                         CLIFF_CATCH,                -1)
+    Character.edit_action_parameters(PEPPY, Action.CliffWait,       -1,                         CLIFF_WAIT,                 -1)
 
     // Modify Actions               // Action           // Staling ID   // Main ASM                 // Interrupt/Other ASM          // Movement/Physics ASM         // Collision ASM
 
@@ -248,6 +253,9 @@ scope Peppy {
     Character.edit_menu_action_parameters(PEPPY, 0x3,               File.PEPPY_VICTORY_1,       VICTORY_1,                  -1)
     Character.edit_menu_action_parameters(PEPPY, 0x4,               File.PEPPY_CSS,             CSS,                        -1)
     Character.edit_menu_action_parameters(PEPPY, 0xD,               File.PEPPY_1P_POSE,         -1,                         -1)
+	
+
+
 
     Character.table_patch_start(ground_nsp, Character.id.PEPPY, 0x4)
     dw      PeppyNSP.ground_begin_initial_
@@ -270,14 +278,9 @@ scope Peppy {
     float32 1.0
     OS.patch_end()
 
-    // Set Fox as original character
-    Character.table_patch_start(variant_original, Character.id.PEPPY, 0x4)
-    dw      Character.id.FOX
-    OS.patch_end()
-
     // Set crowd chant FGM.
     Character.table_patch_start(crowd_chant_fgm, Character.id.PEPPY, 0x2)
-    dh  0x02B7
+    dh  0x0433
     OS.patch_end()
 
     // Set Kirby hat_id
@@ -293,10 +296,15 @@ scope Peppy {
     Character.table_patch_start(gfx_routine_end, Character.id.PEPPY, 0x4)
     dw      charge_gfx_routine_
     OS.patch_end()
-    
+
     // For spawning, clears out charges of nsp
     Character.table_patch_start(initial_script, Character.id.PEPPY, 0x4)
     dw      0x800D7DEC                      // use samus jump
+    OS.patch_end()
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.PEPPY, 0x2)
+    dh {MIDI.id.AREA6}
     OS.patch_end()
 
     // an associated moveset command: b0bc0000 removes the white flicker, this is identical to Samus
@@ -323,35 +331,9 @@ scope Peppy {
     // Shield colors for costume matching
     Character.set_costume_shield_colors(PEPPY, WHITE, RED, BROWN, AZURE, BLACK, ORANGE, NA, NA)
 
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  4,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  0,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  60,  -1,  200, 1000, -50, 200)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  6,  -1,  -1, -1, -10, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  4,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  4,   -1,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  14,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  6,   -1,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  -1,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  4,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  65,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  65,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  6,   -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  44,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  44,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  6,  -1,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,  -1,  -1, -1, -1, -1)
-
     // Set action strings
     Character.table_patch_start(action_string, Character.id.PEPPY, 0x4)
     dw  Action.action_string_table
-    OS.patch_end()
-
-    // Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.PEPPY, 0x4)
-    dw      AI.LONG_RANGE.ROUTINE.NSP_SHOOT
     OS.patch_end()
 
     // @ Description

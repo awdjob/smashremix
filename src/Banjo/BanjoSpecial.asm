@@ -680,7 +680,7 @@ scope BanjoNSP {
     scope air_shoot_physics_: {
         // 0x180 in player struct = temp variable 1
         addiu   sp, sp,-0x0030              // allocate stack space
-        sw    	ra, 0x0014(sp)              // store t0, t1, ra
+        sw      ra, 0x0014(sp)              // store t0, t1, ra
         lw      t0, 0x0084(a0)              // t0 = player struct
         lw      t1, 0x0180(t0)              // t1 = temp variable 2
         lui     t8, 0x800E                  // ~
@@ -694,7 +694,7 @@ scope BanjoNSP {
         nop
         lw      ra, 0x0014(sp)              // load ra
         jr      ra                          // return
-        addiu 	sp, sp, 0x0030				// deallocate stack space
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -1093,25 +1093,25 @@ scope BanjoUSP {
     scope usp_transition_attack_: {
         addiu   sp, sp, -0x0020             // ~
         sw      ra, 0x001C(sp)              // ~
-        addiu	t6, r0, 0x0003
-		sw		a0, 0x0020(sp)
-		sw		t6, 0x0010(sp)
-		addiu	a1, r0, Banjo.Action.USPAttack // insert action in a1
-		addiu	a2, r0, 0x0000
+        addiu   t6, r0, 0x0003
+        sw      a0, 0x0020(sp)
+        sw      t6, 0x0010(sp)
+        addiu   a1, r0, Banjo.Action.USPAttack // insert action in a1
+        addiu   a2, r0, 0x0000
 
         lw      t0, 0x0084(a0)              // load player struct
         sw      r0, 0x017C(t0)              // temp variable 1 = 0
         sw      r0, 0x0180(t0)              // temp variable 2 = 0
         sw      r0, 0x0184(t0)              // temp variable 3 = 0
 
-        jal		0x800E6F24					// change action routine
-		lui		a3, 0x3f80
+        jal     0x800E6F24                  // change action routine
+        lui     a3, 0x3f80
 
-        jal		0x800E0830
-		lw		a0, 0x0020(sp)
+        jal     0x800E0830
+        lw      a0, 0x0020(sp)
 
-        jal		0x8015BFBC
-		lw		a0, 0x0020(sp)
+        jal     0x8015BFBC
+        lw      a0, 0x0020(sp)
 
         lw      ra, 0x001C(sp)              // ~
         addiu   sp, sp, 0x0020              // ~
@@ -1238,24 +1238,24 @@ scope BanjoUSP {
         sw      t1, 0x0B18(a2)              // update button_press_buffer with current inputs
         sw      t1, 0x0018(sp)              // save button_pressed to stack
 
-		lui		at, 0x4120					// at = 10.0
-		mtc1    at, f6                      // ~
+        lui     at, 0x4120                  // at = 10.0
+        mtc1    at, f6                      // ~
         lwc1    f8, 0x0078(a0)              // ~
         c.le.s  f8, f6                      // ~
         nop
         bc1tl   _animation                  // skip if haven't reached frame 8
         nop
 
-		lw      t3, 0x0018(sp)              // load button press buffer
+        lw      t3, 0x0018(sp)              // load button press buffer
         andi    t1, t3, B_PRESSED           // t1 = 0x40 if (B_PRESSED); else t1 = 0
         beq     t1, r0, _animation          // skip if (!B_PRESSED)
         nop
 
-		sw      r0, 0x0010(sp)              // unknown argument = 0
+        sw      r0, 0x0010(sp)              // unknown argument = 0
         sw      r0, 0x0018(sp)              // interrupt flag = FALSE
 
-        jal		usp_transition_attack_
-		nop
+        jal     usp_transition_attack_
+        nop
 
         beq     r0, r0, _end
         nop
@@ -1277,7 +1277,7 @@ scope BanjoUSP {
         jal     0x801438F0                  // begin special fall
         sw      t6, 0x0014(sp)              // store LANDING_FSM
 
-		_end:
+        _end:
         lw      ra, 0x0024(sp)              // ~
         addiu   sp, sp, 0x0028              // ~
         jr      ra                          // original return logic
@@ -1387,7 +1387,7 @@ scope BanjoUSP {
         bnezl   t6, _end                    // branch if temp variable 1 is set...
         swc1    f2, 0x0030(a1)              // ...and store updated x rotation
 
-		_end:
+        _end:
         lw      ra, 0x0020(sp)              // ~
         addiu   sp, sp, 0x0038              // ~
         jr      ra                          // original return logic
@@ -1702,7 +1702,7 @@ scope BanjoUSP {
         nop
         // freeze x position
         sw      r0, 0x0048(s0)              // x velocity = 0
-		// freeze y position
+        // freeze y position
         sw      r0, 0x004C(s0)              // y velocity = 0
 
         _check_rear_back:
@@ -1712,7 +1712,7 @@ scope BanjoUSP {
         nop
 
         lui     t0, X_SPEED_BACK          // ~
-        mtc1	t0, f4						// put default X speed into f4
+        mtc1    t0, f4                      // put default X speed into f4
         lwc1    f0, 0x0044(s0)              // ~
         cvt.s.w f0, f0                      // f0 = direction
         mul.s   f4, f0, f4                  // f2 = x velocity * direction
@@ -1729,10 +1729,10 @@ scope BanjoUSP {
         nop
 
         // initialize x/y velocity
-        lui		t0, Y_SPEED_ATTACK  		// load default y speed
+        lui     t0, Y_SPEED_ATTACK          // load default y speed
         mtc1    t0, f2                      // f2 = Y_SPEED
         lui     t0, X_SPEED_ATTACK          // ~
-        mtc1	t0, f4						// put default X speed into f4
+        mtc1    t0, f4                      // put default X speed into f4
 
         _apply_movement:
         // f4 = x velocity
@@ -1786,7 +1786,7 @@ scope BanjoUSP {
     scope recoil_physics_: {
         // 0x17C in player struct = temp variable 1
         addiu   sp, sp,-0x0030              // allocate stack space
-        sw    	ra, 0x0014(sp)              // store t0, t1, ra
+        sw      ra, 0x0014(sp)              // store t0, t1, ra
         lw      t0, 0x0084(a0)              // t0 = player struct
         lw      t1, 0x017C(t0)              // t1 = temp variable 1
         lui     t8, 0x800E                  // ~
@@ -1800,7 +1800,7 @@ scope BanjoUSP {
         nop
         lw      ra, 0x0014(sp)              // load ra
         jr      ra                          // return
-        addiu 	sp, sp, 0x0030				// deallocate stack space
+        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 
     // @ Description
@@ -1809,7 +1809,7 @@ scope BanjoUSP {
     // Also applies SPLAT_X_SPEED
     scope splat_physics_: {
         addiu   sp, sp,-0x0020              // allocate stack space
-        sw    	ra, 0x0014(sp)              // ra
+        sw      ra, 0x0014(sp)              // ra
         lw      a1, 0x0084(a0)              // a1 = player struct
         lw      t6, 0x0184(a1)              // t6 = temp variable 3
         beqz    t6, _end                    // branch if temp variable 3 not set
@@ -1828,7 +1828,7 @@ scope BanjoUSP {
         nop
 
         lw      ra, 0x0014(sp)              // load ra
-        addiu 	sp, sp, 0x0020				// deallocate stack space
+        addiu   sp, sp, 0x0020              // deallocate stack space
         jr      ra                          // return
         nop
     }
@@ -1938,7 +1938,7 @@ scope BanjoUSP {
 // @ Description
 // Subroutines for Down Special
 scope BanjoDSP {
-    constant AERIAL_INITIAL_Y_SPEED(0x4100) // DSP rise
+    constant AERIAL_INITIAL_Y_SPEED(0x4140) // DSP rise
     constant Y_SPEED(0xC2DC)                // current setting - float:-110.0
     constant INITIAL_Y_SPEED(0x4334)        // current setting - float:180.0
     constant INITIAL_X_SPEED(0x42B4)        // current setting - float:90.0
@@ -2101,24 +2101,27 @@ scope BanjoDSP {
         swc1    f0, 0x000C(sp)              // ~
         swc1    f2, 0x0010(sp)              // store t0, t1, f0, f2
 
-        // slow x movement
+        _check_begin:
+        lw      t0, 0x0184(a2)              // t0 = temp variable 3
+        ori     t1, r0, BEGIN               // t1 = BEGIN
+        bne     t0, t1, _slow_x_movement    // skip if t0 != BEGIN
+        nop
+
+        // slow y movement
+        lwc1    f0, 0x004C(a2)              // f0 = current y velocity
+        lui     t0, 0x3F40                  // ~
+        mtc1    t0, f2                      // f2 = 0.75
+        mul.s   f0, f0, f2                  // f0 = y velocity * 0.75
+        swc1    f0, 0x004C(a2)              // y velocity = (y velocity * 0.75)
+        b       _end
+        nop
+
+        _slow_x_movement:
         lwc1    f0, 0x0048(a2)              // f0 = current x velocity
         lui     t0, 0x3F60                  // ~
         mtc1    t0, f2                      // f2 = 0.875
         mul.s   f0, f0, f2                  // f0 = x velocity * 0.875
         swc1    f0, 0x0048(a2)              // x velocity = (x velocity * 0.875)
-
-        _check_begin:
-        lw      t0, 0x0184(a2)              // t0 = temp variable 3
-        ori     t1, r0, BEGIN               // t1 = BEGIN
-        bne     t0, t1, _end                // skip if t0 != BEGIN
-        nop
-        // slow y movement
-        lwc1    f0, 0x004C(a2)              // f0 = current y velocity
-        lui     t0, 0x3F60                  // ~
-        mtc1    t0, f2                      // f2 = 0.875
-        mul.s   f0, f0, f2                  // f0 = x velocity * 0.875
-        swc1    f0, 0x004C(a2)              // y velocity = (y velocity * 0.875)
 
         _end:
         lw      t0, 0x0004(sp)              // ~
@@ -2139,7 +2142,7 @@ scope BanjoDSP {
         addiu   sp, sp,-0x0018              // allocate stack space
         sw      t0, 0x0004(sp)              // ~
         sw      t1, 0x0008(sp)              // ~
-        sw    	ra, 0x000C(sp)              // ~
+        sw      ra, 0x000C(sp)              // ~
         sw      a0, 0x0010(sp)              // store t0, t1, ra, a0
         lw      t0, 0x0084(a0)              // t0 = player struct
         lw      t1, 0x0180(t0)              // t1 = temp variable 2
@@ -2179,7 +2182,7 @@ scope BanjoDSP {
         lw      ra, 0x000C(sp)              // ~
         lw      a0, 0x0010(sp)              // load t0, t1, ra, a0
         jr      ra                          // return
-        addiu 	sp, sp, 0x0018				// deallocate stack space
+        addiu   sp, sp, 0x0018              // deallocate stack space
     }
 
     // @ Description
@@ -2212,28 +2215,15 @@ scope BanjoDSP {
 
         // If Banjo is not in the ground pound motion, run a normal aerial collision subroutine
         // instead.
-        jal     0x800DE99C                  // aerial collision subroutine
+        jal     0x800DE978                  // aerial collision subroutine
         nop
         b       _end                        // branch to end
         nop
 
         _main_collision:
         li      a1, begin_landing_          // a1 = begin_landing_
-        jal     0x800DE6E4                  // general air collision?
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
         lw      a0, 0x0010(sp)              // load a0
-        lw      a0, 0x0010(sp)              // load a0
-        jal     0x800DE87C                  // check ledge/floor collision?
-        nop
-        beq     v0, r0, _end                // skip if !collision
-        nop
-        lw      a0, 0x0010(sp)              // load a0
-        lw      a1, 0x0084(a0)              // a1 = player struct
-        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
-        andi    a2, a2, 0x3000              // bitmask
-        beq     a2, r0, _end                // skip if !ledge_collision
-        nop
-        jal     0x80144C24                  // ledge grab subroutine
-        nop
 
         _end:
         lw      ra, 0x0014(sp)              // load ra

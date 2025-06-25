@@ -57,7 +57,7 @@ scope SlippyNSP {
         lw      t6, 0x017C(v0)              // t6 = temp variable 1
         beql    t6, r0, _continue           // branch if temp variable 1 is not set
         mtc1    r0, f6                      // f6 = 0
-        
+
         // if temp variable 1 is set
         addiu   a1, sp, 0x0018              // 0x0018(sp) = offset coordinates
         sw      r0, 0x017C(v0)              // reset temp variable 1
@@ -73,18 +73,18 @@ scope SlippyNSP {
         addiu   a1, sp, 0x0018              // a1 = coordinates to create projectile at
         lw      a0, 0x0028(sp)              // a0 = player object
         mtc1    r0, f6                      // f6 = 0
-        
+
         _continue:
         lwc1    f8, 0x0078(a0)              // ~
         c.le.s  f8, f6                      // ~
         nop                                 // ~
         bc1fl   _end                        // branch if animation end hasn't been reached
         lw      ra, 0x0014(sp)              // load ra
-        
+
         jal     0x800DEE54                  // idle/fall transition
         nop
         lw      ra, 0x0014(sp)              // load ra
-        
+
         _end:
         jr      ra                          // return
         addiu   sp, sp, 0x0028              // deallocate stack space
@@ -97,12 +97,12 @@ scope SlippyNSP {
         sw      ra, 0x0014(sp)              // store ra
         li      a1, air_to_ground_          // a1(transition subroutine) = air_to_ground_
         jal     0x800DE6E4                  // common air collision subroutine (transition on landing, no ledge grab)
-        nop 
+        nop
         lw      ra, 0x0014(sp)              // load ra
         jr      ra                          // return
         addiu   sp, sp, 0x0018              // deallocate stack space
     }
-    
+
     // @ Description
     // Subroutine which handles ground to air transition for neutral special actions
     scope air_to_ground_: {
@@ -114,7 +114,7 @@ scope SlippyNSP {
         sw      a0, 0x0034(sp)              // 0x0034(sp) = player struct
         lw      v0, 0x0034(sp)              // v0 = player struct
         lw      a0, 0x0038(sp)              // a0 = player object
-        
+
         lw      a2, 0x0008(v0)              // load character ID
         lli     a1, Character.id.KIRBY      // a1 = id.KIRBY
         beql    a1, a2, _change_action      // if Kirby, load alternate action ID
@@ -122,19 +122,19 @@ scope SlippyNSP {
         lli     a1, Character.id.JKIRBY     // a1 = id.JKIRBY
         beql    a1, a2, _change_action      // if J Kirby, load alternate action ID
         lli     a1, Kirby.Action.SLIPPY_NSP_Ground
-        
-        
+
+
         addiu   a1, r0, 0x00E1              // a1 = equivalent ground action for current air action
         _change_action:
         lw      a2, 0x0078(a0)              // a2(starting frame) = current animation frame
         lui     a3, 0x3F80                  // a3(frame speed multiplier) = 1.0
         jal     0x800E6F24                  // change action
-        sw      r0, 0x00010(sp)             // argument 4 = 0
+        sw      r0, 0x0010(sp)              // argument 4 = 0
         lw      ra, 0x001C(sp)              // load ra
         jr      ra                          // return
         addiu   sp, sp, 0x0038              // deallocate stack space
     }
-    
+
     // @ Description
     // Initial subroutine for Slippy's laser.
     scope laser_stage_setting_: {
@@ -147,7 +147,7 @@ scope SlippyNSP {
         lui     a3, 0x8000                  // a3 = 0x80000000
         beq     v0, r0, _end_stage_setting  // if 801655C8 returns 0, there's no space to create a new projectile object, so skip to end
         nop
-        
+
         lw      v1, 0x0084(v0)              // v0 = projectile special struct
         lui     at, 0x4396                  // ~
         mtc1    at, f8                      // projectile speed = 300
@@ -164,15 +164,15 @@ scope SlippyNSP {
         jal     0x80103320                  // unknown subroutine (pink ball graphic?)
         lw      a0, 0x0024(sp)              // a0 = creation coordinates
         lw      v0, 0x0018(sp)              // v0 = projectile object
-        
+
         _end_stage_setting:
         lw      ra, 0x0014(sp)              // load ra
-        jr      ra                          // return    
+        jr      ra                          // return
         addiu   sp, sp, 0x0030              // deallocate stack space
     }
-    
-    
-    
+
+
+
     // @ Description
     // Projectile struct for Slippy's laser.
     OS.align(16)
@@ -182,7 +182,7 @@ scope SlippyNSP {
     dw Character.SLIPPY_file_6_ptr
     OS.copy_segment(0x10391C, 0x28)
 }
-	
+
 
 // @ Description
 // Subroutines for Up Special
@@ -226,11 +226,11 @@ scope SlippyUSP {
         nop                                 // ~
         bc1fl   _calculate_speed            // skip if absolute stick < 0...
         lwc1    f10, 0x0B20(s0)             // ...and set new angle to previous angle
-        
+
         jal     0x8001863C                  // f0 = atan2(f12,f14)
         nop
         mov.s   f12, f0                     // f12 = stick angle
-        
+
         _get_turn_angle:
         mtc1    r0, f0                      // f0 = 0
         li      at, 0x40C90FE4              // ~
@@ -238,14 +238,14 @@ scope SlippyUSP {
         li      at, 0xC0490FD0              // ~
         mtc1    at, f4                      // f4 = -3.14159 rads/-180 degrees
         li      at, TURN_SPEED              // ~
-        mtc1    at, f6                      // f6 = TURN_SPEED    
+        mtc1    at, f6                      // f6 = TURN_SPEED
         lwc1    f10, 0x0B20(s0)             // f10 = current movement angle
         sub.s   f8, f12, f10                // f8 = angle difference: stick angle - current angle
         c.lt.s  f4, f8                      // ~
         nop                                 // ~
         bc1fl   _calculate_turn             // branch if angle difference < -180...
         add.s   f8, f8, f2                  // ...and add 360 degrees to angle differnece
-        
+
         _calculate_turn:
         abs.s   f14, f8                     // f14 = absolute angle difference
         c.lt.s  f6, f14                     // ~
@@ -256,16 +256,16 @@ scope SlippyUSP {
         nop                                 // ~
         bc1fl   _apply_turn                 // branch if angle difference < 0...
         neg.s   f6, f6                      // ...and set f6 to -TURN_SPEED
-        
+
         _apply_turn:
         add.s   f10, f10, f6                // f10 = previous angle + TURN_SPEED
-        
+
         _update_angle:
         c.lt.s  f4, f10                     // ~
         nop                                 // ~
         bc1fl   _calculate_speed            // branch if new movement angle < -180...
         add.s   f10, f10, f2                // ...and add 360 degrees to movement angle
-        
+
         _calculate_speed:
         swc1    f10, 0x0B20(s0)             // store updated movement angle
         lui     at, 0x3F80                  // ~
@@ -281,8 +281,8 @@ scope SlippyUSP {
         mtc1    at, f6                      // ~
         mul.s   f4, f6, f4                  // f4 = SPEED: BASE_SPEED * multiplier
         swc1    f4, 0x0030(sp)              // 0x0030(sp) = SPEED
-        
-        
+
+
         _apply_movement:
         // ultra64 cosf function
         jal     0x80035CD0                  // f0 = cos(f12)
@@ -301,38 +301,13 @@ scope SlippyUSP {
         mul.s   f2, f2, f0                  // f2 = x velocity * direction
         swc1    f2, 0x0048(s0)              // store updated x velocity
         swc1    f4, 0x004C(s0)              // store updated y velocity
-        
+
         _end:
         jal     0x8015C054                  // unknown final firefox subroutine
         lw      a0, 0x0020(sp)              // a0 = player object
         lw      ra, 0x0014(sp)              // load ra
         jr      ra                          // return
         addiu   sp, sp, 0x0040              // deallocate stack space
-    }
-    
-    // @ Description
-    // Ledge grab check for Slippy.
-    scope check_ledge_grab_: {
-        addiu   sp, sp,-0x0030              // allocate stack space
-        sw      ra, 0x0014(sp)              // ~
-        sw      a0, 0x0018(sp)              // store ra, a0
-        jal     0x800DE87C                  // check ledge/floor collision?
-        nop
-        beq     v0, r0, _end                // skip if !collision
-        nop
-        lw      a0, 0x0018(sp)              // a0 = player object
-        lw      a1, 0x0084(a0)              // a1 = player struct
-        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
-        andi    a2, a2, 0x3000              // bitmask
-        beq     a2, r0, _end                // skip if !ledge_collision
-        nop
-        jal     0x80144C24                  // ledge grab subroutine
-        nop
-        
-        _end:
-        lw      ra, 0x0014(sp)              // load ra
-        jr      ra                          // return
-        addiu   sp, sp, 0x0030              // deallocate stack space
     }
 }
 
@@ -355,5 +330,5 @@ scope SlippyDSP {
         _branch:
         OS.copy_segment(0xD76EC, 0x34)
     }
-    
+
 }

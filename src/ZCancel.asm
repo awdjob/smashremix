@@ -13,7 +13,8 @@ include "Toggles.asm"
 scope ZCancel {
 
     // @ Description
-    // An optional toggle to spice things up
+    // A good training mechanic that punishes you form missing your z cancels while landing with aerials
+    // by halofactory
     scope _cruel_z_cancel: {
         scope CRUEL_Z_CANCEL_MODE: {
             constant OFF(0)
@@ -100,6 +101,7 @@ scope ZCancel {
 
         _egg:
         sw      r0, 0x0B18(v1)              //
+        sw      r0, 0x07A0(v1)              // set capturer to 0
 
         addiu   a1, r0, Action.EggLay       // set to egg
         or      a2, r0, r0                  // a2(starting frame) = 0 (doesn't do anything here?)
@@ -145,22 +147,22 @@ scope ZCancel {
         li      t0, Global.current_screen   // ~
         lbu     t0, 0x0000(t0)              // t0 = current screen
         addiu   at, r0, 0x0001              // at = 1P mode screen_id
-        
+
         bne     t0, at, _instant_ko_normal  // continue normal path if not on 1p screen (as well as title screen)
         nop
-        
+
         li      at, SinglePlayerModes.STAGE_FLAG
         lb      at, 0x0000(at)           // load current stage
         addiu   t0, r0, 0x000D           // final stage ID
-        
+
         bne     t0, at, _instant_ko_normal  // continue normal path if not on 1p screen (as well as title screen)
         nop
-        
+
         li      at, 0x80131580           // load "match off" byte (gets turned on after fight ends and when pause pressed
         lbu     at, 0x0000(at)
         beqz    at, _instant_ko_skip     // if "match off" byte is set to 0, then you shouldn't be able to KO in the 1p Final Boss (this should possibly always be the case)
         nop
-        
+
         _instant_ko_normal:
         lw      t0, 0x0084(a0)           // t0 = player struct
         sw      r0, 0x0A20(t0)           // clear Overlay Routine
@@ -170,7 +172,7 @@ scope ZCancel {
         sw      r0, 0x0A88(t0)           // clear current Overlay
         jal     0x8013C1C4               // set to KO action
         nop
-        
+
         _instant_ko_skip:
         j       0x80150AF0 + 0x4         // and skip to end
         lw      ra, 0x0014(sp)
@@ -204,7 +206,7 @@ scope ZCancel {
         nop
 
         li      t6, Toggles.entry_z_cancel_opts
-        lw      t6, 0x0004(t6)              // t0 = 0 for DEFAULT, 1 for Disabled, 2 for Melee, 3 for Auto, 4 for Glide
+        lw      t6, 0x0004(t6)              // t6 = 0 for DEFAULT, 1 for Disabled, 2 for Melee, 3 for Auto, 4 for Glide
         beqz    t6, _default                // branch accordingly
         lli     at, 0x0001                  // t1 = 1 (Disabled)
         beq     at, t6, _return             // branch accordingly
@@ -219,7 +221,7 @@ scope ZCancel {
         // if we're here, this is a CPU z cancel
         _cpu_z_cancel:
         li      t6, Toggles.entry_z_cancel_opts
-        lw      t6, 0x0004(t6)              // t0 = 0 for DEFAULT, 1 for Disabled, 2 for Melee, 3 for Auto, 4 for Glide
+        lw      t6, 0x0004(t6)              // t6 = 0 for DEFAULT, 1 for Disabled, 2 for Melee, 3 for Auto, 4 for Glide
         beqz    t6, _z_cancel_success       // branch accordingly
         lli     at, 0x0001                  // t1 = 1 (Disabled)
         beq     at, t6, _return             // branch accordingly

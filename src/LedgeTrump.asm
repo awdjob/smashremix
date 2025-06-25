@@ -1,5 +1,6 @@
 // LedgeTrump.asm
-
+// Removes the ability to ledge hog other players, the trumped player will fall off the ledge
+// by halofactory
 scope LedgeTrump {
 
     // check right ledge = 800DB590

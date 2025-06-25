@@ -12,7 +12,9 @@ include "OS.asm"
 
 scope Character {
     // number of character slots to add
-    constant ADD_CHARACTERS(61)
+    constant ADD_CHARACTERS(68)
+    // number of vanilla characters in base game
+    constant NUM_VANILLA_CHARACTERS(27)
     // start and end offset for the main character struct table (RAM 0x80116E10)
     constant STRUCT_TABLE(0x92610)
     variable STRUCT_TABLE_END(STRUCT_TABLE + 0x6C)
@@ -22,9 +24,9 @@ scope Character {
     constant SHARED_ACTION_ARRAY(0xA45D8)
 
     // total number of character slots (note 0x1B and 0x1C will be unused)
-    constant NUM_CHARACTERS(27 + 2 + ADD_CHARACTERS)
-	variable NUM_REMIX_FIGHTERS(0)	// Will be updated by define_character
-	variable NUM_POLYGONS(0)	    // ~
+    constant NUM_CHARACTERS(NUM_VANILLA_CHARACTERS + 2 + ADD_CHARACTERS)
+    variable NUM_REMIX_FIGHTERS(0)  // Will be updated by define_character
+    variable NUM_POLYGONS(0)        // ~
     ///////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////// CHARACTER MACRO ///////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,6 +76,7 @@ scope Character {
         constant {name}_param_array_size({name}_parent_param_array_size + {add_actions})
 
         // CHARACTER ID
+        global define CHARACTER_ADDED_{name}(id.{name})
         constant id.{name}((STRUCT_TABLE_END - STRUCT_TABLE) / 0x4)
 
         // Parent character name
@@ -340,18 +343,18 @@ scope Character {
         dw      costume_shield_color.{parent} // default to parent
         OS.patch_end()
 
-		// Handle Polygons
-		if {variant_type} == variant_type.POLYGON {
-			// Set Kirby hat_id to none
-			Character.table_patch_start(kirby_inhale_struct, 0x2, Character.id.{name}, 0xC)
-			dh 0x08
-			OS.patch_end()
-			global variable NUM_POLYGONS(NUM_POLYGONS + 1)
-		}
+        // Handle Polygons
+        if {variant_type} == variant_type.POLYGON {
+            // Set Kirby hat_id to none
+            Character.table_patch_start(kirby_inhale_struct, 0x2, Character.id.{name}, 0xC)
+            dh 0x08
+            OS.patch_end()
+            global variable NUM_POLYGONS(NUM_POLYGONS + 1)
+        }
 
-		if {variant_type} == variant_type.NA {
-			global variable NUM_REMIX_FIGHTERS(NUM_REMIX_FIGHTERS + 1)
-		}
+        if {variant_type} == variant_type.NA {
+            global variable NUM_REMIX_FIGHTERS(NUM_REMIX_FIGHTERS + 1)
+        }
 
         pullvar base, origin
     }
@@ -383,44 +386,94 @@ scope Character {
     // modifies parameters for an action (animation id, command list offset, flags)
     // NOTE: this macro supports use outside of this file.
     macro edit_action_parameters(name, action, animation, command, flags) {
-    if {action} >= 0xDC && ({action} - 0xDC) * 0x14 >= Character.action_array_size.{Character.{name}_parent} {
-        print "\n\nWARNING: Action 0x" ; OS.print_hex({action}) ; print " does not exist for {{name}_parent}. edit_action_parameters aborted.\n"
-    } else {
-        // Define {num} (used to avoid constant declaration issues with read16)
-        if !{defined num} {
-            evaluate num(0)
-        }
-        // Get ROM offset for parent action struct
-        if {action} >= 0xDC {
-            variable PARENT_ACTION_STRUCT({Character.{name}_parent_action_array} + (({action} - 0xDC) * 0x14))
+        if {action} >= 0xDC && ({action} - 0xDC) * 0x14 >= Character.action_array_size.{Character.{name}_parent} {
+            print "\n\nWARNING: Action 0x" ; OS.print_hex({action}) ; print " does not exist for {{name}_parent}. edit_action_parameters aborted.\n"
         } else {
-            variable PARENT_ACTION_STRUCT(Character.SHARED_ACTION_ARRAY + ({action} * 0x14))
-        }
+            // Define {num} (used to avoid constant declaration issues with read16)
+            if !{defined num} {
+                evaluate num(0)
+            }
+            // Get ROM offset for parent action struct
+            if {action} >= 0xDC {
+                variable PARENT_ACTION_STRUCT({Character.{name}_parent_action_array} + (({action} - 0xDC) * 0x14))
+            } else {
+                variable PARENT_ACTION_STRUCT(Character.SHARED_ACTION_ARRAY + ({action} * 0x14))
+            }
 
-        // Get offset for parameter struct
-        global evaluate num({num} + 1)
-        read16 param_read_{num}, "../roms/original.z64", PARENT_ACTION_STRUCT
-        variable param_offset(param_read_{num} >> 6)
+            // Get offset for parameter struct
+            global evaluate num({num} + 1)
+            read16 param_read_{num}, "../roms/original.z64", PARENT_ACTION_STRUCT
+            variable param_offset(param_read_{num} >> 6)
 
-        // Check for no parameters
-        if param_offset == 0x3FF {
-            print "\n\nWARNING: Action parameters do not exist for character: {name} action: {action} (0x" ; OS.print_hex({action}) ; print "). edit_action_parameters aborted.\n"
-        } else {
-        // Modify parameter struct
-        pushvar origin, base
-        origin {Character.{name}_param_array_origin} + (param_offset * 0xC)
-        if {animation} != -1 {
-            dw {animation}                  // insert animation
-        } else {; origin origin() + 0x4; }
-        if {command} != -1 {
-            dw {command}                    // insert command offset
-        } else {; origin origin() + 0x4; }
-        if {flags} != -1 {
-            dw {flags}                      // insert flags
-        }
-        pullvar base, origin
+            // Check for no parameters
+            if param_offset == 0x3FF {
+                print "\n\nWARNING: Action parameters do not exist for character: {name} action: {action} (0x" ; OS.print_hex({action}) ; print "). edit_action_parameters aborted.\n"
+            } else {
+            // Modify parameter struct
+            pushvar origin, base
+            origin {Character.{name}_param_array_origin} + (param_offset * 0xC)
+            if {animation} != -1 {
+                dw {animation}                  // insert animation
+            } else {; origin origin() + 0x4; }
+            if {command} != -1 {
+                dw {command}                    // insert command offset
+            } else {; origin origin() + 0x4; }
+            if {flags} != -1 {
+                dw {flags}                      // insert flags
+            }
+            pullvar base, origin
+            }
         }
     }
+
+    // @ Description
+    // duplicates the original moveset command prepending a secondary moveset command file as a CONCURRENT_STREAM
+    // this is a way of adding aditional functionality to a command without changing the original behavior
+    // NOTE: this macro supports use outside of this file.
+    macro add_concurrent_commands(name, action, command) {
+        if {action} >= 0xDC && ({action} - 0xDC) * 0x14 >= Character.action_array_size.{name} {
+            print "\n\nWARNING: Action 0x" ; OS.print_hex({action}) ; print " does not exist for {{name}}. edit_action_parameters aborted.\n"
+        } else {
+            // Define {num} (used to avoid constant declaration issues with read16)
+            if !{defined num} {
+                evaluate num(0)
+            }
+            // Get ROM offset for parent action struct
+            if {action} >= 0xDC {
+                variable PARENT_ACTION_STRUCT({Character.{name}_action_array} + (({action} - 0xDC) * 0x14))
+            } else {
+                variable PARENT_ACTION_STRUCT(Character.SHARED_ACTION_ARRAY + ({action} * 0x14))
+            }
+
+            // Get offset for parameter struct
+            global evaluate num({num} + 1)
+            read16 param_read_{num}, "../roms/original.z64", PARENT_ACTION_STRUCT
+            variable param_offset(param_read_{num} >> 6)
+
+            // Check for no parameters
+            if param_offset == 0x3FF {
+                print "\n\nWARNING: Action parameters do not exist for character: {name} action: {action} (0x" ; OS.print_hex({action}) ; print "). edit_action_parameters aborted.\n"
+            } else {
+            // Get address of original command
+            variable PARAM_STRUCT(Character.{name}_original_param_array + (param_offset * 0xC))
+            read32 command_read_{num}, "../roms/original.z64", PARAM_STRUCT + 0x4
+
+            evaluate original_command(command_read_{num})
+
+            EDITED_COMMAND_{name}_{action}_{command}:
+            Moveset.CONCURRENT_STREAM({command});
+            Moveset.GO_TO_FILE({original_command});
+            Moveset.END();
+
+            // Modify parameter struct
+            pushvar origin, base
+            origin {Character.{name}_param_array_origin} + (param_offset * 0xC)
+            origin origin() + 0x4;
+            dw EDITED_COMMAND_{name}_{action}_{command}
+
+            pullvar base, origin
+            }
+        }
     }
 
     // @ Description
@@ -1033,6 +1086,7 @@ scope Character {
         // Move action array
         KIRBY_action_array:
         global evaluate KIRBY_action_array_origin(origin())
+        constant KIRBY_action_array_origin(origin())
         OS.move_segment({KIRBY_original_action_array}, action_array_size.KIRBY)
         // Add space for new actions
         fill (KIRBY_action_array + (action_array_size.KIRBY + ({add_actions} * 0x14))) - pc()
@@ -1781,7 +1835,7 @@ scope Character {
             }
             addu    at, at, t5              // original line 4
             lw      t5, LOWER(at)           // original line 5 (modified)
-			// jr 	t5
+            // jr   t5
         }
 
 
@@ -1826,11 +1880,11 @@ scope Character {
             OS.patch_end()
             // data screen
             OS.patch_start(0x15E4E4, 0x80132494)
-            li		t7, menu_zoom.table     // original lines 1/2
+            li      t7, menu_zoom.table     // original lines 1/2
             OS.patch_end()
             // challenger approaching screen
             OS.patch_start(0x12A8B0, 0x80131EF0)
-            li		t6, menu_zoom.table     // original lines 1/2
+            li      t6, menu_zoom.table     // original lines 1/2
             OS.patch_end()
         }
 
@@ -2142,47 +2196,85 @@ scope Character {
     move_table(crowd_chant_fgm, 0xA81A8, 0x2)
     move_table(yoshi_egg, 0x103160, 0x1C)
 
-	// ai tables
+    // remix 1p end image song table
+    scope remix_1p_end_bgm {
+        OS.align(16)
+        table:
+        constant TABLE_ORIGIN(origin())
+        dh  {MIDI.id.SMW_TITLECREDITS}      // 0x00 - MARIO
+        dh  {MIDI.id.STARFOX_MEDLEY}        // 0x01 - FOX
+        dh  {MIDI.id.DK_RAP}                // 0x02 - DONKEY
+        dh  {MIDI.id.CRATERIA_MAIN}         // 0x03 - SAMUS
+        dh  {MIDI.id.SMB2_MEDLEY}           // 0x04 - LUIGI
+        dh  {MIDI.id.HYRULE_TEMPLE}         // 0x05 - LINK
+        dh  {MIDI.id.YOSHI_TALE}            // 0x06 - YOSHI
+        dh  {MIDI.id.FZERO_CLIMBUP}         // 0x07 - CAPTAIN
+        dh  {MIDI.id.POP_STAR}              // 0x08 - KIRBY
+        dh  {MIDI.id.POKEFLOATS}            // 0x09 - PIKACHU
+        dh  {MIDI.id.SS_AQUA}               // 0x0A - JIGGLY
+        dh  {MIDI.id.POLLYANNA}             // 0x0B - NESS
+        dh  0x19                            // 0x0C - BOSS
+        dh  0x25                            // 0x0D - METAL
+        dh  0x24                            // 0x0E - NMARIO
+        dh  0x24                            // 0x0F - NFOX
+        dh  0x24                            // 0x10 - NDONKEY
+        dh  0x24                            // 0x11 - NSAMUS
+        dh  0x24                            // 0x12 - NLUIGI
+        dh  0x24                            // 0x13 - NLINK
+        dh  0x24                            // 0x14 - NYOSHI
+        dh  0x24                            // 0x15 - NCAPTAIN
+        dh  0x24                            // 0x16 - NKIRBY
+        dh  0x24                            // 0x17 - NPIKACHU
+        dh  0x24                            // 0x18 - NJIGGLY
+        dh  0x24                            // 0x19 - NNESS
+        dh  {MIDI.id.DKCTITLE}              // 0x1A - GDONKEY
+        // pad table for new characters
+        fill (table + (NUM_CHARACTERS * 0x2)) - pc()
+        OS.align(4)
+    }
+
+    // ai tables
     move_table(ai_behaviour, 0x102B04, 0x4)
 
-    scope ai_behaviour_heavy_attack {
-            OS.align(16)
-            table:
-            constant TABLE_ORIGIN(origin())
-            dw  AI.heavy_attack_arrays.mario
-            dw  AI.heavy_attack_arrays.fox
-            dw  AI.heavy_attack_arrays.dk
-            dw  AI.heavy_attack_arrays.samus
-            dw  AI.heavy_attack_arrays.luigi
-            dw  AI.heavy_attack_arrays.link
-            dw  AI.heavy_attack_arrays.yoshi
-            dw  AI.heavy_attack_arrays.captain_falcon
-            dw  AI.heavy_attack_arrays.kirby
-            dw  AI.heavy_attack_arrays.pikachu
-            dw  AI.heavy_attack_arrays.jigglypuff
-            dw  AI.heavy_attack_arrays.ness
-            dw  0                           // boss
-            dw  AI.heavy_attack_arrays.mario// metal mario
-            dw  AI.heavy_attack_arrays.mario// polygons
-            dw  AI.heavy_attack_arrays.fox
-            dw  AI.heavy_attack_arrays.dk
-            dw  AI.heavy_attack_arrays.samus
-            dw  AI.heavy_attack_arrays.luigi
-            dw  AI.heavy_attack_arrays.link
-            dw  AI.heavy_attack_arrays.yoshi
-            dw  AI.heavy_attack_arrays.captain_falcon
-            dw  AI.heavy_attack_arrays.kirby
-            dw  AI.heavy_attack_arrays.pikachu
-            dw  AI.heavy_attack_arrays.jigglypuff
-            dw  AI.heavy_attack_arrays.ness
-            dw  AI.heavy_attack_arrays.dk   // giant dk
-            dw  0                           // none
-            dw  0                           // none
+    // Commenting this table since it's unused. Could have been useful for punishing laggy moves or hitting stunned opponents
+    // scope ai_behaviour_heavy_attack {
+            // OS.align(16)
+            // table:
+            // constant TABLE_ORIGIN(origin())
+            // dw  AI.heavy_attack_arrays.mario
+            // dw  AI.heavy_attack_arrays.fox
+            // dw  AI.heavy_attack_arrays.dk
+            // dw  AI.heavy_attack_arrays.samus
+            // dw  AI.heavy_attack_arrays.luigi
+            // dw  AI.heavy_attack_arrays.link
+            // dw  AI.heavy_attack_arrays.yoshi
+            // dw  AI.heavy_attack_arrays.captain_falcon
+            // dw  AI.heavy_attack_arrays.kirby
+            // dw  AI.heavy_attack_arrays.pikachu
+            // dw  AI.heavy_attack_arrays.jigglypuff
+            // dw  AI.heavy_attack_arrays.ness
+            // dw  0                           // boss
+            // dw  AI.heavy_attack_arrays.mario// metal mario
+            // dw  AI.heavy_attack_arrays.mario// polygons
+            // dw  AI.heavy_attack_arrays.fox
+            // dw  AI.heavy_attack_arrays.dk
+            // dw  AI.heavy_attack_arrays.samus
+            // dw  AI.heavy_attack_arrays.luigi
+            // dw  AI.heavy_attack_arrays.link
+            // dw  AI.heavy_attack_arrays.yoshi
+            // dw  AI.heavy_attack_arrays.captain_falcon
+            // dw  AI.heavy_attack_arrays.kirby
+            // dw  AI.heavy_attack_arrays.pikachu
+            // dw  AI.heavy_attack_arrays.jigglypuff
+            // dw  AI.heavy_attack_arrays.ness
+            // dw  AI.heavy_attack_arrays.dk   // giant dk
+            // dw  0                           // none
+            // dw  0                           // none
 
-            // pad table for new characters
-            fill (table + (NUM_CHARACTERS * 0x4)) - pc()
-            OS.align(4)
-    }
+            // // pad table for new characters
+            // fill (table + (NUM_CHARACTERS * 0x4)) - pc()
+            // OS.align(4)
+    // }
 
     move_table(ai_attack_prevent, 0x1065E4, 0x4)
     move_table_14(ai_aerial_chase, 0x1066A4, 0x4)
@@ -2235,6 +2327,7 @@ scope Character {
         constant FALCON(0x07)
         constant KIRBY(0x08)
         constant PIKACHU(0x09)
+        constant PIKA(0x9)
         constant JIGGLY(0x0A)
         constant JIGGLYPUFF(0x0A)
         constant PUFF(0x0A)
@@ -2244,18 +2337,22 @@ scope Character {
         constant NMARIO(0x0E)
         constant NFOX(0x0F)
         constant NDONKEY(0x10)
+        constant NDK(0x10)
         constant NSAMUS(0x11)
         constant NLUIGI(0x12)
         constant NLINK(0x13)
         constant NYOSHI(0x14)
         constant NCAPTAIN(0x15)
+        constant NFALCON(0x15)
         constant NKIRBY(0x16)
         constant NPIKACHU(0x17)
+        constant NPIKA(0x17)
         constant NJIGGLY(0x18)
         constant NPUFF(0x18)
         constant NJIGGLYPUFF(0x18)
         constant NNESS(0x19)
         constant GDONKEY(0x1A)
+        constant GDK(0x1A)
         constant PLACEHOLDER(0x1B)
         constant NONE(0x1C)
     }
@@ -2434,14 +2531,14 @@ scope Character {
         constant TABLE_ORIGIN(origin())
         //  D-UP        //  D-DOWN       //  D-LEFT     //  D-RIGHT
         db  id.METAL;   db  id.NMARIO;   db  id.JMARIO; db  id.NONE        // 0x00 - MARIO
-        db  id.PEPPY;   db  id.NFOX;     db  id.JFOX;   db  id.NONE        // 0x01 - FOX
+        db  id.NONE;    db  id.NFOX;     db  id.JFOX;   db  id.NONE        // 0x01 - FOX
         db  id.GDONKEY; db  id.NDONKEY;  db  id.JDK;    db  id.NONE        // 0x02 - DONKEY
         db  id.NONE;    db  id.NSAMUS;   db  id.JSAMUS; db  id.ESAMUS      // 0x03 - SAMUS
         db  id.MLUIGI;  db  id.NLUIGI;   db  id.JLUIGI; db  id.NONE        // 0x04 - LUIGI
         db  id.BOSS;    db  id.NLINK;    db  id.JLINK;  db  id.ELINK       // 0x05 - LINK
         db  id.NONE;    db  id.NYOSHI;   db  id.JYOSHI; db  id.NONE        // 0x06 - YOSHI
         db  id.NONE;    db  id.NCAPTAIN; db  id.JFALCON;db  id.NONE        // 0x07 - CAPTAIN
-        db  id.PIANO;    db  id.NKIRBY;   db  id.JKIRBY; db  id.NONE        // 0x08 - KIRBY
+        db  id.NONE;    db  id.NKIRBY;   db  id.JKIRBY; db  id.NONE        // 0x08 - KIRBY
         db  id.NONE;    db  id.NPIKACHU; db  id.JPIKA;  db  id.EPIKA       // 0x09 - PIKACHU
         db  id.NONE;    db  id.NJIGGLY;  db  id.JPUFF;  db  id.EPUFF       // 0x0A - JIGGLY
         db  id.NONE;    db  id.NNESS;    db  id.JNESS;  db  id.NONE        // 0x0B - NESS
@@ -2460,6 +2557,43 @@ scope Character {
         db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x18 - NJIGGLY
         db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x19 - NNESS
         db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x1A - GDONKEY
+        // pad table for new characters
+        fill table + (NUM_CHARACTERS * 4) - pc(), id.NONE
+    }
+
+    // @ Description
+    // Holds variant character IDs with the same model in an array for each character
+    scope variants_with_same_model {
+        OS.align(16)
+        table:
+        constant TABLE_ORIGIN(origin())
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x00 - MARIO
+        db  id.JFOX;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x01 - FOX
+        db  id.JDK;     db  id.GDONKEY;  db  id.NONE;   db  id.NONE        // 0x02 - DONKEY
+        db  id.JSAMUS;  db  id.ESAMUS;   db  id.NONE;   db  id.NONE        // 0x03 - SAMUS
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x04 - LUIGI
+        db  id.JLINK;   db  id.ELINK;    db  id.NONE;   db  id.NONE        // 0x05 - LINK
+        db  id.JYOSHI;  db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x06 - YOSHI
+        db  id.JFALCON; db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x07 - CAPTAIN
+        db  id.JKIRBY;  db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x08 - KIRBY
+        db  id.JPIKA;   db  id.EPIKA;    db  id.NONE;   db  id.NONE        // 0x09 - PIKACHU
+        db  id.JPUFF;   db  id.EPUFF;    db  id.NONE;   db  id.NONE        // 0x0A - JIGGLY
+        db  id.JNESS;   db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x0B - NESS
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x0C - BOSS
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x0D - METAL
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x0E - NMARIO
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x0F - NFOX
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x10 - NDONKEY
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x11 - NSAMUS
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x12 - NLUIGI
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x13 - NLINK
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x14 - NYOSHI
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x15 - NCAPTAIN
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x16 - NKIRBY
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x17 - NPIKACHU
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x18 - NJIGGLY
+        db  id.NONE;    db  id.NONE;     db  id.NONE;   db  id.NONE        // 0x19 - NNESS
+        db  id.DONKEY;  db  id.JDK;      db  id.NONE;   db  id.NONE        // 0x1A - GDONKEY
         // pad table for new characters
         fill table + (NUM_CHARACTERS * 4) - pc(), id.NONE
     }
@@ -2694,13 +2828,13 @@ scope Character {
         FOX:;       db 0x0D, 0x02, 0x0A, 0x06, 0x0E, 0x07, 0x03, 0x0C
         DONKEY:;    db 0x0D, 0x0E, 0x01, 0x09, 0x06, 0x0C, 0x0F, 0x03
         SAMUS:;     db 0x02, 0x0C, 0x0E, 0x04, 0x09, 0x0F, 0x07, 0x03
-        LUIGI:;     db 0x05, 0x0F, 0x07, 0x0C, 0x0A, 0x03, 0x03
+        LUIGI:;     db 0x05, 0x0F, 0x07, 0x0C, 0x0A, 0x03, 0x03, 0x02
         LINK:;      db 0x05, 0x0F, 0x01, 0x08, 0x0E, 0x03, 0x0C
-        YOSHI:;     db 0x05, 0x01, 0x07, 0x03, 0x0C, 0x09, 0x0E, 0x0F
+        YOSHI:;     db 0x05, 0x01, 0x07, 0x03, 0x0C, 0x09, 0x0E, 0x0F, 0x02, 0x0A
         CAPTAIN:;   db 0x01, 0x0A, 0x04, 0x0C, 0x0E, 0x09, 0x02, 0x0F
         KIRBY:;     db 0x0C, 0x03, 0x07, 0x01, 0x05, 0x0F, 0x0A
         PIKACHU:;   db 0x03, 0x01, 0x09, 0x05, 0x06, 0x06, 0x02, 0x04, 0x0A, 0x0C
-        JIGGLYPUFF:;db 0x0D, 0x01, 0x09, 0x05, 0x06, 0x04, 0x02, 0x0A, 0x0E
+        JIGGLYPUFF:;db 0x0D, 0x01, 0x09, 0x05, 0x06, 0x04, 0x02, 0x0A, 0x0E, 0x02
         NESS:;      db 0x01, 0x03, 0x09, 0x05, 0x0F, 0x0A, 0x07
         METAL:;     db 0x0E, 0x01, 0x05, 0x09, 0x03, 0x02
         POLYGON:;   db 0x0A, 0x01, 0x06, 0x09, 0x0E, 0x0F, 0x03
@@ -2709,22 +2843,23 @@ scope Character {
 
     // @ Description
     // Common functions for when we add in remix polygons
-	macro polygon_setup(name, remix_parent) {
+    // by Halofactory
+    macro polygon_setup(name, remix_parent) {
 
-		// Set crowd chant FGM to none
-		Character.table_patch_start(crowd_chant_fgm, Character.id.{name}, 0x2)
-		dh  0x02B7
-		OS.patch_end()
+        // Set crowd chant FGM to none
+        Character.table_patch_start(crowd_chant_fgm, Character.id.{name}, 0x2)
+        dh  0x02B7
+        OS.patch_end()
 
         // Set Kirby hat_id
         Character.table_patch_start(kirby_inhale_struct, 0x2, Character.id.{name}, 0xC)
         dh 0x08
         OS.patch_end()
 
-		// Set parent variant
-		Character.table_patch_start(variant_original, Character.id.{name}, 0x4)
-		dw      Character.id.{remix_parent}
-		OS.patch_end()
+        // Set parent variant
+        Character.table_patch_start(variant_original, Character.id.{name}, 0x4)
+        dw      Character.id.{remix_parent}
+        OS.patch_end()
 
         // set own variant
         Character.table_patch_start(variants, Character.id.{remix_parent}, 0x4)
@@ -2732,27 +2867,23 @@ scope Character {
         db Character.id.{name}
         OS.patch_end()
 
-        Character.table_patch_start(variant_original, Character.id.{name}, 0x4)
-        dw      Character.id.{remix_parent} // set parent character
+        // Copy Parent's CPU behaviour pointer
+        Character.table_patch_start(ai_behaviour, Character.id.{name}, 0x4)
+        OS.copy_segment(Character.ai_behaviour.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
         OS.patch_end()
 
-		// Copy Parent's CPU behaviour pointer
-		Character.table_patch_start(ai_behaviour, Character.id.{name}, 0x4)
-		OS.copy_segment(Character.ai_behaviour.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
-		OS.patch_end()
+        // Copy Parent's heavy attack CPU behaviour pointer
+        // Character.table_patch_start(ai_behaviour_heavy_attack, Character.id.{name}, 0x4)
+        // OS.copy_segment(Character.ai_behaviour_heavy_attack.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
+        // OS.patch_end()
 
-		// Copy Parent's heavy attack CPU behaviour pointer
-		Character.table_patch_start(ai_behaviour_heavy_attack, Character.id.{name}, 0x4)
-		OS.copy_segment(Character.ai_behaviour_heavy_attack.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
-		OS.patch_end()
+        // Copy Parent's ai behaviour pointer
+        Character.table_patch_start(ai_behaviour, Character.id.{name}, 0x4)
+        OS.copy_segment(Character.action_string.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
+        OS.patch_end()
 
-		// Copy Parent's ai behaviour pointer
-		Character.table_patch_start(ai_behaviour, Character.id.{name}, 0x4)
-		OS.copy_segment(Character.action_string.TABLE_ORIGIN + (Character.id.{remix_parent} * 0x4), 0x4)
-		OS.patch_end()
-
-		// Set default costumes
-		Character.set_default_costumes(Character.id.{name}, 0, 1, 4, 5, 1, 3, 2)
+        // Set default costumes
+        Character.set_default_costumes(Character.id.{name}, 0, 1, 4, 5, 1, 3, 2)
         Teams.add_team_costume(YELLOW, {name}, 0x6)
 
         // Shield colors for costume matching
@@ -2763,58 +2894,281 @@ scope Character {
         dw 0x8013DD68                           // skips entry script
         OS.patch_end()
 
+        // Set Remix 1P ending music
+        Character.table_patch_start(remix_1p_end_bgm, Character.id.{name}, 0x2)
+        dh 0x24
+        OS.patch_end()
+
+        // Add character id to SinglePlayerModes.polygon_id_table
+        pushvar origin, base
+        origin  SinglePlayerModes.polygon_id_table_origin + ((Character.id.{name} - Character.id.NWARIO) * 4)
+        dw Character.id.{name}
+        OS.patch_end()
     }
 
 
     // @ Description
     // Jump table for Lvl 10 cpus to use instead of rolling
     scope close_quarter_combat {
-		OS.align(4)
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        while pc() < (table + (NUM_CHARACTERS * 0x4)) {
+            // by default, all lv10 cpus will avoid spamming roll
+            dw AI.level_ten.stop_roll_spam_._continue
+        }
+        OS.align(4)
+    }
+
+    // @ Description
+    // Jump table for custom character recovery logic
+    scope recovery_logic {
+        OS.align(4)
         table:
         constant TABLE_ORIGIN(origin())
         fill (Character.NUM_CHARACTERS * 0x4)
-		OS.align(4)
+        OS.align(4)
+    }
+
+    // @ Description
+    // Jump table for running a function when the character is hit
+    // Sonic for example recovers his ability to upB again
+    scope on_hit {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS * 0x4)
+        OS.align(4)
+    }
+
+    // @ Description
+    // Jump table for applying a custom action to a grabbed opponent instead of CapturePulled
+    scope custom_capture_action {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS * 0x4)
+        OS.align(4)
+    }
+
+    // @ Description
+    // Modifies the subroutine which handles mashing/breaking out of the ThrownDK action.
+    // Used for characters that use ThrownDK as their custom_capture_action
+    // Must use a function that returns v0 = 0 for no change or v0 = 1 for skipping the default checks
+    scope custom_capture_dk_interrupt {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS * 0x4)
+        OS.align(4)
+    }
+
+    // @ Description
+    // Jump table for using a custom input sequence when far away.
+    // This is used on AI.ROUTINE.NSP_SHOOT(0x80138D24),
+    // a vanilla function that makes it so Mario, Fox, Samus, etc use their NSP from a distance
+    // This table lets us assign different inputs for the same situation when needed
+    scope nsp_shoot_custom_move {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS * 0x4)
+        OS.align(4)
+    }
+
+    // @ Description
+    // This table stores characters that can perform the Ness Jump
+    // go to nesshared.asm to see an example of this table being used
+    scope ness_jump {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS)
+        OS.align(4)
+    }
+
+    // @ Description
+    // This table stores characters that turn like Mario when entering/Exiting a Pipe
+    // go to marioshared.asm to see an example of this table being used
+    scope pipe_turn {
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        fill (Character.NUM_CHARACTERS)
+        OS.align(4)
+    }
+
+    // @ Description
+    // Replacement for shared actions
+    // Use when an action that is usually shared should have unique function slots
+    scope shared_action_replace {
+        variable NUM_SHARED_ACTION_REPLACEMENTS(0)
+
+        macro create_table(shared_action) {
+            evaluate num(NUM_SHARED_ACTION_REPLACEMENTS)
+            global variable SHARED_ACTION_REPLACEMENT_ACTION_{num}(Action.{shared_action})
+            global define SHARED_ACTION_REPLACEMENT_LABEL_{num}({shared_action})
+
+            scope {shared_action} {
+                OS.align(4)
+                table:
+                global variable SHARED_ACTION_REPLACEMENT_TABLE_{num}(origin())
+                constant TABLE_ORIGIN(origin())
+                fill (Character.NUM_CHARACTERS * 0x4)
+                OS.align(4)
+            }
+
+            global variable NUM_SHARED_ACTION_REPLACEMENTS(NUM_SHARED_ACTION_REPLACEMENTS+1)
+        }
+
+        create_table(UTilt)
+        create_table(FTilt)
+        create_table(FTiltHigh)
+        create_table(FTiltMidHigh)
+        create_table(FTiltMidLow)
+        create_table(FTiltLow)
+        create_table(DTilt)
+        create_table(Jab1)
+        create_table(Jab2)
+        create_table(Dash)
+        create_table(DashAttack)
+        create_table(AttackAirN)
+        create_table(AttackAirF)
+        create_table(AttackAirB)
+        create_table(AttackAirU)
+        create_table(AttackAirD)
+        create_table(FSmashHigh)
+        create_table(FSmashMidHigh)
+        create_table(FSmash)
+        create_table(FSmashMidLow)
+        create_table(FSmashLow)
+        create_table(USmash)
+        create_table(DSmash)
+        create_table(CrouchIdle)
+
+        // ftMainSetStatus: 800E6F24 + 30
+        scope replace_action: {
+            OS.patch_start(0x62754, 0x800E6F54)
+            jal     replace_action
+            nop
+            _return:
+            OS.patch_end()
+
+            // a1 = action to change to
+            // s1 = character struct
+
+            lw  t0, 0x0008(s1)  // t0 = character id
+
+            define n(0)
+            while {n} < NUM_SHARED_ACTION_REPLACEMENTS {
+                // If not respective action, skip
+                lli     t2, SHARED_ACTION_REPLACEMENT_ACTION_{n}
+                bne     a1, t2, _after_action_{SHARED_ACTION_REPLACEMENT_LABEL_{n}}_check
+                nop
+
+                sll     t1, t0, 2
+                li      at, shared_action_replace.{SHARED_ACTION_REPLACEMENT_LABEL_{n}}.table
+                addu    t1, t1, at                              // t1 = entry
+                lw      at, 0x0000(t1)                          // at = characters entry in jump table
+                beqz    at, _after_action_{SHARED_ACTION_REPLACEMENT_LABEL_{n}}_check         // skip if no entry
+                nop
+                or      a1, r0, at
+                sw      a1, 0x94(sp) // save over original action
+                b _end
+                nop
+
+                _after_action_{SHARED_ACTION_REPLACEMENT_LABEL_{n}}_check: // label for skip
+                evaluate n({n}+1)
+            }
+
+            _end:
+            sw      r0, 0x7c(sp)    // original line 1
+            sw      t7, 0x84(sp)    // original line 2
+            j       _return         // return
+            nop
+        }
     }
 
     // @ Description
     // This will allow us to quickly check if a character is capable of reflecting or absorbing a projectile
-	scope fighter_reflect: {
-		OS.align(4)
+    scope fighter_reflect: {
+        OS.align(4)
         table:
         constant TABLE_ORIGIN(origin())
-		db OS.FALSE				// 0x00 - MARIO
-		db OS.TRUE				// 0x01 - FOX
-		db OS.FALSE				// 0x02 - DONKEY
-		db OS.FALSE				// 0x03 - SAMUS
-		db OS.FALSE				// 0x04 - LUIGI
-		db OS.FALSE				// 0x05 - LINK
-		db OS.FALSE				// 0x06 - YOSHI
-		db OS.FALSE				// 0x07 - CAPTAIN
-		db OS.FALSE				// 0x08 - KIRBY
-		db OS.FALSE				// 0x09 - PIKACHU
-		db OS.FALSE				// 0x0A - JIGGLY
-		db OS.TRUE				// 0x0B - NESS
-		db OS.FALSE				// 0x0C - BOSS
-		db OS.FALSE				// 0x0D - METAL
-		db OS.FALSE				// 0x0E - NMARIO
-		db OS.FALSE				// 0x0F - NFOX
-		db OS.FALSE				// 0x10 - NDONKEY
-		db OS.FALSE				// 0x11 - NSAMUS
-		db OS.FALSE				// 0x12 - NLUIGI
-		db OS.FALSE				// 0x13 - NLINK
-		db OS.FALSE				// 0x14 - NYOSHI
-		db OS.FALSE				// 0x15 - NCAPTAIN
-		db OS.FALSE				// 0x16 - NKIRBY
-		db OS.FALSE				// 0x17 - NPIKACHU
-		db OS.FALSE				// 0x18 - NJIGGLY
-		db OS.TRUE				// 0x19 - NNESS
-		db OS.FALSE				// 0x1A - GDONKEY
-		db OS.FALSE				// 0x1B - None
-		db OS.FALSE				// 0x1C - None
-		// pad table for new characters
-		fill (table + (NUM_CHARACTERS)) - pc()
-		OS.align(4)
-	}
+        db OS.FALSE             // 0x00 - MARIO
+        db OS.TRUE              // 0x01 - FOX
+        db OS.FALSE             // 0x02 - DONKEY
+        db OS.FALSE             // 0x03 - SAMUS
+        db OS.FALSE             // 0x04 - LUIGI
+        db OS.FALSE             // 0x05 - LINK
+        db OS.FALSE             // 0x06 - YOSHI
+        db OS.FALSE             // 0x07 - CAPTAIN
+        db OS.FALSE             // 0x08 - KIRBY
+        db OS.FALSE             // 0x09 - PIKACHU
+        db OS.FALSE             // 0x0A - JIGGLY
+        db OS.TRUE              // 0x0B - NESS
+        db OS.FALSE             // 0x0C - BOSS
+        db OS.FALSE             // 0x0D - METAL
+        db OS.FALSE             // 0x0E - NMARIO
+        db OS.FALSE             // 0x0F - NFOX
+        db OS.FALSE             // 0x10 - NDONKEY
+        db OS.FALSE             // 0x11 - NSAMUS
+        db OS.FALSE             // 0x12 - NLUIGI
+        db OS.FALSE             // 0x13 - NLINK
+        db OS.FALSE             // 0x14 - NYOSHI
+        db OS.FALSE             // 0x15 - NCAPTAIN
+        db OS.FALSE             // 0x16 - NKIRBY
+        db OS.FALSE             // 0x17 - NPIKACHU
+        db OS.FALSE             // 0x18 - NJIGGLY
+        db OS.TRUE              // 0x19 - NNESS
+        db OS.FALSE             // 0x1A - GDONKEY
+        db OS.FALSE             // 0x1B - None
+        db OS.FALSE             // 0x1C - None
+        // pad table for new characters
+        fill (table + (NUM_CHARACTERS)) - pc()
+        OS.align(4)
+    }
+
+    // @ Description
+    //
+    scope fighter_DK_mode: {
+        // head, left arm, right arm.
+        OS.align(4)
+        table:
+        constant TABLE_ORIGIN(origin())
+        db 0x7, 0x4, 0xA, 0x0   // 0x00 - MARIO
+        db 0x7, 0x4, 0xA, 0x0   // 0x01 - FOX
+        db 0x7, 0x4, 0xA, 0x0   // 0x02 - DONKEY
+        db 0x9, 0x4, 0xB, 0x0   // 0x03 - SAMUS
+        db 0x7, 0x4, 0xA, 0x0   // 0x04 - LUIGI
+        db 0x12, 0x4, 0x9, 0x0  // 0x05 - LINK
+        db 0x3, 0x7, 0xB, 0x0   // 0x06 - YOSHI
+        db 0x7, 0x4, 0xA, 0x0   // 0x07 - CAPTAIN
+        db 0x2, 0x6, 0xB, 0x0   // 0x08 - KIRBY
+        db 0x7, 0x5, 0xD, 0x0   // 0x09 - PIKACHU
+        db 0x2, 0x6, 0xA, 0x0   // 0x0A - JIGGLY
+        db 0x7, 0x4, 0xA, 0x0   // 0x0B - NESS
+        db 0x7, 0x4, 0xA, 0x0   // 0x0C - BOSS
+        db 0x7, 0x4, 0xA, 0x0   // 0x0D - METAL
+        db 0x7, 0x4, 0xA, 0x0   // 0x0E - NMARIO
+        db 0x7, 0x4, 0xA, 0x0   // 0x0F - NFOX
+        db 0x7, 0x4, 0xA, 0x0   // 0x10 - NDONKEY
+        db 0x9, 0x4, 0xB, 0x0   // 0x11 - NSAMUS
+        db 0x7, 0x4, 0xA, 0x0   // 0x12 - NLUIGI
+        db 0x12, 0x4, 0x9, 0x0  // 0x13 - NLINK
+        db 0x3, 0x7, 0xB, 0x0   // 0x14 - NYOSHI
+        db 0x7, 0x4, 0xA, 0x0   // 0x15 - NCAPTAIN
+        db 0x2, 0x6, 0xB, 0x0   // 0x16 - NKIRBY
+        db 0x7, 0x5, 0xD, 0x0   // 0x17 - NPIKACHU
+        db 0x2, 0x6, 0xA, 0x0   // 0x18 - NJIGGLY
+        db 0x7, 0x4, 0xA, 0x0   // 0x19 - NNESS
+        db 0x7, 0x4, 0xA, 0x0   // 0x1A - GDONKEY
+        db 0x7, 0x4, 0xA, 0x0   // 0x1B - None
+        db 0x7, 0x4, 0xA, 0x0   // 0x1C - None
+        // pad table for new characters
+        fill (table + (NUM_CHARACTERS) * 4) - pc()
+        OS.align(4)
+    }
 
     // @ Description
     // Magnifying Glass Scale Override
@@ -2880,6 +3234,36 @@ scope Character {
         nop
     }
 
+    // @ Description
+    // Returns hitbox collision flags for all active hitboxes.
+    // @ Arguments
+    // a0 - player struct
+    // @ Returns
+    // v0 - collision flags for all active hitboxes
+    scope get_hitbox_collision_flags_: {
+        addiu   t8, a0, 0x0294              // t8 = first hitbox struct
+        addiu   t9, t8, 0xC4 * 3            // t9 = last hitbox struct
+        or      v0, r0, r0                  // v0 = 0
+        _loop:
+        lw      t0, 0x0000(t8)              // t0 = hitbox state
+        beqz    t0, _loop_end               // skip if hitbox is disabled
+        nop
+        lbu     t1, 0x0060(t8)              // t1 = hitbox collision flags(1/4)
+        or      v0, v0, t1                  // v0 = v0 | collision flags
+        lbu     t1, 0x0068(t8)              // t1 = hitbox collision flags(2/4)
+        or      v0, v0, t1                  // v0 = v0 | collision flags
+        lbu     t1, 0x0070(t8)              // t1 = hitbox collision flags(3/4)
+        or      v0, v0, t1                  // v0 = v0 | collision flags
+        lbu     t1, 0x0078(t8)              // t1 = hitbox collision flags(4/4)
+        or      v0, v0, t1                  // v0 = v0 | collision flags
+        _loop_end:
+        bne     t8, t9, _loop               // loop if t8 != last hitbox struct
+        addiu   t8, t8, 0x00C4              // t8 = next hitbox struct
+        // v0 = collision flags for all active hitboxes
+        jr      ra                          // return
+        nop
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////// ADD CHARACTERS ////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -2888,10 +3272,12 @@ scope Character {
     // move mario's action parameter array
     move_mario_parameter_array()
 
-    // add mario clones (for unusable ids 0x1B and 0x1C)
+    // 0x1B - RANDOM
+    define_character(RANDOM, CAPTAIN, File.RANDOM_MAIN, 0x0EB, 0, File.RANDOM_CHARACTER, 0x14E, 0, 0x15E, 0x14D, 0, 0x2A0, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_FALCON, Stages.id.BTP_FALCON, Stages.id.BTT_GND, Stages.id.BTP_GND, sound_type.U, variant_type.SPECIAL)
+
+    // add mario clone (for unusable id 0x1C)
     pushvar origin, base
     origin  STRUCT_TABLE_END
-    dw 0x80117810
     dw 0x80117810
     variable STRUCT_TABLE_END(origin())
     pullvar base, origin
@@ -2912,7 +3298,7 @@ scope Character {
     OS.align(16)
 
     // extend kirby's action arrays
-    extend_kirby_arrays(126)
+    extend_kirby_arrays(155)
 
     // set up extended high score table
     OS.align(16)
@@ -3130,58 +3516,57 @@ scope Character {
     origin variant_original.TABLE_ORIGIN + (id.BOSS * 4)
     dw      id.LINK
 
-    // When no character is hovered on CSS, we want no variant indicators to display
-    origin variant_original.TABLE_ORIGIN + (id.NONE * 4)
-    dw      id.NONE
+    origin variant_original.TABLE_ORIGIN + (id.PLACEHOLDER * 4)
+    dw      id.NONE         // When Random booken is hovered on CSS, we want no variant indicators to display
+    dw      id.NONE         // When no character is hovered on CSS, we want no variant indicators to display
 
     pullvar origin, base
 
     // Modifies the Various Menu Actions of Polygons to Remove their Noises
+    scope polygon_victory {
+        NNESS_WIN2:
+        dw 0xA0880000; dw 0;
 
-    // METAL
-    // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
-    Character.edit_menu_action_parameters(METAL,        0x1,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(METAL,        0x2,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(METAL,        0x3,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(METAL,        0x4,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(METAL,        0xE,                -1,                         0x80000000,                 -1)
+        // NMARIO
+        // Modify Menu Action Parameters                    // Action          // Animation                 // Moveset Data             // Flags
+        Character.edit_menu_action_parameters(NMARIO,       0x1,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NMARIO,       0x2,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NMARIO,       0x3,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NMARIO,       0x4,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NMARIO,       0xE,               -1,                          0x80000000,                 -1)
 
-    // NMARIO
-    // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
-    Character.edit_menu_action_parameters(NMARIO,       0x1,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NMARIO,       0x2,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NMARIO,       0x3,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NMARIO,       0x4,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NMARIO,       0xE,                -1,                         0x80000000,                 -1)
+        // NFOX
+        Character.edit_menu_action_parameters(NFOX,         0x1,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NFOX,         0x2,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NFOX,         0x3,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NFOX,         0x4,               -1,                          0x80000000,                 -1)
 
-    // NFOX
-    Character.edit_menu_action_parameters(NFOX,         0x1,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NFOX,         0x2,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NFOX,         0x3,                -1,                         0x80000000,                 -1)
-	Character.edit_menu_action_parameters(NFOX,         0x4,                -1,                         0x80000000,                 -1)
+        // NDK
+        // Modify Menu Action Parameters                    // Action          // Animation                 // Moveset Data             // Flags
+        Character.edit_menu_action_parameters(NDONKEY,      0x1,               -1,                          0x80000000,                 -1)
 
-    // NDK
-    // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
-    Character.edit_menu_action_parameters(NDONKEY,      0x1,                -1,                         0x80000000,                 -1)
+        // NNESS
+        // Modify Menu Action Parameters                    // Action          // Animation                 // Moveset Data             // Flags
+        Character.edit_menu_action_parameters(NNESS,        0x3,               -1,                          NNESS_WIN2,                 -1)
+        Character.edit_menu_action_parameters(NNESS,        0x4,               -1,                          NNESS_WIN2,                 -1)
 
-    // NLUIGI
-    // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
-    Character.edit_menu_action_parameters(NLUIGI,       0x1,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NLUIGI,       0x2,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NLUIGI,       0x3,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NLUIGI,       0x4,                -1,                         0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NLUIGI,       0xE,                -1,                         0x80000000,                 -1)
+        // NLUIGI
+        // Modify Menu Action Parameters                    // Action          // Animation                 // Moveset Data             // Flags
+        Character.edit_menu_action_parameters(NLUIGI,       0x2,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NLUIGI,       0x3,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NLUIGI,       0xE,               -1,                          0x80000000,                 -1)
 
-    // NYOSHI
-    Character.edit_menu_action_parameters(NYOSHI,       0x1,               -1,                          0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NYOSHI,       0x2,               -1,                          0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NYOSHI,       0x3,               -1,                          0x80000000,                 -1)
+        // NYOSHI
+        Character.edit_menu_action_parameters(NYOSHI,       0x1,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NYOSHI,       0x2,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NYOSHI,       0x3,               -1,                          0x80000000,                 -1)
 
-    // NCAPTAIN
-    Character.edit_menu_action_parameters(NCAPTAIN,     0x1,               -1,                          0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NCAPTAIN,     0x2,               -1,                          0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NCAPTAIN,     0x3,               -1,                          0x80000000,                 -1)
-    Character.edit_menu_action_parameters(NCAPTAIN,     0x4,               -1,                          0x80000000,                 -1)
+        // NCAPTAIN
+        Character.edit_menu_action_parameters(NCAPTAIN,     0x1,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NCAPTAIN,     0x2,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NCAPTAIN,     0x3,               -1,                          0x80000000,                 -1)
+        Character.edit_menu_action_parameters(NCAPTAIN,     0x4,               -1,                          0x80000000,                 -1)
+    }
 
     // set up custom characters
     // define_character(name, parent, file_1, file_2, file_3, file_4, file_5, file_6, file_7, file_8, file_9, attrib_offset, add_actions, bool_jab_3)
@@ -3212,15 +3597,15 @@ scope Character {
     // 0x1D - FALCO
     define_character(FALCO, FOX, File.FALCO_MAIN, 0x0D0, 0, File.FALCO_CHARACTER, 0x13A, 0x0D2, 0x15A, 0x0A1, 0x013C, 0x474, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_FALCO, Stages.id.BTP_FALCO, Stages.id.BTT_FALCON, Stages.id.BTP_GND, sound_type.U, variant_type.NA)
     // 0x1E - GND
-    define_character(GND, CAPTAIN, File.GND_MAIN, 0x0EB, 0, File.GND_CHARACTER, 0x14E, 0, File.GND_ENTRY_KICK, File.GND_PUNCH_GRAPHIC, 0, 0x488, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_GND, Stages.id.BTP_GND, Stages.id.BTT_FALCON, Stages.id.BTP_YOSHI, sound_type.U, variant_type.NA)
+    define_character(GND, CAPTAIN, File.GND_MAIN, 0x0EB, 0, File.GND_CHARACTER, 0x14E, 0, File.GND_ENTRY_KICK, File.GND_PUNCH_GRAPHIC, 0, 0x48C, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_GND, Stages.id.BTP_GND, Stages.id.BTT_FALCON, Stages.id.BTP_YOSHI, sound_type.U, variant_type.NA)
     // 0x1F - YLINK
     define_character(YLINK, LINK, File.YLINK_MAIN, 0x0E0, 0, File.YLINK_CHARACTER, 0x147, File.YLINK_BOOMERANG_HITBOX, File.YLINK_SPECIAL_GRAPHIC, 0x145, 0, 0x760, 0, OS.TRUE, OS.TRUE, Stages.id.BTT_YL, Stages.id.BTP_YL, Stages.id.BTT_DRM, Stages.id.BTP_DRM, sound_type.U, variant_type.NA)
     // 0x20 - DRM
-    define_character(DRM, MARIO, File.DRM_MAIN, 0x0CA, 0, File.DRM_CHARACTER, 0x12A, File.DRM_PROJECTILE_DATA, 0x164, File.DRM_PROJECTILE_GRAPHIC, 0, 0x454, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_DRM, Stages.id.BTP_DRM, Stages.id.BTT_YL, Stages.id.BTP_YL, sound_type.U, variant_type.NA)
+    define_character(DRM, MARIO, File.DRM_MAIN, 0x0CA, 0, File.DRM_CHARACTER, 0x12A, File.DRM_PROJECTILE_DATA, 0x164, File.DRM_PROJECTILE_GRAPHIC, 0, 0x4A4, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_DRM, Stages.id.BTP_DRM, Stages.id.BTT_YL, Stages.id.BTP_YL, sound_type.U, variant_type.NA)
     // 0x21 - WARIO
     define_character(WARIO, MARIO, File.WARIO_MAIN, 0x0CA, 0, File.WARIO_CHARACTER, 0x12A, 0x0CC, 0x164, 0x129, 0, 0x51C, 2, OS.FALSE, OS.TRUE, Stages.id.BTT_WARIO, Stages.id.BTP_WARIO, Stages.id.BTT_JIGGLYPUFF, Stages.id.BTP_JIGGLYPUFF,sound_type.U, variant_type.NA)
     // 0x22 - DSAMUS
-    define_character(DSAMUS, SAMUS, File.DSAMUS_MAIN, 0x0D8, 0, File.DSAMUS_CHARACTER, 0x142, 0x15D, File.DSAMUS_SECONDARY, 0, 0, 0x6B4, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_DS, Stages.id.BTP_DS, Stages.id.BTT_LUCAS, Stages.id.BTP_LUCAS2, sound_type.U, variant_type.NA)
+    define_character(DSAMUS, SAMUS, File.DSAMUS_MAIN, 0x0D8, 0, File.DSAMUS_CHARACTER, 0x142, 0x15D, File.DSAMUS_SECONDARY, 0, 0, 0x6BC, 3, OS.TRUE, OS.TRUE, Stages.id.BTT_DS, Stages.id.BTP_DS, Stages.id.BTT_LUCAS, Stages.id.BTP_LUCAS2, sound_type.U, variant_type.SPECIAL)
     // 0x23 - ELINK
     define_character(ELINK, LINK, File.ELINK_MAIN, 0x0E0, 0, 0x144, 0x147, 0x0E2, 0x161, 0x145, 0, 0x708, 0, OS.TRUE, OS.TRUE, Stages.id.BTT_LINK, Stages.id.BTP_LINK, Stages.id.BTT_YL, Stages.id.BTP_YL, sound_type.U, variant_type.E)
     // 0x24 - JSAMUS
@@ -3228,7 +3613,7 @@ scope Character {
     // 0x25 - JNESS
     define_character(JNESS, NESS, File.JNESS_MAIN, 0x0EE, 0, 0x14F, 0x150, 0x160, File.JNESS_PKFIRE, 0x151, 0, 0x5BC, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_NESS, Stages.id.BTP_NESS, Stages.id.BTT_LUCAS, Stages.id.BTP_LUCAS2, sound_type.J, variant_type.J)
     // 0x26 - LUCAS
-    define_character(LUCAS, NESS, File.LUCAS_MAIN, 0x0EE, 0, File.LUCAS_CHARACTER, 0x150, 0x160, File.LUCAS_PKFIRE, 0x151, 0, 0x614, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_LUCAS, Stages.id.BTP_LUCAS2, Stages.id.BTT_WARIO, Stages.id.BTP_DS, sound_type.U, variant_type.NA)
+    define_character(LUCAS, NESS, File.LUCAS_MAIN, 0x0EE, 0, File.LUCAS_CHARACTER, 0x150, 0x160, File.LUCAS_PKFIRE, 0x151, 0, 0x618, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_LUCAS, Stages.id.BTP_LUCAS2, Stages.id.BTT_WARIO, Stages.id.BTP_DS, sound_type.U, variant_type.SPECIAL)
     // 0x27 - JLINK
     define_character(JLINK, LINK, File.JLINK_MAIN, 0x0E0, 0, File.JLINK_CHARACTER, 0x147, 0x0E2, 0x161, 0x145, 0, 0x708, 0, OS.TRUE, OS.TRUE, Stages.id.BTT_LINK, Stages.id.BTP_LINK, Stages.id.BTT_YL, Stages.id.BTP_YL, sound_type.J, variant_type.J)
     // 0x28 - JFALCON
@@ -3248,7 +3633,7 @@ scope Character {
     // 0x2F - EPUFF
     define_character(EPUFF, JIGGLYPUFF, File.EPUFF_MAIN, 0x0E8, 0, 0x14A, 0x14B, 0, 0x15F, 0, 0, 0x474, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_JIGGLYPUFF, Stages.id.BTP_JIGGLYPUFF, Stages.id.BTT_FALCO, Stages.id.BTP_MARIO, sound_type.U, variant_type.E)
     // 0x30 - JKIRBY
-    define_character(JKIRBY, KIRBY, File.JKIRBY_MAIN, 0x0E4, 0, 0x148, 0x149, 0, 0x15C, 0, 0, 0x808, 0x93, OS.TRUE, OS.FALSE, Stages.id.BTT_KIRBY, Stages.id.BTP_KIRBY, Stages.id.BTT_FOX, Stages.id.BTP_FOX, sound_type.J, variant_type.J)
+    define_character(JKIRBY, KIRBY, File.JKIRBY_MAIN, 0x0E4, 0, 0x148, 0x149, 0, 0x15C, 0, 0, 0x808, 0xA1, OS.TRUE, OS.FALSE, Stages.id.BTT_KIRBY, Stages.id.BTP_KIRBY, Stages.id.BTT_FOX, Stages.id.BTP_FOX, sound_type.J, variant_type.J)
     // 0x31 - JYOSHI
     define_character(JYOSHI, YOSHI, File.JYOSHI_MAIN, 0x0F6, 0, 0x152, 0x154, 0, 0x162, 0x153, 0, 0x47C, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_YOSHI, Stages.id.BTP_YOSHI, Stages.id.BTT_FALCON, Stages.id.BTP_GND, sound_type.J, variant_type.J)
     // 0x32 - JPIKA
@@ -3274,7 +3659,7 @@ scope Character {
     // 0x3C - SANDBAG
     define_character(SANDBAG, CAPTAIN, File.SANDBAG_MAIN, 0x0EB, 0, 0x14C, 0x14E, 0, 0x15E, 0x14D, 0, 0x488, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_FALCON, Stages.id.BTP_FALCON, Stages.id.BTT_GND, Stages.id.BTP_GND, sound_type.U, variant_type.SPECIAL)
     // 0x3D - SUPER SONIC
-    define_character(SSONIC, FOX, File.SSONIC_MAIN, 0x0D0, 0, File.SSONIC_CHARACTER, File.SONIC_SHIELD_POSE, File.SONIC_SPRING_HITBOX, 0x15A, File.SONIC_ENTRY, File.SONIC_SPRING_GRAPHIC, 0x58C, 18, OS.TRUE, OS.TRUE, Stages.id.BTT_SONIC, Stages.id.BTP_SONIC, Stages.id.BTT_WARIO, Stages.id.BTP_DS, sound_type.U, variant_type.SPECIAL)
+    define_character(SSONIC, FOX, File.SSONIC_MAIN, 0x0D0, 0, File.SSONIC_CHARACTER, File.SONIC_SHIELD_POSE, File.SONIC_SPRING_HITBOX, File.SSONIC_EMERALDS, File.SONIC_ENTRY, File.SONIC_SPRING_GRAPHIC, 0x58C, 24, OS.TRUE, OS.TRUE, Stages.id.BTT_SONIC, Stages.id.BTP_SONIC, Stages.id.BTT_WARIO, Stages.id.BTP_DS, sound_type.U, variant_type.SPECIAL)
     // 0x3E - SHEIK
     define_character(SHEIK, CAPTAIN, File.SHEIK_MAIN, 0x0EB, 0, File.SHEIK_CHARACTER, File.SHEIK_SHIELD_POSE, File.SHEIK_PROJECTILE_HITBOX, 0x15E, 0x14D, 0, 0x4B0, 0x5, OS.TRUE, OS.TRUE, Stages.id.BTT_SHEIK, Stages.id.BTP_SHEIK, Stages.id.BTT_LINK, Stages.id.BTP_LUCAS2, sound_type.U, variant_type.NA)
     // 0x3F - MARINA
@@ -3283,19 +3668,29 @@ scope Character {
     define_character(DEDEDE, CAPTAIN, File.DEDEDE_MAIN, 0x0EB, 0, File.DEDEDE_CHARACTER, File.DEDEDE_SHIELD_POSE, File.WADDLE_DEE_INFO, File.DEDEDE_STAR, 0, 0, 0x5A4, 0x16, OS.TRUE, OS.TRUE, Stages.id.BTT_DEDEDE, Stages.id.BTP_DEDEDE, Stages.id.BTT_MARTH, Stages.id.BTP_YL, sound_type.U, variant_type.NA)
     copy_gfx_parameters(DEDEDE, KIRBY)
     // 0x41 - GOEMON
-    define_character(GOEMON, MARIO, File.GOEMON_MAIN, 0x0CA, 0, File.GOEMON_CHARACTER, File.GOEMON_SHIELD_POSE, File.GOEMON_RYO_HITBOX, File.GOEMON_CLOUD_INFO, File.GOEMON_RYO_GRAPHIC, File.GOEMON_ENTRY_GFX, 0x91C, 20, OS.TRUE, OS.TRUE, Stages.id.BTT_GOEMON, Stages.id.BTP_GOEMON, Stages.id.BTT_JIGGLYPUFF, Stages.id.BTP_JIGGLYPUFF,sound_type.U, variant_type.NA)
+    define_character(GOEMON, MARIO, File.GOEMON_MAIN, 0x0CA, 0, File.GOEMON_CHARACTER, File.GOEMON_SHIELD_POSE, File.GOEMON_RYO_HITBOX, File.GOEMON_CLOUD_INFO, File.GOEMON_RYO_GRAPHIC, File.GOEMON_ENTRY_GFX, 0x91C, 22, OS.TRUE, OS.TRUE, Stages.id.BTT_GOEMON, Stages.id.BTP_GOEMON, Stages.id.BTT_JIGGLYPUFF, Stages.id.BTP_JIGGLYPUFF,sound_type.U, variant_type.NA)
     // 0x42 - PEPPY
     define_character(PEPPY, FOX, File.PEPPY_MAIN, 0x0D0, 0, File.PEPPY_CHARACTER, 0x13A, File.PEPPY_LASER_HITBOX, 0x15A, 0x0A1, File.PEPPY_LASER_GFX, 0x474, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_FOX, Stages.id.BTP_FOX, Stages.id.BTT_FOX, Stages.id.BTP_FOX, sound_type.U, variant_type.SPECIAL)
     // 0x43 - SLIPPY
     define_character(SLIPPY, FOX, File.SLIPPY_MAIN, 0x0D0, 0, File.SLIPPY_CHARACTER, 0x13A, File.SLIPPY_LASER_HITBOX, File.SLIPPY_REFLECT_GFX, 0x0A1, File.SLIPPY_LASER_GRAPHIC, 0x4AC, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_FALCO, Stages.id.BTP_FALCO, Stages.id.BTT_FALCO, Stages.id.BTP_FALCO, sound_type.U, variant_type.SPECIAL)
     // 0x44 - BANJO
-    define_character(BANJO, CAPTAIN, File.BANJO_MAIN, 0x0EB, 0, File.BANJO_CHARACTER, 0x14C, File.BANJO_SHIELD_POSE, 0x15E, File.BANJO_ENTRY_EFFECTS, File.KAZOOIE_EGG_INFO, 0x898, 0x5, OS.TRUE, OS.TRUE, Stages.id.BTT_BANJO, Stages.id.BTP_BANJO, Stages.id.BTT_LINK, Stages.id.BTP_LUCAS2, sound_type.U, variant_type.NA)
+    define_character(BANJO, CAPTAIN, File.BANJO_MAIN, 0x0EB, 0, File.BANJO_CHARACTER, File.BANJO_SHIELD_POSE, 0, 0x15E, File.BANJO_ENTRY_EFFECTS, File.KAZOOIE_EGG_INFO, 0x898, 0x5, OS.TRUE, OS.TRUE, Stages.id.BTT_BANJO, Stages.id.BTP_BANJO, Stages.id.BTT_LINK, Stages.id.BTP_LUCAS2, sound_type.U, variant_type.NA)
     // 0x45 - METAL LUIGI
     define_character(MLUIGI, LUIGI, File.METAL_LUIGI_MAIN, 0x0DC, 0, File.METAL_LUIGI_CHARACTER, 0x12A, 0x0DE, 0x164, 0x129, 0, 0x418, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_LUIGI, Stages.id.BTP_LUIGI, Stages.id.BTT_LUIGI, Stages.id.BTP_LUIGI, sound_type.U, variant_type.SPECIAL)
     // 0x46 - EBISUMARU
     define_character(EBI, MARIO, File.EBISUMARU_MAIN, 0x0CA, 0, File.EBISUMARU_CHARACTER, File.GOEMON_SHIELD_POSE, File.GOEMON_RYO_HITBOX, File.GOEMON_CLOUD_INFO, File.GOEMON_RYO_GRAPHIC, File.GOEMON_ENTRY_GFX, 0x9C0, 20, OS.TRUE, OS.TRUE, Stages.id.BTT_GOEMON, Stages.id.BTP_GOEMON, Stages.id.BTT_GOEMON, Stages.id.BTP_GOEMON, sound_type.U, variant_type.SPECIAL)
     // 0x47 - DRAGONKING
     define_character(DRAGONKING, CAPTAIN, File.DRAGONKING_MAIN, 0x0EB, 0, File.DRAGONKING_CHARACTER, File.DRAGONKING_SHIELD_POSE, 0, 0x15B, 0x14D, 0, 0x488, 5, OS.TRUE, OS.TRUE, Stages.id.BTT_FALCON, Stages.id.BTP_FALCON, Stages.id.BTT_GND, Stages.id.BTP_GND, sound_type.J, variant_type.SPECIAL)
+    // 0x48 - CRASH
+    define_character(CRASH, MARIO, File.CRASH_MAIN, 0x0CA, 0, File.CRASH_CHARACTER, File.CRASH_SHIELD_POSE, 0x0CC, File.CRASH_SPIN_GFX, File.CRASH_ENTRY, 0, 0x5CC, 9, OS.FALSE, OS.TRUE, Stages.id.BTT_CRASH, Stages.id.BTP_CRASH, Stages.id.BTT_JIGGLYPUFF, Stages.id.BTP_JIGGLYPUFF,sound_type.U, variant_type.NA)
+    // 0x49 - PEACH
+    define_character(PEACH, FOX, File.PEACH_MAIN, 0x0D0, 0, File.PEACH_CHARACTER, File.PEACH_SHIELD_POSE, 0x0D2, File.PEACH_TURNIP_INFO, 0x0A1, 0x013C, 0x59C, 0x0, OS.FALSE, OS.TRUE, Stages.id.BTT_PEACH, Stages.id.BTP_PEACH, Stages.id.BTT_PEACH, Stages.id.BTP_PEACH, sound_type.U, variant_type.NA)
+    // 0x4A - ROY
+    define_character(ROY, CAPTAIN, File.ROY_MAIN, 0x0EB, 0, File.ROY_CHARACTER, File.MARTH_SHIELD, 0, 0x15E, File.MARTH_ENTRY_EFFECTS, 0, 0x4D4, 10, OS.FALSE, OS.TRUE, Stages.id.BTT_MARTH, Stages.id.BTP_MARTH, Stages.id.BTT_DRM, Stages.id.BTP_YL, sound_type.U, variant_type.SPECIAL)
+    // 0x4B - DRL
+    define_character(DRL, LUIGI, File.DRL_MAIN, 0x0DC, 0, File.DRL_CHARACTER, 0x12A, File.DRM_PROJECTILE_DATA, 0x164, File.DRM_PROJECTILE_GRAPHIC, 0, 0x568, 0x0, OS.TRUE, OS.TRUE, Stages.id.BTT_DRM, Stages.id.BTP_DRM, Stages.id.BTT_MARIO, Stages.id.BTP_MARIO, sound_type.U, variant_type.SPECIAL)
+    // 0x4C - LANKY
+    define_character(LANKY, MARIO, File.LANKY_MAIN, 0x0CA, 0, File.LANKY_CHARACTER, File.LANKY_SHIELD_POSE,  File.LANKY_PROJECTILE_HITBOX, File.LANKY_ENTRY, File.LANKY_PROJECTILE_GRAPHIC, 0, 0x580, 21, OS.TRUE, OS.TRUE, Stages.id.BTT_DONKEY_KONG, Stages.id.BTP_DONKEY_KONG, Stages.id.BTT_DONKEY_KONG, Stages.id.BTP_DONKEY_KONG,sound_type.U, variant_type.SPECIAL)
     // ADD NEW CHARACTERS HERE
 
     // REMIX POLYGONS
@@ -3308,7 +3703,7 @@ scope Character {
     // NWOLF
     define_character(NWOLF, FOX, File.NWOLF_MAIN, 0x0D0, 0, File.NWOLF_CHARACTER, File.WOLF_SHIELD_POSE,  File.WOLF_PROJECTILE_HITBOX, File.WOLF_REFLECTOR, File.WOLFEN, File.WOLF_PROJECTILE_GRAPHIC, 0x2BC, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
     // NDRM
-    define_character(NDRM, MARIO, File.NDRM_MAIN, 0x0CA, 0, 0x012D, 0x12A, File.DRM_PROJECTILE_DATA, 0x164, File.DRM_PROJECTILE_GRAPHIC, 0, 0x2B0, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
+    define_character(NDRM, MARIO, File.NDRM_MAIN, 0x0CA, 0, File.NDRM_CHARACTER, 0x12A, File.DRM_PROJECTILE_DATA, 0x164, File.DRM_PROJECTILE_GRAPHIC, 0, 0x2B0, 0x0, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
     // NSONIC
     define_character(NSONIC, FOX, File.NSONIC_MAIN, 0x0D0, 0, File.NSONIC_CHARACTER, File.SONIC_SHIELD_POSE, File.SONIC_SPRING_HITBOX, File.CSONIC_MAIN, File.SONIC_ENTRY, File.SONIC_SPRING_GRAPHIC, 0x30C, 18, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
     // NSHEIK
@@ -3334,7 +3729,11 @@ scope Character {
     // NCONKER
     define_character(NCONKER, FOX, File.NCONKER_MAIN, 0x0D0, 0, File.NCONKER_CHARACTER, File.CONKER_SHIELD_POSE, File.CONKER_NUT_PROJECTILE_HITBOX, File.CONKER_GRENADE_PROJECTILE_HITBOX, File.GREGS_HAND, File.CONKER_NUT_PROJECTILE_GRAPHIC, 0x3FC, 6, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
     // NBANJO
-    define_character(NBANJO, CAPTAIN, File.NBANJO_MAIN, 0x0EB, 0, File.NBANJO_CHARACTER, 0x14C, File.BANJO_SHIELD_POSE, 0x15E, File.BANJO_ENTRY_EFFECTS, File.KAZOOIE_EGG_INFO, 0x4A8, 0x5, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
+    define_character(NBANJO, CAPTAIN, File.NBANJO_MAIN, 0x0EB, 0, File.NBANJO_CHARACTER, File.BANJO_SHIELD_POSE, 0, 0x15E, File.BANJO_ENTRY_EFFECTS, File.KAZOOIE_EGG_INFO, 0x4A8, 0x5, OS.TRUE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
+    // NPEACH
+    define_character(NPEACH, FOX, File.NPEACH_MAIN, 0x0D0, 0, File.NPEACH_CHARACTER, File.PEACH_SHIELD_POSE, 0x0D2, File.PEACH_TURNIP_INFO, 0x0A1, 0x013C, 0x428, 0x0, OS.FALSE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
+    // NCRASH
+    define_character(NCRASH, MARIO, File.NCRASH_MAIN, 0x0CA, 0, File.NCRASH_CHARACTER, File.CRASH_SHIELD_POSE, 0x0CC,  File.CRASH_SPIN_GFX, File.CRASH_ENTRY, 0, 0x2C0, 9, OS.FALSE, OS.FALSE, Stages.id.BTT_STG1, Stages.id.BTP_POLY, Stages.id.BTT_STG1, Stages.id.BTP_POLY, sound_type.U, variant_type.POLYGON)
 
     print "========================================================================== \n"
     print "# Remix Fighters = "; print "0x"; OS.print_hex(NUM_REMIX_FIGHTERS); print " \n";

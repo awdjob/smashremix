@@ -423,21 +423,9 @@ scope WarioNSP {
         jal     check_recoil_               // check for recoil transition
         lw      a0, 0x0010(sp)              // load a0
         li      a1, air_to_ground_          // a1 = air_to_ground_
-        jal     0x800DE6E4                  // general air collision?
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
         lw      a0, 0x0010(sp)              // load a0
-        lw      a0, 0x0010(sp)              // load a0
-        jal     0x800DE87C                  // check ledge/floor collision?
-        nop
-        beq     v0, r0, _end                // skip if !collision
-        nop
-        lw      a0, 0x0010(sp)              // load a0
-        lw      a1, 0x0084(a0)              // a1 = player struct
-        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
-        andi    a2, a2, 0x3000              // bitmask
-        beq     a2, r0, _end                // skip if !ledge_collision
-        nop
-        jal     0x80144C24                  // ledge grab subroutine
-        nop
+
         _end:
         lw      ra, 0x0014(sp)              // load ra
         addiu   sp, sp, 0x0018              // deallocate stack space
@@ -1303,28 +1291,15 @@ scope WarioDSP {
 
         // If Wario is not in the ground pound motion, run a normal aerial collision subroutine
         // instead.
-        jal     0x800DE99C                  // aerial collision subroutine
+        jal     0x800DE978                  // aerial collision subroutine
         nop
         b       _end                        // branch to end
         nop
 
         _main_collision:
         li      a1, begin_landing_          // a1 = begin_landing_
-        jal     0x800DE6E4                  // general air collision?
+        jal     0x800DE80C                  // common air collision subroutine (transition on landing, allow ledge grab)
         lw      a0, 0x0010(sp)              // load a0
-        lw      a0, 0x0010(sp)              // load a0
-        jal     0x800DE87C                  // check ledge/floor collision?
-        nop
-        beq     v0, r0, _end                // skip if !collision
-        nop
-        lw      a0, 0x0010(sp)              // load a0
-        lw      a1, 0x0084(a0)              // a1 = player struct
-        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
-        andi    a2, a2, 0x3000              // bitmask
-        beq     a2, r0, _end                // skip if !ledge_collision
-        nop
-        jal     0x80144C24                  // ledge grab subroutine
-        nop
 
         _end:
         lw      ra, 0x0014(sp)              // load ra

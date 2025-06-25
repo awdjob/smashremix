@@ -4,7 +4,19 @@
 
 scope NSonic {
     // Insert Moveset files
-    
+
+    DASH_ATTACK:; Moveset.CONCURRENT_STREAM(DASH_ATTACK_CONCURRENT); insert "moveset/DASH_ATTACK.bin"
+    DASH_ATTACK_CONCURRENT:
+    dw 0x04000005                                   // wait 5 frames
+    Moveset.SUBROUTINE(Sonic.BALL_HURTBOX_ON)       // enable ball hurtboxes
+    dw 0xA8000000; dw 0xA0300001                    // show ball model
+    dw 0x04000009; Moveset.SUBROUTINE(Sonic.SHOW_MODEL)   // wait 9 frames then show full model
+    dw 0x80000002                                   // begin a loop with 2 iterations
+    dw 0x04000003; dw 0xA8000000; dw 0xA0300001     // show ball model and wait 3 frames
+    dw 0x04000003; Moveset.SUBROUTINE(Sonic.SHOW_MODEL)   // show full model and wait 3 frames
+    dw 0x84000000                                   // end loop
+    Moveset.SUBROUTINE(Sonic.BALL_HURTBOX_OFF)      // disable ball hurtboxes
+    dw 0                                            // terminate moveset commands
 
     // Modify Action Parameters             // Action               // Animation                // Moveset Data             // Flags
     Character.edit_action_parameters(NSONIC, Action.Idle,            File.SONIC_IDLE,            Sonic.IDLE,                       -1)
@@ -47,6 +59,7 @@ scope NSonic {
     Character.edit_action_parameters(NSONIC, Action.CapturePulled,   -1,                         Sonic.DMG_1,                      -1)
     Character.edit_action_parameters(NSONIC, Action.Thrown1,         -1,                         Sonic.DMG_1,                      -1)
     Character.edit_action_parameters(NSONIC, Action.Thrown2,         -1,                         Sonic.DMG_1,                      -1)
+    Character.edit_action_parameters(NSONIC, Action.ThrownFoxB,      0x2C8,                      -1,                               -1)
                                                                                               
     Character.edit_action_parameters(NSONIC, Action.Stun,            File.SONIC_STUN,            Sonic.STUN,                       -1)
     Character.edit_action_parameters(NSONIC, Action.Sleep,           File.SONIC_STUN,            Sonic.ASLEEP,                     -1)
@@ -82,7 +95,7 @@ scope NSonic {
     Character.edit_action_parameters(NSONIC, Action.Jab1,            File.SONIC_JAB1,            Sonic.JAB1,                       -1)
     Character.edit_action_parameters(NSONIC, Action.Jab2,            File.SONIC_JAB2,            Sonic.JAB2,                       -1)
     Character.edit_action_parameters(NSONIC, 0xDC,                   File.SONIC_JAB3,            Sonic.JAB3,                       -1)
-    Character.edit_action_parameters(NSONIC, Action.DashAttack,      File.SONIC_DASH_ATTACK,     Sonic.DASH_ATTACK,                -1)
+    Character.edit_action_parameters(NSONIC, Action.DashAttack,      File.SONIC_DASH_ATTACK,     DASH_ATTACK,                      -1)
     Character.edit_action_parameters(NSONIC, Action.FTiltHigh,       File.SONIC_FTILT_HIGH,      Sonic.FTILT_HIGH,                 -1)
     Character.edit_action_parameters(NSONIC, Action.FTiltMidHigh,    0,                          0x80000000,                  0)
     Character.edit_action_parameters(NSONIC, Action.FTilt,           File.SONIC_FTILT,           Sonic.FTILT,                      -1)
@@ -104,18 +117,21 @@ scope NSonic {
     Character.edit_action_parameters(NSONIC, Action.AttackAirD,      File.SONIC_DAIR,            Sonic.DAIR,                       -1)
     Character.edit_action_parameters(NSONIC, Action.EnterPipe,       File.SONIC_ENTER_PIPE,      -1,                         -1)
     Character.edit_action_parameters(NSONIC, Action.ExitPipe,        File.SONIC_EXIT_PIPE,       -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownStandU,      File.SONIC_DOWNSTANDU,      -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.StunStartU,      File.SONIC_DOWNSTANDU,      -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.Revive2,         File.SONIC_DOWNSTANDU,      -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownStandD,      File.SONIC_DOWNSTANDD,      -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.StunStartD,      File.SONIC_DOWNSTANDD,      -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownBounceU,     -1,                         Sonic.DOWNBOUNCE,                 -1)
-    Character.edit_action_parameters(NSONIC, Action.DownBounceD,     -1,                         Sonic.DOWNBOUNCE,                 -1)
-    Character.edit_action_parameters(NSONIC, Action.DownAttackU,     File.SONIC_DOWNATTACKU,     Sonic.DOWNATTACKU,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownBackU,       File.SONIC_DOWNBACKU,       -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownBackD,       File.SONIC_DOWNBACKD,       -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownForwardD,    File.SONIC_DOWNFORWARDD,    -1,                         -1)
-    Character.edit_action_parameters(NSONIC, Action.DownForwardU,    File.SONIC_DOWNFORWARDU,    -1,                         -1)
+    Character.edit_action_parameters(NSONIC, Action.DownStandU,      File.SONIC_DOWNSTANDU,      -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.StunLandU,       File.SONIC_DOWNBOUNCEU,      -1,                       -1)
+    Character.edit_action_parameters(NSONIC, Action.StunStartU,      File.SONIC_DOWNSTANDU,      -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.Revive1,         File.SONIC_DOWNBOUNCED,      -1,                       -1)
+    Character.edit_action_parameters(NSONIC, Action.Revive2,         File.SONIC_DOWNSTANDD,      -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.DownStandD,      File.SONIC_DOWNSTANDD,      -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.StunLandD,       File.SONIC_DOWNBOUNCED,      -1,                       -1)
+    Character.edit_action_parameters(NSONIC, Action.StunStartD,      File.SONIC_DOWNSTANDD,      -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.DownBounceU,     File.SONIC_DOWNBOUNCEU,     Sonic.DOWNBOUNCE,          -1)
+    Character.edit_action_parameters(NSONIC, Action.DownBounceD,     File.SONIC_DOWNBOUNCED,     Sonic.DOWNBOUNCE,          -1)
+    Character.edit_action_parameters(NSONIC, Action.DownAttackU,     File.SONIC_DOWNATTACKU,     Sonic.DOWNATTACKU,         -1)
+    Character.edit_action_parameters(NSONIC, Action.DownBackU,       File.SONIC_DOWNBACKU,       -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.DownBackD,       File.SONIC_DOWNBACKD,       -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.DownForwardD,    File.SONIC_DOWNFORWARDD,    -1,                        -1)
+    Character.edit_action_parameters(NSONIC, Action.DownForwardU,    File.SONIC_DOWNFORWARDU,    -1,                        -1)
     Character.edit_action_parameters(NSONIC, 0xE4,                   File.SONIC_USP_SPRING,      Sonic.USP,                        0x00000000)
 
     Character.edit_action_parameters(NSONIC, Action.Teeter,          File.SONIC_TEETER,          Sonic.TEETERING,                  -1)

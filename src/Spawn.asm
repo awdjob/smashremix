@@ -955,11 +955,11 @@ scope Spawn {
     float32 -1105, -0213
     float32  1775,  0111
 
-	// 5D - CORNERIA CITY
-    float32 -1685,  1700
-    float32  1685,  1700
-    float32 -0740,  1100
-    float32  0740,  1100
+	// 5D - Raid Blue
+    float32 -1685,  0700
+    float32  1685,  0700
+    float32 -0600,  0042
+    float32  0600,  0042
 
 	// 5E - Congo Falls
     float32 -1000,  0915
@@ -967,11 +967,11 @@ scope Spawn {
     float32 -1000,  0125
     float32  1000,  0125
 
-	// 5F - Osohe
-    float32 -3443,  1358
-    float32  3443,  1358
-    float32 -1778,  0023
-    float32  1778,  0023
+    // 5F - Osohe
+    float32 -1243, -0067
+    float32  1243, -0067
+    float32 -2726,  1123
+    float32  2726,  1123
 
 	// 60 - Yoshi's Story II
     float32  1594,  0900
@@ -1591,11 +1591,98 @@ scope Spawn {
     float32 -0498, -0118
     float32  0251, -0133
     
-    // C7 - Ski Lifts
+    // C7 - Big Snowman
     float32 -3880,  1745
     float32  4095,  0645
     float32 -2090,  1745
     float32  2210,  0645
+
+    // C8 - Dream Land Beta DL
+    float32 -1400,  0910
+    float32  1400,  0910
+    float32 -1400,  0005
+    float32  1400,  0005
+    
+    // C9 - LMAO Castle
+    float32 -1800,  0035
+    float32  1800,  0035
+    float32 -0600,  0035
+    float32  0600,  0035
+    
+    // CA - Discovery Falls
+    float32 -2135,  0000
+    float32  2135,  0000
+    float32 -0703,  0000
+    float32  0703,  0000
+
+    // CB - BTT_CRASH
+    dw  0xC53A29A1, 0x44CB8000
+    dw  0x43814168, 0x44CB8000
+    dw  0xC5819342, 0xC4A60000
+    dw  0x44CE8A41, 0x45710000
+
+    // CC - Discovery Falls Remix
+    float32 -2135,  0000
+    float32  2135,  0000
+    float32 -0703,  0000
+    float32  0703,  0000
+
+    // CD - N64 Remix
+    float32 -1378,  0050
+    float32  1378,  0050
+    float32  3275,  0478
+    float32 -3275,  0478
+
+    // CE - BTP CRASH
+    dw 0, 0, 0, 0, 0, 0, 0, 0
+
+    // CF - Peach Break the Targets
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+
+    // D0 - Peach Board the Platforms
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+
+    // D1 - Soccer
+    float32 -3042,  0005
+    float32  3042,  0005
+    float32 -1615,  0005
+    float32  1615,  0005
+
+    // D2 - Time Twister
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D3 - Time Twister SSS
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D4 - N. Sanity Beach
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D5 - Snow Go
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D6 - Future Frenzy
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
 
     neutral_table:
     // 00 - Peach's Castle
@@ -1921,10 +2008,10 @@ scope Spawn {
     float32  1315,  0805
 
     // 35 - Dragon King
-    float32 -1740,  1355
-    float32  1740,  1355
-    float32 -1740,  0035
-    float32  1740,  0035
+    float32 -1392,  1091
+    float32  1392,  1091
+    float32 -1392,  0035
+    float32  1392,  0035
 
     // 36 - Great Bay
     float32 -1013,  0511
@@ -2085,8 +2172,8 @@ scope Spawn {
     // 50 - Battlefield DL
     float32 -1400,  0910
     float32  1400,  0910
-    float32  0000,  1545
-    float32  0000,  0005
+    float32 -1400,  0005
+    float32  1400,  0005
 
     // 51 - BTT_DS
     float32  0000,  0035
@@ -2160,11 +2247,11 @@ scope Spawn {
     float32 -1105, -0213
     float32  1775,  0111
 
-	// 5D - CORNERIA CITY
-    float32 -1685,  1700
-    float32  1685,  1700
-    float32 -1685,  0990
-    float32  1685,  0990
+	// 5D - Raid Blue
+    float32 -1685,  0700
+    float32  1685,  0700
+    float32 -1685, -0028
+    float32  1685, -0028
 
 	// 5E - Congo Falls
     float32 -1000,  0915
@@ -2172,11 +2259,11 @@ scope Spawn {
     float32 -1000,  0125
     float32  1000,  0125
 
-	// 5F - Osohe
-    float32 -3443,  1358
-    float32  3443,  1358
-    float32 -1778,  0023
-    float32  1778,  0023
+    // 5F - Osohe
+    float32 -1243, -0067
+    float32  1243, -0067
+    float32 -2726,  1123
+    float32  2726,  1123
 
 	// 60 - Yoshi's Story II
     float32 -1594,  0900
@@ -2643,8 +2730,8 @@ scope Spawn {
     // AD - Dragon King Remix
     float32 -1740,  1355
     float32  1740,  1355
-    float32 -2950,  2425
-    float32  2950,  2425
+    float32 -2950,  1915
+    float32  2950,  1915
 
     // AE - Marina Board the Platforms
     float32  0000,  0000
@@ -2796,12 +2883,98 @@ scope Spawn {
     float32 -0498, -0118
     float32  0251, -0133
     
-    // C7 - Ski Lifts
+    // C7 - Big Snowman
     float32 -3880,  1745
     float32  4095,  0645
     float32 -2090,  1745
     float32  2210,  0645
-    
+
+    // C8 - Dream Land Beta DL
+    float32 -1400,  0910
+    float32  1400,  0910
+    float32 -1400,  0005
+    float32  1400,  0005
+
+    // C9 - LMAO Castle
+    float32 -1800,  0035
+    float32  1800,  0035
+    float32 -0600,  0035
+    float32  0600,  0035
+
+    // CA - Discovery Falls
+    float32 -2135,  0000
+    float32  2135,  0000
+    float32 -0703,  0000
+    float32  0703,  0000
+
+    // CB - BTT_CRASH
+    dw  0xC53A29A1, 0x44CB8000
+    dw  0x43814168, 0x44CB8000
+    dw  0xC5819342, 0xC4A60000
+    dw  0x44CE8A41, 0x45710000
+
+    // CC - Discovery Falls Remix
+    float32 -2135,  0000
+    float32  2135,  0000
+    float32 -0703,  0000
+    float32  0703,  0000
+
+    // CD - N64 Remix
+    float32 -1378,  0050
+    float32  1378,  0050
+    float32  3275,  0478
+    float32 -3275,  0478
+
+    // CE - BTP CRASH
+    dw 0, 0, 0, 0, 0, 0, 0, 0
+
+    // CF - Peach Break the Targets
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+
+    // D0 - Peach Board the Platforms
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+    float32  0000,  0000
+
+    // D1 - Soccer
+    float32 -3042,  0005
+    float32  3042,  0005
+    float32 -1615,  0005
+    float32  1615,  0005
+
+    // D2 - Time Twister
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D3 - Time Twister SSS
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D4 - N. Sanity Beach
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D5 - Snow Go
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
+
+    // D6 - Future Frenzy
+    float32 -1800,  0005
+    float32  1800,  0005
+    float32 -0900,  0005
+    float32  0900,  0005
 }
 
 } // __SPAWN__

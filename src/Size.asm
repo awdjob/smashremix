@@ -329,12 +329,16 @@ scope Size {
         sw      at, 0x0004(sp)              // save registers
 
         // hijack this routine to clear KirbyHats.magic_hat_on and taunt_loses_power :E
+        lli     t6, OS.FALSE                // t6 = FALSE
+        lw      at, 0x0020(t2)              // at = hat power ID
+        lli     a2, Character.id.NONE       // a2 = magic hat power ID
+        beql    at, a2, pc() + 8            // if magic hat, then set to on
+        lli     t6, OS.TRUE                 // t6 = TRUE
         li      a2, KirbyHats.spawn_with_hat
         addu    a2, a2, t9                  // a2 = address of port's spawn_with_hat
-        lw      at, 0x0000(a2)              // t6 = spawn_with_hat
+        lw      at, 0x0000(a2)              // at = spawn_with_hat
         lli     a2, CharacterSelectDebugMenu.KirbyHat.MAX_VALUE - 1 // a2 = 2nd to last kirby hat entry ('???')
-        bnel    at, a2, pc() + 12           // if not magic hat, then don't set to on
-        lli     t6, OS.FALSE                // t6 = FALSE
+        beql    at, a2, pc() + 8            // if magic hat, then set to on
         lli     t6, OS.TRUE                 // t6 = TRUE
         li      a2, KirbyHats.magic_hat_on  // a2 = magic_hat_on
         addu    a2, a2, t9                  // a2 = address of port's magic_hat_on
@@ -2289,6 +2293,8 @@ scope Size {
             beq     a1, at, _apply_scale    // apply scale if Luigi
             lli     at, Character.id.DRM
             beq     a1, at, _apply_scale    // apply scale if Dr. Mario
+            lli     at, Character.id.DRL
+            beq     a1, at, _apply_scale    // apply scale if Dr. Luigi
             lli     at, Character.id.JMARIO
             beq     a1, at, _apply_scale    // apply scale if J Mario
             lli     at, Character.id.JLUIGI

@@ -77,9 +77,12 @@ scope Slippy {
     insert SHINE,"moveset/SHINE.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
+
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.SLIPPY, 0x2)
+    dh {MIDI.id.AREA6}
+    OS.patch_end()
 
     // @ Description
     // Slippy's extra actions
@@ -119,15 +122,15 @@ scope Slippy {
         //string_0x0E0:; String.insert("Appear2")
         string_0x0E1:; String.insert("DemonSniper")
         string_0x0E2:; String.insert("DemonSniperAir")
-        string_0x0E3:; String.insert("JetPackAir")
-        string_0x0E4:; String.insert("JetPackStart")
+        string_0x0E3:; String.insert("JetPackStart")
+        string_0x0E4:; String.insert("JetPackStartAir")
         string_0x0E5:; String.insert("JetPackReadying")
-        string_0x0E6:; String.insert("JetPackFlash")
-        string_0x0E7:; String.insert("FireFox")
+        string_0x0E6:; String.insert("JetPackReadyingAir")
+        string_0x0E7:; String.insert("FireToad")
         string_0x0E8:; String.insert("JetPackAir")
         string_0x0E9:; String.insert("JetPackEnd")
         string_0x0EA:; String.insert("JetPackEndAir")
-        string_0x0EB:; String.insert("JetPackLandingAir")
+        string_0x0EB:; String.insert("JetPackLanding")
         //string_0x0EC:; String.insert("ReflectorStart")
         //string_0x0ED:; String.insert("Reflecting")
         //string_0x0EE:; String.insert("ReflectorEnd")
@@ -235,8 +238,8 @@ scope Slippy {
     Character.edit_action_parameters(SLIPPY, Action.AttackAirD,         File.WARIO_DAIR,            DAIR,                        0)
     Character.edit_action_parameters(SLIPPY, Action.LandingAirB,        0x274,                      -1,                         -1); add_hip_translation(Action.LandingAirB, 1.6)
 
-    Character.edit_action_parameters(SLIPPY, 0xE1,                      0x25D,                      NSP_GROUND,                 0);add_hip_translation(0xE1, 1.6)
- 	Character.edit_action_parameters(SLIPPY, 0xE2,                      0x281,                      NSP_AIR,                    0);add_hip_translation(0xE2, 1.6)
+    Character.edit_action_parameters(SLIPPY, 0xE1,                      File.SLIPPY_SHOOT_GROUND,   NSP_GROUND,                 0)
+ 	Character.edit_action_parameters(SLIPPY, 0xE2,                      File.SLIPPY_SHOOT_AIR,      NSP_AIR,                    0)
     Character.edit_action_parameters(SLIPPY, 0xE3,                      -1,                         USP_BEGIN,                  -1)
     Character.edit_action_parameters(SLIPPY, 0xE4,                      -1,                         USP_BEGIN,                  -1)
     Character.edit_action_parameters(SLIPPY, 0xE5,                      -1,                         USP_CHARGE,                 -1)
@@ -280,7 +283,7 @@ scope Slippy {
 
     // Set crowd chant FGM.
     Character.table_patch_start(crowd_chant_fgm, Character.id.SLIPPY, 0x2)
-    dh  0x02B7
+    dh  0x0432
     OS.patch_end()
 
     // Set Kirby hat_id
@@ -294,41 +297,6 @@ scope Slippy {
 
     // Shield colors for costume matching
     Character.set_costume_shield_colors(SLIPPY, WHITE, RED, BLUE, TURQUOISE, PURPLE, ORANGE, YELLOW, NA)
-
-    Character.table_patch_start(variant_original, Character.id.SLIPPY, 0x4)
-    dw      Character.id.FALCO // set Falco as original character (not Fox, who SLIPPY is a clone of)
-    OS.patch_end()
-
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.SLIPPY, 0x4)
-    dw      CPU_ATTACKS
-    OS.patch_end()
-
-    // Set CPU NSP long range behaviour
-    Character.table_patch_start(ai_long_range, Character.id.SLIPPY, 0x4)
-    dw      AI.LONG_RANGE.ROUTINE.NSP_SHOOT
-    OS.patch_end()
-
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  5,   0,  -1, -1, -1, -1)   // todo: confirm coords for all
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  -1,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  -1,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  14,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  3,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  12,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  8,  0,  -1, -1, -1, -1) // fair actually comes out frame 5, but bair is frame 10
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  6,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   0,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  5,   0,   -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  3,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  31,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  31,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  6,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  13,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  13,   0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  7,  0,  -1, -1, -1, -1)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,   0,  -1, -1, -1, -1)
 
     // @ Description
     // Patch which allows Slippy Toad's jab 2 to cancel back into jab 1.
@@ -546,26 +514,43 @@ scope Slippy {
     // @ Description
     // Extends the end of Fox's USP collision function. Adds a ledge grab check for Slippy.
     scope usp_collision_patch_: {
-    OS.patch_start(0xD6E98, 0x8015C458)
+    OS.patch_start(0xD6D00, 0x8015C2C0)
         j       usp_collision_patch_
-        lw      a0, 0x0020(sp)              // a0 = player object
+        sw      a0, 0x0020(sp)              // 0x0020(sp) = player object
         _return:
         OS.patch_end()
 
-        lw      t6, 0x0084(a0)              // t6 = player struct
-        lw      t6, 0x0008(t6)              // t6 = character id
+        // s0 = player struct
+        lw      t6, 0x0008(s0)              // t6 = character id
         lli     at, Character.id.SLIPPY     // at = id.SLIPPY
-        bne     at, t6, _end                // branch if chracter != SLIPPY
+        bne     at, t6, _original           // branch if chracter != SLIPPY
         nop
 
         // if the character is Slippy, check for ledge grabs
-        jal     SlippyUSP.check_ledge_grab_ // unknown up special subroutine (original line 1)
-        lw      a0, 0x0020(sp)              // a0 = player object (original line 2)
-
-        _end:
+        jal     0x800DE798                  // check ledge/floor collision?
+        nop
+        beq     v0, r0, _end                // skip if !collision
+        nop
+        lw      a0, 0x0020(sp)              // a0 = player object
+        lw      a1, 0x0084(a0)              // a1 = player struct
+        lhu     a2, 0x00D2(a1)              // a2 = collision flags?
+        andi    a2, a2, 0x3000              // bitmask
+        beq     a2, r0, _end                // skip if !ledge_collision
+        nop
+        jal     0x80144C24                  // ledge grab subroutine
+        nop
         lw      ra, 0x001C(sp)              // ~
         lw      s0, 0x0018(sp)              // ~
-        jr      ra                          // ~
-        addiu   sp, sp, 0x0020              // original ending
+        jr      ra                          // end function early
+        addiu   sp, sp, 0x0020
+
+        _original:
+        jal     0x800DE758                  // check for collisions (original)
+        nop
+
+        _end:
+        j       _return                     // return
+        nop
+
     }
 }

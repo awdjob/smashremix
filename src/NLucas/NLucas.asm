@@ -89,6 +89,10 @@ scope NLucas {
     dw  0x800E9A60                          // skips overlay ending script
     OS.patch_end()
 
+    // Set special Jump2 physics
+    Character.table_patch_start(ness_jump, Character.id.NLUCAS, 0x1)
+    db      OS.TRUE;     OS.patch_end();
+
     // Handles common things for Polygons
     Character.polygon_setup(NLUCAS, LUCAS)
 

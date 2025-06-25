@@ -12,7 +12,7 @@ include "OS.asm"
 scope MIDI {
     read32 MUSIC_TABLE, "../roms/original.z64", 0x3D768
     variable MUSIC_TABLE_END(MUSIC_TABLE + 0x17C)   // variable containing the current end of the music table
-    constant MIDI_BANK(0x2800000)                   // defines the start of the additional MIDI bank
+    constant MIDI_BANK(0x3000000)                   // defines the start of the additional MIDI bank
     global variable MIDI_BANK_END(MIDI_BANK)        // variable containing the current end of the MIDI bank
     // These 2 variables will be used in FGM.asm to calculate the correct RAM offset for numerous pointers
     variable midi_count(0x2F)                       // variable containing total number of MIDIs
@@ -65,7 +65,8 @@ scope MIDI {
     // has_title - (bool) indicates if this track has a title string
     // track_title - Name of track
     // track_game - Name of game of origin for track (from add_game)
-    macro insert_midi(file_name, random_te, random_ne, can_toggle, has_title, track_title, track_game) {
+    // order - Order of the track
+    macro insert_midi(file_name, random_te, random_ne, can_toggle, has_title, track_title, track_game, order) {
         pushvar origin, base
 
         // defines
@@ -81,6 +82,7 @@ scope MIDI {
         global define MIDI_{MIDI_{file_name}_ID}_FILE_NAME({file_name})
         global define MIDI_{MIDI_{file_name}_ID}_NAME({track_title})
         global define MIDI_{MIDI_{file_name}_ID}_GAME({track_game})
+        global define MIDI_{MIDI_{file_name}_ID}_ORDER({order})
         global define id.{file_name}({MIDI_{file_name}_ID})
 
         // print message
@@ -114,6 +116,57 @@ scope MIDI {
         pullvar base, origin
     }
 
+    // same as insert_midi but from external paths
+    macro insert_external_midi(midi_id, file_name, random_te, random_ne, can_toggle, has_title, track_title, track_game, order) {
+        pushvar origin, base
+
+        // defines
+        define path_MIDI_{midi_id}({file_name}.bin)
+        evaluate offset_MIDI_{midi_id}(MIDI_BANK_END)
+        evaluate MIDI_{midi_id}_ID((MUSIC_TABLE_END - MUSIC_TABLE) / 0x8)
+
+        global variable midi_count({MIDI_{midi_id}_ID} + 0x1)
+        global define MIDI_{MIDI_{midi_id}_ID}_TE({random_te})
+        global define MIDI_{MIDI_{midi_id}_ID}_NE({random_ne})
+        global define MIDI_{MIDI_{midi_id}_ID}_TOGGLE({can_toggle})
+        global define MIDI_{MIDI_{midi_id}_ID}_TITLE({has_title})
+        global define MIDI_{MIDI_{midi_id}_ID}_FILE_NAME({midi_id})
+        global define MIDI_{MIDI_{midi_id}_ID}_NAME({track_title})
+        global define MIDI_{MIDI_{midi_id}_ID}_GAME({track_game})
+        global define MIDI_{MIDI_{midi_id}_ID}_ORDER({order})
+        global define id.{midi_id}({MIDI_{midi_id}_ID})
+
+        // print message
+        print "Added MIDI_{midi_id}({path_MIDI_{midi_id}}): ", {MIDI_{MIDI_{midi_id}_ID}_NAME}, "\n"
+        print "ROM Offset: 0x"; OS.print_hex({offset_MIDI_{midi_id}}); print "\n"
+        print "MIDI_{midi_id}_ID: 0x"; OS.print_hex({MIDI_{midi_id}_ID}); print "\n"
+        print "Sound Test Music ID: ", midi_count, "\n\n"
+
+        // add the new midi to the music table and update MUSIC_TABLE_END
+        origin  MUSIC_TABLE_END
+        dw      origin_MIDI_{midi_id} - MUSIC_TABLE
+        dw      MIDI_{midi_id}.size
+        global variable MUSIC_TABLE_END(origin())
+
+        // insert the MIDI file and update MIDI_BANK_END
+        origin  MIDI_BANK_END
+        constant origin_MIDI_{midi_id}(origin())
+        insert  MIDI_{midi_id}, "{path_MIDI_{midi_id}}"
+        OS.align(4)
+        global variable MIDI_BANK_END(origin())
+
+        // set the number of songs in MUSIC_TABLE
+        origin  MUSIC_TABLE + 0x2
+        dh      midi_count
+
+        // update largest MIDI size
+        if MIDI_{midi_id}.size > largest_midi {
+            global variable largest_midi(MIDI_{midi_id}.size)
+        }
+
+        pullvar base, origin
+    }
+
     // @ Description
     // adds a toggleable MIDI to our new MIDI bank, and the music table
     // file_name - Name of MIDI file
@@ -121,22 +174,22 @@ scope MIDI {
     // random_ne - Default value for Netplay profile
     // track_title - Name of track
     // track_game - Game of origin for track
-    macro insert_midi(file_name, random_te, random_ne, track_title, track_game) {
-        insert_midi({file_name}, {random_te}, {random_ne}, OS.TRUE, OS.TRUE, {track_title}, {track_game})
+    macro insert_midi(file_name, random_te, random_ne, track_title, track_game, order) {
+        insert_midi({file_name}, {random_te}, {random_ne}, OS.TRUE, OS.TRUE, {track_title}, {track_game}, {order})
     }
 
     // @ Description
     // adds an extra, unnamed MIDI to our new MIDI bank, and the music table
     // file_name - Name of MIDI file
     macro insert_extra_midi(file_name) {
-        insert_midi({file_name}, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, -1, -1)
+        insert_midi({file_name}, OS.FALSE, OS.FALSE, OS.FALSE, OS.FALSE, -1, -1, -1)
     }
 
     // @ Description
     // adds an extra, named MIDI to our new MIDI bank, and the music table
     // file_name - Name of MIDI file
-    macro insert_named_extra_midi(file_name, track_title, track_game) {
-        insert_midi({file_name}, OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, {track_title}, {track_game})
+    macro insert_named_extra_midi(file_name, track_title, track_game, order) {
+        insert_midi({file_name}, OS.FALSE, OS.FALSE, OS.FALSE, OS.TRUE, {track_title}, {track_game}, {order})
     }
 
     // define new MIDI bank
@@ -168,6 +221,7 @@ scope MIDI {
     add_game(mariotennis, "Mario Tennis")
     add_game(smrpg, "Super Mario RPG: Legend of the Seven Stars")
     add_game(papermario, "Paper Mario")
+    add_game(mariohoops, "Mario Hoops 3-on-3")
     add_game(talentstudio, "Mario Artist: Talent Studio")
     add_game(marioluigi_bis, "Mario and Luigi: Bowser's Inside Story")
     add_game(ddrmm, "Dance Dance Revolution: Mario Mix")
@@ -180,6 +234,7 @@ scope MIDI {
     add_game(warioworld, "Wario World")
     add_game(warioware, "WarioWare, Inc.: Mega Microgame$!")
     add_game(wwtouched, "WarioWare: Touched!")
+    add_game(dkarc, "Donkey Kong/Donkey Kong Jr.")
     add_game(dkl, "Donkey Kong Land")
     add_game(dkc, "Donkey Kong Country")
     add_game(dkc2, "Donkey Kong Country 2")
@@ -194,6 +249,7 @@ scope MIDI {
     add_game(skyward, "The Legend of Zelda: Skyward Sword")
     add_game(metroid, "Metroid")
     add_game(supermetroid, "Super Metroid")
+    add_game(metroidprime3, "Metroid Prime 3: Corruption")
     add_game(starfox, "Star Fox")
     add_game(starfox2, "Star Fox 2")
     add_game(starfox64, "Star Fox 64")
@@ -201,6 +257,7 @@ scope MIDI {
     add_game(pokemongold, "Pokemon Gold & Silver")
     add_game(pokemonruby, "Pokemon Ruby & Sapphire")
     add_game(stadium, "Pokemon Stadium")
+    add_game(heypika, "Hey You, Pikachu!")
     add_game(kirbydreamland, "Kirby's Dream Land")
     add_game(kirbyadventure, "Kirby's Adventure")
     add_game(kirbysuperstar, "Kirby Super Star")
@@ -219,6 +276,7 @@ scope MIDI {
     add_game(melee, "Super Smash Bros. Melee")
     add_game(animal_crossing, "Animal Crossing")
     add_game(acww, "Animal Crossing: Wild World")
+    add_game(acnewleaf, "Animal Crossing: New Leaf")
     add_game(machrider, "Mach Rider")
     add_game(mischiefmakers, "Mischief Makers")
     add_game(conker, "Conker's Bad Fur Day")
@@ -229,26 +287,32 @@ scope MIDI {
     add_game(goldeneye, "GoldenEye 007")
     add_game(mlb, "Major League Baseball Featuring Ken Griffey Jr.")
     add_game(nbajam, "NBA Jam")
+    add_game(mvc, "Marvel vs. Capcom")
     add_game(mvc2, "Marvel vs. Capcom 2")
     add_game(toh, "Tower of Heaven")
     add_game(persona, "Revelations: Persona")
     add_game(persona5, "Persona 5")
     add_game(fire_emblem, "Fire Emblem")
+    add_game(fe6, "Fire Emblem: The Binding Blade")
     add_game(fe_gaiden, "Fire Emblem Gaiden")
     add_game(sonic1, "Sonic the Hedgehog")
     add_game(sonic2, "Sonic the Hedgehog 2")
     add_game(soniccd, "Sonic CD")
     add_game(sonic3, "Sonic the Hedgehog 3")
     add_game(sonicfighters, "Sonic the Fighters")
+    add_game(sonicR, "Sonic R")
     add_game(sonicadventure, "Sonic Adventure")
     add_game(sonicadventure2, "Sonic Adventure 2")
     add_game(rhfever, "Rhythm Heaven Fever")
     add_game(chrono, "Chrono Trigger")
+    add_game(xenogears, "Xenogears")
     add_game(dragonking, "Dragon King: The Fighting Game")
+    add_game(castlevania, "Castlevania")
     add_game(castlevania_2, "Castlevania II: Simon's Quest")
     add_game(castlevania_bloodlines, "Castlevania: Bloodlines")
     add_game(castlevania_sotn, "Castlevania: Symphony of the Night")
     add_game(castlevania_dos, "Castlevania: Dawn of Sorrow")
+    add_game(castlevania_rob, "Castlevania: Rondo of Blood")
     add_game(isoccer, "International Superstar Soccer 64")
     add_game(goemon, "Ganbare Goemon")
     add_game(mysticalninja, "Mystical Ninja Starring Goemon")
@@ -258,12 +322,13 @@ scope MIDI {
     add_game(quest64, "Quest 64")
     add_game(ogrebattle64, "Ogre Battle 64: Person of Lordly Caliber")
     add_game(ff4, "Final Fantasy IV")
+    add_game(ff5, "Final Fantasy V")
     add_game(jackbros, "Jack Bros.")
     add_game(smtif, "Shin Megami Tensei If...")
     add_game(smtiv, "Shin Megami Tensei IV")
     add_game(shantae, "Shantae")
-    add_game(blastcorps, "Blast Corps")
     add_game(megamanbc, "Megaman: Battle & Chase")
+    add_game(megamanscr, "Mega Man Soccer")
     add_game(doom, "DOOM")
     add_game(doom2, "DOOM II: Hell on Earth")
     add_game(dukenukem3d, "Duke Nukem 3D")
@@ -271,273 +336,352 @@ scope MIDI {
     add_game(sbk, "Snowboard Kids")
     add_game(sbk2, "Snowboard Kids 2")
     add_game(2hu6, "Touhou 6: Embodiment of Scarlet Devil")
+    add_game(crash, "Crash Bandicoot")
+    add_game(crash2, "Crash Bandicoot 2: Cortex Strikes Back")
+    add_game(crash3, "Crash Bandicoot: Warped")
+    add_game(crash_xs, "Crash Bandicoot: The Huge Adventure")
+    add_game(dinoplanet, "Dinosaur Planet")
+    add_game(marathon2, "Marathon 2: Durandal")
+    add_game(ut99, "Unreal Tournament")
+    add_game(shovelknight, "Shovel Knight")
+    add_game(snp, "Sin and Punishment")
+    add_game(bomberman, "Bomberman 64")
+    add_game(bombermanhero, "Bomberman Hero")
+    add_game(kidicarus, "Kid Icarus")
+    add_game(silversurfer, "Silver Surfer")
+    add_game(balloonfight, "Balloon Fight")
+    add_game(paneldepon, "Panel de Pon")
+    add_game(crashbash, "Crash Bash")
     OS.align(4)
 
     // insert custom midi files
-    insert_midi(GANONDORF_BATTLE, OS.TRUE, OS.TRUE, "Ganondorf Battle", ocarina)
-    insert_midi(CORNERIA, OS.TRUE, OS.TRUE, "Corneria", starfox)
-    insert_midi(KOKIRI_FOREST, OS.TRUE, OS.TRUE, "Kokiri Forest", ocarina)
-    insert_midi(DR_MARIO, OS.TRUE, OS.TRUE, "Fever", drm)
-    insert_midi(GAME_CORNER, OS.TRUE, OS.TRUE, "Game Corner", pokemongold)
-    insert_midi(SMASHVILLE, OS.TRUE, OS.TRUE, "Town Hall and Tom Nook's Store", acww)
-    insert_midi(STONECARVING_CITY, OS.TRUE, OS.TRUE, "Stonecarving City", warioshake)
-    insert_midi(FIRST_DESTINATION, OS.TRUE, OS.TRUE, "Final Destination (Melee)", melee)
-    insert_midi(COOLCOOLMOUNTAIN, OS.TRUE, OS.TRUE, "Cool, Cool Mountain", sm64)
-    insert_midi(GODDESSBALLAD, OS.TRUE, OS.TRUE, "Ballad of the Goddess", skyward)
-    insert_midi(SARIA, OS.TRUE, OS.TRUE, "Saria's Song", ocarina)
-    insert_midi(TOWEROFHEAVEN, OS.TRUE, OS.TRUE, "Luna Ascension", toh)
-    insert_midi(FOD, OS.TRUE, OS.TRUE, "Gourmet Race (Melee)", kirbysuperstar)
-    insert_midi(MUDA, OS.TRUE, OS.TRUE, "Muda Kingdom", sml)
-    insert_midi(MEMENTOS, OS.TRUE, OS.TRUE, "Last Surprise", persona5)
-    insert_midi(SPIRAL_MOUNTAIN, OS.TRUE, OS.TRUE, "Spiral Mountain", banjokazooie)
-    insert_midi(N64, OS.TRUE, OS.TRUE, "Dire, Dire Docks", sm64)
-    insert_midi(MUTE_CITY, OS.TRUE, OS.TRUE, "Mute City", fzero)
-    insert_midi(BATTLEFIELD, OS.TRUE, OS.TRUE, "Battlefield", brawl)
-    insert_midi(MADMONSTER, OS.TRUE, OS.TRUE, "Mad Monster Mansion", banjokazooie)
+    insert_midi(GANONDORF_BATTLE, OS.TRUE, OS.TRUE, "Ganondorf Battle", ocarina, 111)
+    insert_midi(CORNERIA, OS.TRUE, OS.TRUE, "Corneria", starfox, 54)
+    insert_midi(KOKIRI_FOREST, OS.TRUE, OS.TRUE, "Kokiri Forest", ocarina, 140)
+    insert_midi(DR_MARIO, OS.TRUE, OS.TRUE, "Fever", drm, 84)
+    insert_midi(GAME_CORNER, OS.TRUE, OS.TRUE, "Game Corner", pokemongold, 108)
+    insert_midi(SMASHVILLE, OS.TRUE, OS.TRUE, "Town Hall and Tom Nook's Store", acww, 257)
+    insert_midi(STONECARVING_CITY, OS.TRUE, OS.TRUE, "Stonecarving City", warioshake, 237)
+    insert_midi(FIRST_DESTINATION, OS.TRUE, OS.TRUE, "Final Destination (Melee)", melee, 90)
+    insert_midi(COOLCOOLMOUNTAIN, OS.TRUE, OS.TRUE, "Snow Mountain", sm64, 223)
+    insert_midi(GODDESSBALLAD, OS.TRUE, OS.TRUE, "Ballad of the Goddess", skyward, 12)
+    insert_midi(SARIA, OS.TRUE, OS.TRUE, "Saria's Song", ocarina, 214)
+    insert_midi(TOWEROFHEAVEN, OS.TRUE, OS.TRUE, "Luna Ascension", toh, 149)
+    insert_midi(FOD, OS.TRUE, OS.TRUE, "Gourmet Race (Melee)", kirbysuperstar, 119)
+    insert_midi(MUDA, OS.TRUE, OS.TRUE, "Muda Kingdom", sml, 167)
+    insert_midi(MEMENTOS, OS.TRUE, OS.TRUE, "Last Surprise", persona5, 143)
+    insert_midi(SPIRAL_MOUNTAIN, OS.TRUE, OS.TRUE, "Spiral Mountain", banjokazooie, 228)
+    insert_midi(N64, OS.TRUE, OS.TRUE, "Dire, Dire Docks", sm64, 67)
+    insert_midi(MUTE_CITY, OS.TRUE, OS.TRUE, "Mute City", fzero, 171)
+    insert_midi(BATTLEFIELD, OS.TRUE, OS.TRUE, "Battlefield", brawl, 19)
+    insert_midi(MADMONSTER, OS.TRUE, OS.TRUE, "Mad Monster Mansion", banjokazooie, 153)
     insert_extra_midi(GANON_VICTORY)
     insert_extra_midi(YOUNGLINK_VICTORY)
     insert_extra_midi(FALCO_VICTORY)
     insert_extra_midi(DRMARIO_VICTORY)
-    insert_midi(MELEE_MENU, OS.TRUE, OS.TRUE, "Melee Menu", melee)
-    insert_midi(GREEN_GREENS, OS.TRUE, OS.TRUE, "Green Greens", kirbydreamland)
-    insert_midi(NORFAIR, OS.TRUE, OS.TRUE, "Brinstar Depths (Melee)", metroid)
-    insert_midi(BOWSERBOSS, OS.TRUE, OS.TRUE, "Koopa's Theme", sm64)
-    insert_midi(POKEMON_STADIUM, OS.TRUE, OS.TRUE, "Trainer Battle", pokemonred)
-    insert_midi(BOWSERROAD, OS.TRUE, OS.TRUE, "Koopa's Road", sm64)
-    insert_midi(BOWSERFINAL, OS.TRUE, OS.TRUE, "Ultimate Koopa", sm64)
-    insert_midi(SMB3OVERWORLD, OS.TRUE, OS.TRUE, "Super Mario Bros. 3 (Melee)", smb3)
-    insert_midi(DELFINO, OS.TRUE, OS.TRUE, "Delfino Plaza", sunshine)
-    insert_midi(VS_KLUNGO, OS.TRUE, OS.TRUE, "Vs. Klungo", banjo2)
-    insert_midi(BIG_BLUE, OS.TRUE, OS.TRUE, "Big Blue", fzero)
+    insert_extra_midi(MELEE_MENU)
+    insert_midi(GREEN_GREENS, OS.TRUE, OS.TRUE, "Green Greens", kirbydreamland, 123)
+    insert_midi(NORFAIR, OS.TRUE, OS.TRUE, "Brinstar Depths", metroid, 36)
+    insert_midi(BOWSERBOSS, OS.TRUE, OS.TRUE, "Koopa's Theme", sm64, 142)
+    insert_midi(POKEMON_STADIUM, OS.TRUE, OS.TRUE, "Trainer Battle", pokemonred, 258)
+    insert_midi(BOWSERROAD, OS.TRUE, OS.TRUE, "Koopa's Road", sm64, 141)
+    insert_midi(BOWSERFINAL, OS.TRUE, OS.TRUE, "Ultimate Koopa", sm64, 264)
+    insert_midi(SMB3OVERWORLD, OS.TRUE, OS.TRUE, "Super Mario Bros. 3 (Melee)", smb3, 242)
+    insert_midi(DELFINO, OS.TRUE, OS.TRUE, "Delfino Plaza", sunshine, 66)
+    insert_midi(VS_KLUNGO, OS.TRUE, OS.TRUE, "Vs. Klungo", banjo2, 273)
+    insert_midi(BIG_BLUE, OS.TRUE, OS.TRUE, "Big Blue", fzero, 23)
     insert_extra_midi(DSAMUS_VICTORY)
-    insert_midi(ONETT, OS.TRUE, OS.TRUE, "Onett", earthbound)
-    insert_midi(ZEBES_LANDING, OS.TRUE, OS.TRUE, "Upper Brinstar", supermetroid)
-    insert_midi(FROSTY_VILLAGE, OS.TRUE, OS.TRUE, "Frosty Village", dkr)
-    insert_midi(EASTON_KINGDOM, OS.TRUE, OS.TRUE, "Easton Kingdom", sml)
-    insert_midi(WING_CAP, OS.TRUE, OS.TRUE, "Wing Cap", sm64)
-    insert_midi(RBY_GYMLEADER, OS.TRUE, OS.TRUE, "Gym Leader Battle", pokemonred)
-    insert_midi(KITCHEN_ISLAND, OS.TRUE, OS.TRUE, "Wario Land", warioland)
-    insert_midi(GLACIAL, OS.TRUE, OS.TRUE, "River Stage", mvc2)
-    insert_midi(DK_RAP, OS.TRUE, OS.TRUE, "DK Rap", dk64)
+    insert_midi(ONETT, OS.TRUE, OS.TRUE, "Onett", earthbound, 180)
+    insert_midi(ZEBES_LANDING, OS.TRUE, OS.TRUE, "Upper Brinstar", supermetroid, 268)
+    insert_midi(FROSTY_VILLAGE, OS.TRUE, OS.TRUE, "Frosty Village", dkr, 102)
+    insert_midi(EASTON_KINGDOM, OS.TRUE, OS.TRUE, "Easton Kingdom", sml, 77)
+    insert_midi(WING_CAP, OS.TRUE, OS.TRUE, "Powerful Mario", sm64, 195)
+    insert_midi(RBY_GYMLEADER, OS.TRUE, OS.TRUE, "Gym Leader Battle", pokemonred, 126)
+    insert_midi(KITCHEN_ISLAND, OS.TRUE, OS.TRUE, "Wario Land", warioland, 277)
+    insert_midi(GLACIAL, OS.TRUE, OS.TRUE, "River Stage", mvc2, 207)
+    insert_midi(DK_RAP, OS.TRUE, OS.TRUE, "DK Rap", dk64, 69)
     insert_extra_midi(WARIO_VICTORY)
-    insert_midi(MACHRIDER, OS.TRUE, OS.TRUE, "Mach Rider (Melee)", machrider)
-    insert_midi(POKEFLOATS, OS.TRUE, OS.TRUE, "Red & Blue Medley", pokemonred)
-    insert_midi(GERUDO_VALLEY, OS.TRUE, OS.TRUE, "Gerudo Valley", ocarina)
-    insert_midi(POP_STAR, OS.TRUE, OS.TRUE, "Pop Star", kirby64)
-    insert_midi(STAR_WOLF, OS.TRUE, OS.TRUE, "Star Wolf", starfox64)
-    insert_midi(STARRING_WARIO, OS.TRUE, OS.TRUE, "Starring Wario!", ddrmm)
+    insert_midi(MACHRIDER, OS.TRUE, OS.TRUE, "Mach Rider (Melee)", machrider, 151)
+    insert_midi(POKEFLOATS, OS.TRUE, OS.TRUE, "Red & Blue Medley", pokemonred, 202)
+    insert_midi(GERUDO_VALLEY, OS.TRUE, OS.TRUE, "Gerudo Valley", ocarina, 112)
+    insert_midi(POP_STAR, OS.TRUE, OS.TRUE, "Pop Star", kirby64, 193)
+    insert_midi(STAR_WOLF, OS.TRUE, OS.TRUE, "Star Wolf", starfox64, 232)
+    insert_midi(STARRING_WARIO, OS.TRUE, OS.TRUE, "Starring Wario!", ddrmm, 234)
     insert_extra_midi(LUCAS_VICTORY)
-    insert_midi(POKEMON_CHAMPION, OS.TRUE, OS.TRUE, "Champion Battle", pokemonred)
-    insert_midi(ANIMAL_CROSSING, OS.TRUE, OS.TRUE, "Title Theme (Wild World)", acww)
-    insert_midi(HYRULE_TEMPLE, OS.TRUE, OS.TRUE, "Temple Theme (Melee)", zelda2)
-    insert_midi(POLLYANNA, OS.TRUE, OS.TRUE, "Pollyanna (Melee)", earthboundb)
-    insert_midi(SAMBA_DE_COMBO, OS.TRUE, OS.TRUE, "Samba de Combo", mother3)
-    insert_midi(DCMC, OS.TRUE, OS.TRUE, "DCMC Performance", mother3)
-    insert_midi(UNFOUNDED_REVENGE, OS.TRUE, OS.TRUE, "Unfounded Revenge", mother3)
-    insert_midi(THE_DAYS_WHEN_MY_MOTHER_WAS_THERE, OS.TRUE, OS.TRUE, "The Days When My Mother Was There", persona5)
-    insert_midi(BRAWL, OS.TRUE, OS.TRUE, "Brawl Menu", brawl)
-    insert_midi(NBA_JAM, OS.TRUE, OS.TRUE, "Team Select", nbajam)
-    insert_midi(KENGJR, OS.TRUE, OS.TRUE, "Call Me Jr.", mlb)
-    insert_midi(CLOCKTOWER, OS.TRUE, OS.TRUE, "Clock Tower", mvc2)
-    insert_midi(BEIN_FRIENDS, OS.TRUE, OS.TRUE, "Bein' Friends", earthboundb)
-    insert_midi(KK_RIDER, OS.TRUE, OS.TRUE, "Go K.K. Rider!", animal_crossing)
-    insert_midi(SNAKEY_CHANTEY, OS.TRUE, OS.TRUE, "Snakey Chantey", dkc2)
-    insert_midi(TAZMILY, OS.TRUE, OS.TRUE, "Mom's Hometown", mother3)
-    insert_midi(FLAT_ZONE, OS.TRUE, OS.TRUE, "Flat Zone", melee)
-    insert_midi(FLAT_ZONE_2, OS.TRUE, OS.TRUE, "Flat Zone II", brawl)
-    insert_midi(YOSHI_GOLF, OS.TRUE, OS.TRUE, "Yoshi's Island (Mario Golf)", mariogolf)
-    insert_midi(FINALTEMPLE, OS.TRUE, OS.TRUE, "Great Temple/Dark Link", zelda2)
-    insert_midi(OBSTACLE, OS.TRUE, OS.TRUE, "Obstacle Course", yoshis_island)
-    insert_midi(EVEN_DRIER_GUYS, OS.TRUE, OS.TRUE, "Even Drier Guys", mother3)
-    insert_midi(FIRE_FIELD, OS.TRUE, OS.TRUE, "Feel Our Pain (Fire Field)", fzero_gx)
-    insert_midi(PEACH_CASTLE, OS.TRUE, OS.TRUE, "Princess Peach's Castle (Melee)", smb)
-    insert_midi(BANJO_MAIN, OS.TRUE, OS.TRUE, "Main Theme", banjokazooie)
+    insert_midi(POKEMON_CHAMPION, OS.TRUE, OS.TRUE, "Champion Battle", pokemonred, 44)
+    insert_midi(ANIMAL_CROSSING, OS.TRUE, OS.TRUE, "Title Theme (Wild World)", acww, 254)
+    insert_midi(HYRULE_TEMPLE, OS.TRUE, OS.TRUE, "Temple Theme (Melee)", zelda2, 247)
+    insert_midi(POLLYANNA, OS.TRUE, OS.TRUE, "Pollyanna (Melee)", earthboundb, 192)
+    insert_midi(SAMBA_DE_COMBO, OS.TRUE, OS.TRUE, "Samba de Combo", mother3, 213)
+    insert_midi(PORKY_MEDLEY, OS.TRUE, OS.TRUE, "Master Porky Medley", mother3, 159)
+    insert_midi(UNFOUNDED_REVENGE, OS.TRUE, OS.TRUE, "Unfounded Revenge", mother3, 267)
+    insert_midi(THE_DAYS_WHEN_MY_MOTHER_WAS_THERE, OS.TRUE, OS.TRUE, "The Days When My Mother Was There", persona5, 249)
+    insert_extra_midi(BRAWL)
+    insert_midi(NBA_JAM, OS.TRUE, OS.TRUE, "NBA Jam Medley", nbajam, 173)
+    insert_midi(KENGJR, OS.TRUE, OS.TRUE, "Call Me Jr.", mlb, 42)
+    insert_midi(CLOCKTOWER, OS.TRUE, OS.TRUE, "Clock Tower", mvc2, 50)
+    insert_midi(BEIN_FRIENDS, OS.TRUE, OS.TRUE, "Bein' Friends", earthboundb, 21)
+    insert_midi(KK_RIDER, OS.TRUE, OS.TRUE, "Go K.K. Rider!", animal_crossing, 115)
+    insert_midi(SNAKEY_CHANTEY, OS.TRUE, OS.TRUE, "Snakey Chantey", dkc2, 221)
+    insert_midi(TAZMILY, OS.TRUE, OS.TRUE, "Mom's Hometown", mother3, 164)
+    insert_midi(FLAT_ZONE, OS.TRUE, OS.TRUE, "Flat Zone", melee, 92)
+    insert_midi(FLAT_ZONE_2, OS.TRUE, OS.TRUE, "Flat Zone II", brawl, 93)
+    insert_midi(YOSHI_GOLF, OS.TRUE, OS.TRUE, "Yoshi's Island (Mario Golf)", mariogolf, 285)
+    insert_midi(FINALTEMPLE, OS.TRUE, OS.TRUE, "Great Temple/Dark Link", zelda2, 121)
+    insert_midi(OBSTACLE, OS.TRUE, OS.TRUE, "Obstacle Course", yoshis_island, 175)
+    insert_midi(EVEN_DRIER_GUYS, OS.TRUE, OS.TRUE, "Even Drier Guys", mother3, 82)
+    insert_midi(FZERO_MEDLEY, OS.TRUE, OS.TRUE, "F-Zero Medley", fzero, 105)
+    insert_midi(PEACH_CASTLE, OS.TRUE, OS.TRUE, "Princess Peach's Castle (Melee)", smb, 196)
+    insert_midi(BANJO_MAIN, OS.TRUE, OS.TRUE, "Main Title (Banjo-Kazooie)", banjokazooie, 156)
     insert_extra_midi(BOWSER_VICTORY)
-    insert_midi(MULTIMAN, OS.TRUE, OS.TRUE, "Multi-Man Melee", melee)
-    insert_midi(CRUEL, OS.TRUE, OS.TRUE, "Cruel Multi-Man Mode", brawl)
-    insert_midi(GANGPLANK, OS.TRUE, OS.TRUE, "Gang-Plank Galleon", dkc)
-    insert_midi(FD_BRAWL, OS.TRUE, OS.TRUE, "Final Destination (Brawl)", brawl)
-    insert_midi(ASTRAL_OBSERVATORY, OS.TRUE, OS.TRUE, "Astral Observatory", majora)
-    insert_midi(ARIA_OF_THE_SOUL, OS.TRUE, OS.TRUE, "Aria of the Soul", persona)
-    insert_midi(PAPER_MARIO_BATTLE, OS.TRUE, OS.TRUE, "Battle Fanfare", papermario)
-    insert_midi(KING_OF_THE_KOOPAS, OS.TRUE, OS.TRUE, "King of the Koopas", papermario)
-    insert_midi(MRPATCH, OS.TRUE, OS.TRUE, "Mr. Patch", banjo2)
-    insert_midi(SKERRIES, OS.TRUE, OS.TRUE, "K. Rool's Acid Punk", dkl)
-    insert_midi(BEWARE_THE_FORESTS_MUSHROOMS, OS.TRUE, OS.TRUE, "Beware the Forest's Mushrooms", smrpg)
-    insert_midi(FIGHT_AGAINST_BOWSER, OS.TRUE, OS.TRUE, "Fight Against Bowser", smrpg)
-    insert_midi(DKR_BOSS, OS.TRUE, OS.TRUE, "Boss Challenges", dkr)
-    insert_midi(CRESCENT_ISLAND, OS.TRUE, OS.TRUE, "Crescent Island", dkr)
+    insert_midi(MULTIMAN, OS.TRUE, OS.TRUE, "Multi-Man Melee", melee, 168)
+    insert_midi(TABUU, OS.TRUE, OS.TRUE, "Boss Battle Song 2", brawl, 32)
+    insert_midi(GANGPLANK, OS.TRUE, OS.TRUE, "Gang-Plank Galleon", dkc, 109)
+    insert_midi(FD_BRAWL, OS.TRUE, OS.TRUE, "Final Destination (Brawl)", brawl, 89)
+    insert_midi(ASTRAL_OBSERVATORY, OS.TRUE, OS.TRUE, "Astral Observatory", majora, 8)
+    insert_midi(ARIA_OF_THE_SOUL, OS.TRUE, OS.TRUE, "Aria of the Soul", persona, 6)
+    insert_midi(PAPER_MARIO_BATTLE, OS.TRUE, OS.TRUE, "Battle Fanfare", papermario, 17)
+    insert_midi(KING_OF_THE_KOOPAS, OS.TRUE, OS.TRUE, "King of the Koopas", papermario, 138)
+    insert_midi(MRPATCH, OS.TRUE, OS.TRUE, "Mr. Patch", banjo2, 166)
+    insert_midi(SKERRIES, OS.TRUE, OS.TRUE, "K. Rool's Acid Punk", dkl, 134)
+    insert_midi(BEWARE_THE_FORESTS_MUSHROOMS, OS.TRUE, OS.TRUE, "Beware the Forest's Mushrooms", smrpg, 22)
+    insert_midi(FIGHT_AGAINST_BOWSER, OS.TRUE, OS.TRUE, "Fight Against Bowser", smrpg, 85)
+    insert_midi(DKR_BOSS, OS.TRUE, OS.TRUE, "Boss Challenges", dkr, 33)
+    insert_midi(CRESCENT_ISLAND, OS.TRUE, OS.TRUE, "Crescent Island", dkr, 59)
     insert_extra_midi(CONKER_VICTORY)
-    insert_midi(RITH_ESSA, OS.TRUE, OS.TRUE, "Rith Essa", jetforce)
-    insert_midi(TARGET_TEST, OS.TRUE, OS.TRUE, "Targets!", melee)
-    insert_midi(VENOM, OS.TRUE, OS.TRUE, "Venom", starfox)
-    insert_midi(SURPRISE_ATTACK, OS.TRUE, OS.TRUE, "Surprise Attack", starfox2)
-    insert_midi(BK_FINALBATTLE, OS.TRUE, OS.TRUE, "Final Battle", banjokazooie)
+    insert_midi(RITH_ESSA, OS.TRUE, OS.TRUE, "Rith Essa", jetforce, 206)
+    insert_midi(TARGET_TEST, OS.TRUE, OS.TRUE, "Targets!", melee, 246)
+    insert_midi(VENOM, OS.TRUE, OS.TRUE, "Venom", starfox, 270)
+    insert_midi(SURPRISE_ATTACK, OS.TRUE, OS.TRUE, "Surprise Attack", starfox2, 244)
+    insert_midi(BK_FINALBATTLE, OS.TRUE, OS.TRUE, "Final Battle (Banjo-Kazooie)", banjokazooie, 87)
     insert_extra_midi(MEWTWO_VICTORY)
-    insert_midi(OLE, OS.TRUE, OS.TRUE, "Ole!", conker)
-    insert_midi(WINDY, OS.TRUE, OS.TRUE, "Windy and Co.", conker)
-    insert_midi(STARFOX_MEDLEY, OS.TRUE, OS.TRUE, "Star Fox Medley (Melee)", starfox)
-    insert_midi(DATADYNE, OS.TRUE, OS.TRUE, "dataDyne Central: Defection", pd)
-    insert_midi(INVESTIGATION_X, OS.TRUE, OS.TRUE, "dataDyne Central: Investigation X", pd)
-    insert_midi(CRADLE, OS.TRUE, OS.TRUE, "Antenna Cradle", goldeneye)
-    insert_midi(MM_TITLE, OS.TRUE, OS.TRUE, "Mischief Makers Title Theme", mischiefmakers)
-    insert_midi(ESPERANCE, OS.TRUE, OS.TRUE, "Esperance", mischiefmakers)
-    insert_midi(SLOPRANO, OS.TRUE, OS.TRUE, "Sloprano", conker)
+    insert_midi(OLE, OS.TRUE, OS.TRUE, "Ole!", conker, 179)
+    insert_midi(WINDY, OS.TRUE, OS.TRUE, "Windy and Co.", conker, 282)
+    insert_midi(STARFOX_MEDLEY, OS.TRUE, OS.TRUE, "Star Fox Medley (Melee)", starfox, 231)
+    insert_midi(DATADYNE, OS.TRUE, OS.TRUE, "dataDyne Central: Defection", pd, 62)
+    insert_midi(INVESTIGATION_X, OS.TRUE, OS.TRUE, "dataDyne Central: Investigation X", pd, 63)
+    insert_midi(CRADLE, OS.TRUE, OS.TRUE, "Antenna Cradle", goldeneye, 4)
+    insert_midi(MM_TITLE, OS.TRUE, OS.TRUE, "Opening Title (Mischief Makers)", mischiefmakers, 183)
+    insert_midi(ESPERANCE, OS.TRUE, OS.TRUE, "Esperance", mischiefmakers, 81)
+    insert_midi(SLOPRANO, OS.TRUE, OS.TRUE, "Sloprano", conker, 220)
     insert_extra_midi(WOLF_VICTORY)
-    insert_midi(NSMB, OS.TRUE, OS.TRUE, "Overworld Theme", nsmb)
-    insert_midi(JUNGLEJAPES, OS.TRUE, OS.TRUE, "Jungle Japes (Melee)", dkc)
-    insert_midi(FOREST_INTERLUDE, OS.TRUE, OS.TRUE, "Forest Interlude", dkc2)
-    insert_midi(TOADS_TURNPIKE, OS.TRUE, OS.TRUE, "Toad's Turnpike", mk64)
-    insert_midi(GB_MEDLEY, OS.TRUE, OS.TRUE, "Game Boy Medley", ssbr)
-    insert_named_extra_midi(BUBBLY, "Bubbly Clouds", kirbydreamland)
-    insert_named_extra_midi(ROADTOCERULEANCITY, "Road to Cerulean City", pokemonred)
-    insert_named_extra_midi(LEVEL1_WARIO, "Stage 1", warioland)
-    insert_named_extra_midi(MABE, "Mabe Village", awakening)
-    insert_named_extra_midi(REST, "Rest Area", ssbr)
-    insert_midi(FE_MEDLEY, OS.TRUE, OS.TRUE, "Fire Emblem Medley", fire_emblem)
-    insert_midi(YOSHI_TALE, OS.TRUE, OS.TRUE, "Yoshi's Tale", yoshis_story)
-    insert_midi(FLOWER_GARDEN, OS.TRUE, OS.TRUE, "Flower Garden", yoshis_island)
-    insert_midi(WILDLANDS, OS.TRUE, OS.FALSE, "Wildlands", yoshis_island_ds)
-    insert_midi(VS_MARX, OS.FALSE, OS.TRUE, "Vs. Marx", kirbysuperstar)
+    insert_midi(NSMB, OS.TRUE, OS.TRUE, "Overworld Theme", nsmb, 187)
+    insert_midi(JUNGLEJAPES, OS.TRUE, OS.TRUE, "Jungle Japes (Melee)", dkc, 133)
+    insert_midi(FOREST_INTERLUDE, OS.TRUE, OS.TRUE, "Forest Interlude", dkc2, 97)
+    insert_midi(TOADS_TURNPIKE, OS.TRUE, OS.TRUE, "Toad's Turnpike", mk64, 255)
+    insert_midi(GB_MEDLEY, OS.TRUE, OS.TRUE, "Game Boy Medley", ssbr, 107)
+    insert_named_extra_midi(BUBBLY, "Bubbly Clouds", kirbydreamland, 38)
+    insert_named_extra_midi(ROADTOCERULEANCITY, "Road to Cerulean City", pokemonred, 208)
+    insert_named_extra_midi(LEVEL1_WARIO, "Stage 1", warioland, 230)
+    insert_named_extra_midi(MABE, "Mabe Village", awakening, 150)
+    insert_named_extra_midi(REST, "Rest Area", ssbr, 204)
+    insert_midi(FE_MEDLEY, OS.TRUE, OS.TRUE, "Fire Emblem Medley", fire_emblem, 91)
+    insert_midi(YOSHI_TALE, OS.TRUE, OS.TRUE, "Yoshi's Tale", yoshis_story, 287)
+    insert_midi(FLOWER_GARDEN, OS.TRUE, OS.TRUE, "Flower Garden", yoshis_island, 94)
+    insert_midi(WILDLANDS, OS.TRUE, OS.FALSE, "Wildlands", yoshis_island_ds, 280)
+    insert_midi(VS_MARX, OS.FALSE, OS.TRUE, "Vs. Marx", kirbysuperstar, 274)
     insert_extra_midi(MARTH_VICTORY)
-    insert_midi(SS_AQUA, OS.TRUE, OS.TRUE, "S.S. Aqua", pokemongold)
-    insert_midi(METAL_BATTLE, OS.TRUE, OS.TRUE, "Metal Battle", melee)
-    insert_midi(SLIDER, OS.TRUE, OS.TRUE, "Slider", sm64)
-    insert_midi(MULTIMAN2, OS.TRUE, OS.TRUE, "Multi-Man Melee 2", melee)
-    insert_midi(FIRE_EMBLEM, OS.TRUE, OS.TRUE, "Together We Ride (Melee)", fire_emblem)
-    insert_midi(KANTO_WILD_BATTLE, OS.TRUE, OS.TRUE, "Kanto Wild Pokemon Battle", pokemongold)
-    insert_midi(SMB2OVERWORLD, OS.TRUE, OS.TRUE, "Super Mario Bros. 2 Overworld", smb2)
-    insert_midi(PIRATELAND, OS.TRUE, OS.TRUE, "Pirate Land", marioparty2)
-    insert_midi(TROPICALISLAND, OS.TRUE, OS.TRUE, "Yoshi's Tropical Island", marioparty)
-    insert_midi(FLYINGBATTERY, OS.TRUE, OS.TRUE, "Flying Battery", sonic3)
-    insert_midi(OPEN_YOUR_HEART, OS.TRUE, OS.TRUE, "Open Your Heart", sonicadventure)
-    insert_midi(SONIC2_BOSS, OS.TRUE, OS.TRUE, "Sonic 2 Boss", sonic2)
+    insert_midi(SS_AQUA, OS.TRUE, OS.TRUE, "S.S. Aqua", pokemongold, 212)
+    insert_midi(METAL_BATTLE, OS.TRUE, OS.TRUE, "Metal Battle", melee, 161)
+    insert_midi(SLIDER, OS.TRUE, OS.TRUE, "Slider", sm64, 219)
+    insert_midi(MULTIMAN2, OS.TRUE, OS.TRUE, "Multi-Man Melee 2", melee, 169)
+    insert_midi(FIRE_EMBLEM, OS.TRUE, OS.TRUE, "Together We Ride (Melee)", fire_emblem, 256)
+    insert_midi(KANTO_WILD_BATTLE, OS.TRUE, OS.TRUE, "Kanto Wild Pokemon Battle", pokemongold, 136)
+    insert_midi(SMB2OVERWORLD, OS.TRUE, OS.TRUE, "Super Mario Bros. 2 Overworld", smb2, 241)
+    insert_midi(PIRATELAND, OS.TRUE, OS.TRUE, "Pirate Land", marioparty2, 190)
+    insert_midi(TROPICALISLAND, OS.TRUE, OS.TRUE, "Yoshi's Tropical Island", marioparty, 288)
+    insert_midi(FLYINGBATTERY, OS.TRUE, OS.TRUE, "Flying Battery", sonic3, 95)
+    insert_midi(OPEN_YOUR_HEART, OS.TRUE, OS.TRUE, "Open Your Heart", sonicadventure, 181)
+    insert_midi(SONIC2_BOSS, OS.TRUE, OS.TRUE, "Sonic 2 Boss", sonic2, 224)
     insert_extra_midi(SONIC_VICTORY)
-    insert_midi(CASINO_NIGHT, OS.TRUE, OS.TRUE, "Casino Night Zone", sonic2)
-    insert_midi(MONKEY_WATCH, OS.TRUE, OS.TRUE, "Monkey Watch", rhfever)
-    insert_midi(SONIC2_SPECIAL, OS.TRUE, OS.TRUE, "Sonic 2 Special Stage", sonic2)
-    insert_midi(SONICCD_SPECIAL, OS.TRUE, OS.TRUE, "Sonic CD Special Stage", soniccd)
-    insert_midi(GIANTWING, OS.TRUE, OS.TRUE, "Giant Wing", sonicfighters)
-    insert_midi(EMERALDHILL, OS.TRUE, OS.TRUE, "Emerald Hill Zone", sonic2)
-    insert_midi(LIVE_AND_LEARN, OS.TRUE, OS.TRUE, "Live and Learn", sonicadventure2)
-    insert_midi(STARDUST, OS.TRUE, OS.TRUE, "Stardust Speedway B Mix", soniccd)
-    insert_midi(GREEN_HILL_ZONE, OS.TRUE, OS.TRUE, "Green Hill Zone", sonic1)
-    insert_midi(CHEMICAL_PLANT, OS.TRUE, OS.TRUE, "Chemical Plant Zone", sonic2)
-    insert_midi(BABY_BOWSER, OS.TRUE, OS.TRUE, "Baby Bowser", yoshis_island)
-    insert_midi(WIDE_UNDERWATER, OS.TRUE, OS.TRUE, "Ocean Medley", marioparty)
-    insert_midi(METALLIC_MADNESS, OS.TRUE, OS.TRUE, "Metallic Madness", soniccd)
-    insert_midi(EVERYTHING, OS.TRUE, OS.TRUE, "Everything (Super Sonic)", sonicfighters)
-    insert_midi(ROCKSOLID, OS.TRUE, OS.TRUE, "Rock Solid", conker)
-    insert_midi(RAINBOWROAD, OS.TRUE, OS.TRUE, "Rainbow Road", mk64)
-    insert_midi(MK64_CREDITS, OS.TRUE, OS.TRUE, "Victory Lap", mk64)
-    insert_midi(RACEWAYS, OS.TRUE, OS.TRUE, "Raceways", mk64)
-    insert_midi(LINKS_AWAKENING_MEDLEY, OS.TRUE, OS.TRUE, "Link's Awakening Medley", awakening)
-    insert_midi(CORRIDORS_OF_TIME, OS.TRUE, OS.TRUE, "Corridors of Time", chrono)
-    insert_midi(KIRBY_64_BOSS, OS.TRUE, OS.TRUE, "Kirby 64 Boss", kirby64)
-    insert_midi(WALUIGI_PINBALL, OS.TRUE, OS.TRUE, "Waluigi Pinball", mkds)
+    insert_midi(CASINO_NIGHT, OS.TRUE, OS.TRUE, "Casino Night Zone", sonic2, 43)
+    insert_midi(MONKEY_WATCH, OS.TRUE, OS.TRUE, "Monkey Watch", rhfever, 165)
+    insert_midi(SONIC2_SPECIAL, OS.TRUE, OS.TRUE, "Sonic 2 Special Stage", sonic2, 225)
+    insert_midi(SONICCD_SPECIAL, OS.TRUE, OS.TRUE, "Sonic CD Special Stage", soniccd, 226)
+    insert_midi(GIANTWING, OS.TRUE, OS.TRUE, "Giant Wing", sonicfighters, 114)
+    insert_midi(EMERALDHILL, OS.TRUE, OS.TRUE, "Emerald Hill Zone", sonic2, 80)
+    insert_midi(LIVE_AND_LEARN, OS.TRUE, OS.TRUE, "Live and Learn", sonicadventure2, 148)
+    insert_midi(STARDUST, OS.TRUE, OS.TRUE, "Stardust Speedway B Mix", soniccd, 233)
+    insert_midi(GREEN_HILL_ZONE, OS.TRUE, OS.TRUE, "Green Hill Zone", sonic1, 124)
+    insert_midi(CHEMICAL_PLANT, OS.TRUE, OS.TRUE, "Chemical Plant Zone", sonic2, 46)
+    insert_midi(BABY_BOWSER, OS.TRUE, OS.TRUE, "Baby Bowser", yoshis_island, 11)
+    insert_midi(WIDE_UNDERWATER, OS.TRUE, OS.TRUE, "Ocean Medley", marioparty, 177)
+    insert_midi(METALLIC_MADNESS, OS.TRUE, OS.TRUE, "Metallic Madness", soniccd, 162)
+    insert_midi(EVERYTHING, OS.TRUE, OS.TRUE, "Everything (Super Sonic)", sonicfighters, 83)
+    insert_midi(ROCKSOLID, OS.TRUE, OS.TRUE, "Rock Solid", conker, 209)
+    insert_midi(RAINBOWROAD, OS.TRUE, OS.TRUE, "Rainbow Road", mk64, 200)
+    insert_midi(MK64_CREDITS, OS.TRUE, OS.TRUE, "Victory Lap", mk64, 271)
+    insert_midi(RACEWAYS, OS.TRUE, OS.TRUE, "Raceways", mk64, 198)
+    insert_midi(LINKS_AWAKENING_MEDLEY, OS.TRUE, OS.TRUE, "Link's Awakening Medley", awakening, 145)
+    insert_midi(CORRIDORS_OF_TIME, OS.TRUE, OS.TRUE, "Corridors of Time", chrono, 55)
+    insert_midi(KIRBY_64_BOSS, OS.TRUE, OS.TRUE, "Kirby 64 Boss", kirby64, 139)
+    insert_midi(WALUIGI_PINBALL, OS.TRUE, OS.TRUE, "Waluigi Pinball", mkds, 276)
     insert_extra_midi(MARINA_VICTORY)
     insert_extra_midi(SHEIK_VICTORY)
     insert_extra_midi(DEDEDE_VICTORY)
-    insert_midi(SMB2_MEDLEY, OS.TRUE, OS.TRUE, "Super Mario Bros. 2 Medley", smb2)
-    insert_midi(SMW_TITLECREDITS, OS.TRUE, OS.TRUE, "Super Mario World Title/Credits", smw)
-    insert_midi(DRAGONKING, OS.TRUE, OS.TRUE, "Dragon King", dragonking)
-    insert_midi(DEDEDE, OS.TRUE, OS.TRUE, "King Dedede's Theme", kirbydreamland)
-    insert_midi(DRACULAS_CASTLE, OS.TRUE, OS.TRUE, "Dracula's Castle", castlevania_sotn)
-    insert_midi(IRON_BLUE_INTENTION, OS.TRUE, OS.TRUE, "Iron-Blue Intention", castlevania_bloodlines)
-    insert_midi(DRACULAS_TEARS, OS.TRUE, OS.TRUE, "Dracula's Tears", castlevania_dos)
-    insert_midi(WARIOWARE, OS.TRUE, OS.TRUE, "WarioWare, Inc.", warioware)
-    insert_midi(BLOODY_TEARS, OS.TRUE, OS.TRUE, "Bloody Tears", castlevania_2)
-    insert_midi(FROZEN_HILLSIDE, OS.TRUE, OS.TRUE, "Frozen Hillside", kirbyair)
-    insert_midi(MK_REVENGE, OS.TRUE, OS.TRUE, "Meta Knight's Revenge", kirbysuperstar)
-    insert_midi(SOCCER_MENU, OS.TRUE, OS.TRUE, "Main Menu", isoccer)
-    insert_midi(TROUBLE_MAKER, OS.TRUE, OS.TRUE, "Trouble Maker", mischiefmakers)
-    insert_midi(MAIN_MENU2, OS.TRUE, OS.TRUE, "Menu 2 (Melee)", melee)
-    insert_midi(WL2_PERFECT, OS.TRUE, OS.TRUE, "Perfect!", warioland2)
-    insert_midi(CONTROL, OS.TRUE, OS.TRUE, "Control Center", goldeneye)
-    insert_midi(OEDO_EDO, OS.TRUE, OS.TRUE, "Edo Castle Medley", goemon)
-    insert_midi(BIS_THEGRANDFINALE, OS.TRUE, OS.TRUE, "In The Final", marioluigi_bis)
+    insert_midi(SMB2_MEDLEY, OS.TRUE, OS.TRUE, "Super Mario Bros. 2 Medley", smb2, 240)
+    insert_midi(SMW_TITLECREDITS, OS.TRUE, OS.TRUE, "Super Mario World Title/Credits", smw, 243)
+    insert_named_extra_midi(DRAGONKING, "Dragon King", dragonking, 75)
+    insert_midi(DEDEDE, OS.TRUE, OS.TRUE, "King Dedede's Theme", kirbydreamland, 137)
+    insert_midi(DRACULAS_CASTLE, OS.TRUE, OS.TRUE, "Dracula's Castle", castlevania_sotn, 73)
+    insert_midi(IRON_BLUE_INTENTION, OS.TRUE, OS.TRUE, "Iron-Blue Intention", castlevania_bloodlines, 132)
+    insert_midi(DRACULAS_TEARS, OS.TRUE, OS.TRUE, "Dracula's Tears", castlevania_dos, 74)
+    insert_midi(WARIOWARE, OS.TRUE, OS.TRUE, "WarioWare, Inc.", warioware, 278)
+    insert_midi(BLOODY_TEARS, OS.TRUE, OS.TRUE, "Bloody Tears", castlevania_2, 26)
+    insert_midi(FROZEN_HILLSIDE, OS.TRUE, OS.TRUE, "Frozen Hillside", kirbyair, 103)
+    insert_midi(MK_REVENGE, OS.TRUE, OS.TRUE, "Meta Knight's Revenge", kirbysuperstar, 160)
+    insert_midi(SOCCER_MENU, OS.TRUE, OS.TRUE, "Main Menu (ISS64)", isoccer, 154)
+    insert_midi(TROUBLE_MAKER, OS.TRUE, OS.TRUE, "Trouble Maker", mischiefmakers, 261)
+    insert_extra_midi(MAIN_MENU2)
+    insert_midi(WL2_PERFECT, OS.TRUE, OS.TRUE, "Perfect!", warioland2, 188)
+    insert_midi(CONTROL, OS.TRUE, OS.TRUE, "Control Center", goldeneye, 53)
+    insert_midi(OEDO_EDO, OS.TRUE, OS.TRUE, "Edo Castle Medley", goemon, 78)
+    insert_midi(BIS_THEGRANDFINALE, OS.TRUE, OS.TRUE, "In The Final", marioluigi_bis, 131)
     insert_extra_midi(GOEMON_VICTORY)
-    insert_midi(MAJORA_MIDBOSS, OS.TRUE, OS.TRUE, "Middle Boss Battle", majora)
-    insert_midi(WATCH_THEME, OS.TRUE, OS.TRUE, "Q Watch (Pause Menu)", goldeneye)
-    insert_midi(KAI_HIGHWAY, OS.TRUE, OS.TRUE, "Kai Highway", mysticalninja)
-    insert_midi(SMW_ATHLETIC, OS.TRUE, OS.TRUE, "Athletic Theme", smw)
-    insert_midi(CRATERIA_MAIN, OS.TRUE, OS.TRUE, "Crateria Surface", supermetroid)
-    insert_midi(SNES_RAINBOW, OS.TRUE, OS.TRUE, "Rainbow Road (SNES)", smk)
-    insert_midi(BRAWL_OOT, OS.TRUE, OS.TRUE, "Ocarina of Time Medley", ocarina)
-    insert_midi(BOSS_E, OS.TRUE, OS.TRUE, "Boss E", starfox64)
-    insert_midi(MARINE_FORTRESS, OS.TRUE, OS.TRUE, "Marine Fortress", waverace)
-    insert_midi(TWILIGHT_CITY, OS.TRUE, OS.TRUE, "Twilight City", waverace)
-    insert_midi(SOUTHERNISLAND, OS.TRUE, OS.TRUE, "Southern Island/Main Theme", waverace)
-    insert_midi(QUEST64_BATTLE, OS.TRUE, OS.TRUE, "Battle Theme", quest64)
-    insert_midi(MUSICAL_CASTLE, OS.TRUE, OS.TRUE, "Gorgeous Musical Castle", mysticalninja)
-    insert_midi(DECISIVE, OS.TRUE, OS.TRUE, "Decisive", ogrebattle64)
-    insert_midi(BATTLEFIELDV2, OS.TRUE, OS.TRUE, "Battlefield Ver. 2", brawl)
-    insert_midi(BOB, OS.TRUE, OS.TRUE, "Bob-omb Battlefield", sm64)
-    insert_midi(AREA6, OS.TRUE, OS.TRUE, "Area 6", starfox64)
-    insert_midi(HILLTOPCHASE, OS.TRUE, OS.TRUE, "Hilltop Chase", kirbysuperstar)
-    insert_midi(STATUS, OS.TRUE, OS.TRUE, "Status", mariotennis)
-    insert_midi(FF4BOSS, OS.TRUE, OS.TRUE, "Boss Encounter", ff4)
-    insert_midi(GRIMREAPERSCAVERN, OS.TRUE, OS.TRUE, "Grim Reaper's Cavern", jackbros)
-    insert_midi(WORLD_OF_ENVY, OS.TRUE, OS.TRUE, "Shitto Kai / World of Envy", smtif)
-    insert_midi(SHANTAEMEDLEY, OS.TRUE, OS.TRUE, "Day/Night Traveling", shantae)
-    insert_midi(BURNINGTOWN, OS.TRUE, OS.TRUE, "Burning Town", shantae)
-    insert_midi(SHANTAEBOSS, OS.TRUE, OS.TRUE, "Boss Battle (Shantae)", shantae)
-    insert_midi(FORTRESS_BOSS, OS.TRUE, OS.TRUE, "Fortress Boss", smw)
-    insert_midi(HORROR_LAND, OS.TRUE, OS.TRUE, "Horror Land", marioparty2)
-    insert_midi(AC_TITLE, OS.TRUE, OS.TRUE, "Title Theme", animal_crossing)
-    insert_midi(DARKWORLD, OS.TRUE, OS.TRUE, "Dark World", lttp)
+    insert_midi(MAJORA_MIDBOSS, OS.TRUE, OS.TRUE, "Middle Boss Battle", majora, 163)
+    insert_extra_midi(WATCH_THEME)
+    insert_midi(KAI_HIGHWAY, OS.TRUE, OS.TRUE, "Kai Highway", mysticalninja, 135)
+    insert_midi(SMW_ATHLETIC, OS.TRUE, OS.TRUE, "Athletic Theme", smw, 9)
+    insert_midi(CRATERIA_MAIN, OS.TRUE, OS.TRUE, "Crateria Surface", supermetroid, 57)
+    insert_midi(SNES_RAINBOW, OS.TRUE, OS.TRUE, "Rainbow Road (SNES)", smk, 201)
+    insert_midi(BRAWL_OOT, OS.TRUE, OS.TRUE, "Ocarina of Time Medley", ocarina, 176)
+    insert_midi(BOSS_E, OS.TRUE, OS.TRUE, "Boss E", starfox64, 34)
+    insert_midi(MARINE_FORTRESS, OS.TRUE, OS.TRUE, "Marine Fortress", waverace, 158)
+    insert_midi(TWILIGHT_CITY, OS.TRUE, OS.TRUE, "Twilight City", waverace, 262)
+    insert_midi(SOUTHERNISLAND, OS.TRUE, OS.TRUE, "Southern Island/Main Theme", waverace, 227)
+    insert_midi(QUEST64_BATTLE, OS.TRUE, OS.TRUE, "Battle Theme (Quest 64)", quest64, 18)
+    insert_midi(MUSICAL_CASTLE, OS.TRUE, OS.TRUE, "Gorgeous Musical Castle", mysticalninja, 118)
+    insert_midi(DECISIVE, OS.TRUE, OS.TRUE, "Decisive", ogrebattle64, 65)
+    insert_midi(BATTLEFIELDV2, OS.TRUE, OS.TRUE, "Battlefield Ver. 2", brawl, 20)
+    insert_midi(BOB, OS.TRUE, OS.TRUE, "Main Theme (Super Mario 64)", sm64, 155)
+    insert_midi(AREA6, OS.TRUE, OS.TRUE, "Area 6", starfox64, 5)
+    insert_midi(HILLTOPCHASE, OS.TRUE, OS.TRUE, "Hilltop Chase", kirbysuperstar, 128)
+    insert_midi(STATUS, OS.TRUE, OS.TRUE, "Status", mariotennis, 235)
+    insert_midi(FF4BOSS, OS.TRUE, OS.TRUE, "Boss Encounter", ff4, 35)
+    insert_midi(GRIMREAPERSCAVERN, OS.TRUE, OS.TRUE, "Grim Reaper's Cavern", jackbros, 125)
+    insert_midi(WORLD_OF_ENVY, OS.TRUE, OS.TRUE, "Shitto Kai / World of Envy", smtif, 217)
+    insert_midi(SHANTAEMEDLEY, OS.TRUE, OS.TRUE, "Day/Night Traveling", shantae, 64)
+    insert_midi(BURNINGTOWN, OS.TRUE, OS.TRUE, "Burning Town", shantae, 40)
+    insert_midi(SHANTAEBOSS, OS.TRUE, OS.TRUE, "Boss Battle (Shantae)", shantae, 30)
+    insert_midi(FORTRESS_BOSS, OS.TRUE, OS.TRUE, "Fortress Boss", smw, 98)
+    insert_midi(HORROR_LAND, OS.TRUE, OS.TRUE, "Horror Land", marioparty2, 130)
+    insert_midi(AC_TITLE, OS.TRUE, OS.TRUE, "Animal Crossing Theme", animal_crossing, 3)
+    insert_midi(DARKWORLD, OS.TRUE, OS.TRUE, "Dark World", lttp, 61)
     insert_extra_midi(FILESELECT_SM64)
     insert_extra_midi(ITSATRAP_SM64)
     insert_extra_midi(BANJO_VICTORY)
-    insert_midi(BLASTCORPS_MENU, OS.TRUE, OS.TRUE, "Menu (Blast Corps)", blastcorps)
-    insert_midi(FRAPPE_SNOWLAND, OS.TRUE, OS.TRUE, "Frappe Snowland", mk64)
-    insert_midi(SMRPG_BATTLE, OS.TRUE, OS.TRUE, "Fight Against Monsters", smrpg)
-    insert_midi(TRAVELING, OS.TRUE, OS.TRUE, "Traveling", goepachisuro)
-    insert_midi(CHILL, OS.TRUE, OS.TRUE, "Chill", drm)
-    insert_midi(ROLL, OS.TRUE, OS.TRUE, "Roll's Theme", megamanbc)
-    insert_midi(STICKERBRUSH_SYMPHONY, OS.TRUE, OS.TRUE, "Stickerbrush Symphony", dkc2)
-    insert_midi(DOOM1, OS.TRUE, OS.TRUE, "DOOM Medley", doom)
-    insert_midi(RUNNING_FROM_EVIL, OS.TRUE, OS.TRUE, "Running From Evil", doom2)
+    insert_extra_midi(BLASTCORPS_MENU)
+    insert_midi(FRAPPE_SNOWLAND, OS.TRUE, OS.TRUE, "Frappe Snowland", mk64, 100)
+    insert_midi(SMRPG_BATTLE, OS.TRUE, OS.TRUE, "Fight Against Monsters", smrpg, 86)
+    insert_midi(TRAVELING, OS.TRUE, OS.TRUE, "Traveling", goepachisuro, 259)
+    insert_midi(CHILL, OS.TRUE, OS.TRUE, "Chill", drm, 47)
+    insert_midi(ROLL, OS.TRUE, OS.TRUE, "Roll's Theme", megamanbc, 210)
+    insert_midi(STICKERBRUSH_SYMPHONY, OS.TRUE, OS.TRUE, "Stickerbrush Symphony", dkc2, 236)
+    insert_midi(DOOM1, OS.TRUE, OS.TRUE, "DOOM Medley", doom, 71)
+    insert_midi(RUNNING_FROM_EVIL, OS.TRUE, OS.TRUE, "Running From Evil", doom2, 211)
     insert_extra_midi(CONKER_THE_KING)
-    insert_midi(GRABBAG, OS.TRUE, OS.TRUE, "Grabbag", dukenukem3d)
-    insert_midi(WITHMILASDIVINEPROTECTION, OS.TRUE, OS.TRUE, "With Mila's Divine Protection", fe_gaiden)
-    insert_midi(DKCTITLE, OS.TRUE, OS.TRUE, "Opening (Donkey Kong)", dkc)
-    insert_midi(PLANTATION, OS.TRUE, OS.TRUE, "Plantation", cavestory)
-    insert_midi(BATTLE_GOLD_SILVER, OS.TRUE, OS.TRUE, "Gold & Silver Medley", pokemongold)
-    insert_midi(BIG_BOO, OS.TRUE, OS.TRUE, "Haunted House", sm64)
+    insert_midi(GRABBAG, OS.TRUE, OS.TRUE, "Grabbag", dukenukem3d, 120)
+    insert_midi(WITHMILASDIVINEPROTECTION, OS.TRUE, OS.TRUE, "With Mila's Divine Protection", fe_gaiden, 283)
+    insert_midi(DKCTITLE, OS.TRUE, OS.TRUE, "Opening (Donkey Kong)", dkc, 182)
+    insert_midi(PLANTATION, OS.TRUE, OS.TRUE, "Plantation", cavestory, 191)
+    insert_midi(BATTLE_GOLD_SILVER, OS.TRUE, OS.TRUE, "Gold & Silver Medley", pokemongold, 116)
+    insert_midi(BIG_BOO, OS.TRUE, OS.TRUE, "Haunted House", sm64, 127)
     insert_extra_midi(DKING_VICTORY)
-    insert_midi(7AM, OS.TRUE, OS.TRUE, "7AM", animal_crossing)
+    insert_midi(7AM, OS.TRUE, OS.TRUE, "7AM", animal_crossing, 1)
     insert_extra_midi(DKROPTIONS)
     insert_extra_midi(GALLERY)
-    insert_midi(QUEQUE, OS.TRUE, OS.TRUE, "Que Que", drm64)
+    insert_midi(QUEQUE, OS.TRUE, OS.TRUE, "Que Que", drm64, 197)
     insert_extra_midi(MK64MENU)
-    insert_midi(GOLDENROD_CITY, OS.TRUE, OS.TRUE, "Goldenrod City", pokemongold)
-    insert_midi(CLOCKTOWN, OS.TRUE, OS.TRUE, "Clock Town", majora)
-    insert_midi(BUMPERCROPBUMP, OS.TRUE, OS.TRUE, "Bumper Crop Bump", kirby64)
-    insert_midi(VSRIDLEY, OS.TRUE, OS.TRUE, "Vs. Ridley", supermetroid)
-    insert_midi(GANONMEDLEY, OS.TRUE, OS.TRUE, "Ganon Battle Medley", zelda)
-    insert_midi(FUGUE, OS.TRUE, OS.TRUE, "Little Fugue", ssbr)
-    insert_midi(NUTTY_NOON, OS.TRUE, OS.TRUE, "Nutty Noon", kirbyreturn)
-    insert_midi(GHOSTGULPING, OS.TRUE, OS.TRUE, "Ghost Gulping", papermario)
-    insert_named_extra_midi(SMB2BOSS, "Super Mario Bros. 2 Boss", smb2)
-    insert_midi(FZERO_CLIMBUP, OS.TRUE, OS.TRUE, "Climb Up! And Get the Last Chance!", fzero_x)
-    insert_midi(JFG_SELECT, OS.TRUE, OS.TRUE, "Character Select (Jet Force Gemini)", jetforce)
-    insert_midi(YOSHI_SKA, OS.TRUE, OS.TRUE, "Yoshi's Song", yoshis_story)
-    insert_midi(BOARD_SHOP, OS.TRUE, OS.TRUE, "Board Shop", sbk)
-    insert_midi(FLANDRES_THEME, OS.TRUE, OS.TRUE, "U.N. Owen Was Her?", 2hu6)
-    insert_midi(NIGHTMARE, OS.TRUE, OS.TRUE, "Final Boss (Nightmare's Battle)", kirbyadventure)
-    insert_midi(THE_ALOOF_SOLDIER, OS.TRUE, OS.TRUE, "The Aloof Soldier", gga)
-    insert_midi(WENDYS_HOUSE, OS.TRUE, OS.TRUE, "Wendy's House", sbk2)
-    insert_midi(DANGEROUS_FOE, OS.TRUE, OS.TRUE, "Battle Against a Dangerous Foe", earthboundb)
-    insert_midi(BIG_SNOWMAN, OS.TRUE, OS.TRUE, "Big Snowman", sbk)
-    insert_midi(PIKA_CUP, OS.TRUE, OS.TRUE, "Pika Cup Battles 1-3", stadium)
-    insert_midi(ASHLEYS_THEME, OS.TRUE, OS.TRUE, "Ashley's Theme", wwtouched)
-    insert_midi(SILVER_MOUNTAIN, OS.TRUE, OS.TRUE, "Silver Mountain", sbk)
-    insert_midi(WIZPIG, OS.TRUE, OS.TRUE, "Wizpig Challenge", dkr)
-    insert_midi(TALENTSTUDIO, OS.TRUE, OS.TRUE, "Talent Studio Medley", talentstudio)
-    insert_midi(BATTLE_C1, OS.TRUE, OS.TRUE, "Battle C1", smtiv)
+    insert_midi(GOLDENROD_CITY, OS.TRUE, OS.TRUE, "Goldenrod City", pokemongold, 117)
+    insert_midi(CLOCKTOWN, OS.TRUE, OS.TRUE, "Clock Town", majora, 51)
+    insert_midi(BUMPERCROPBUMP, OS.TRUE, OS.TRUE, "Bumper Crop Bump", kirby64, 39)
+    insert_midi(VSRIDLEY, OS.TRUE, OS.TRUE, "Vs. Ridley", supermetroid, 275)
+    insert_midi(GANONMEDLEY, OS.TRUE, OS.TRUE, "Ganon Battle Medley", zelda, 110)
+    insert_midi(FUGUE, OS.TRUE, OS.TRUE, "Little Fugue", ssbr, 147)
+    insert_midi(NUTTY_NOON, OS.TRUE, OS.TRUE, "Nutty Noon", kirbyreturn, 174)
+    insert_midi(GHOSTGULPING, OS.TRUE, OS.TRUE, "Ghost Gulping", papermario, 113)
+    insert_named_extra_midi(SMB2BOSS, "Super Mario Bros. 2 Boss", smb2, 239)
+    insert_midi(FZERO_CLIMBUP, OS.TRUE, OS.TRUE, "Climb Up! And Get the Last Chance!", fzero_x, 49)
+    insert_midi(JFG_SELECT, OS.TRUE, OS.TRUE, "Character Select (Jet Force Gemini)", jetforce, 45)
+    insert_midi(YOSHI_SKA, OS.TRUE, OS.TRUE, "Yoshi's Song", yoshis_story, 286)
+    insert_midi(BOARD_SHOP, OS.TRUE, OS.TRUE, "Board Shop", sbk, 28)
+    insert_midi(FLANDRES_THEME, OS.TRUE, OS.TRUE, "U.N. Owen Was Her?", 2hu6, 263)
+    insert_midi(NIGHTMARE, OS.TRUE, OS.TRUE, "Final Boss (Nightmare's Battle)", kirbyadventure, 88)
+    insert_midi(THE_ALOOF_SOLDIER, OS.TRUE, OS.TRUE, "The Aloof Soldier", gga, 248)
+    insert_midi(WENDYS_HOUSE, OS.TRUE, OS.TRUE, "Wendy's House", sbk2, 279)
+    insert_midi(DANGEROUS_FOE, OS.TRUE, OS.TRUE, "Battle Against a Dangerous Foe", earthboundb, 14)
+    insert_midi(BIG_SNOWMAN, OS.TRUE, OS.TRUE, "Big Snowman", sbk, 24)
+    insert_midi(PIKA_CUP, OS.TRUE, OS.TRUE, "Pika Cup Battles 1-3", stadium, 189)
+    insert_midi(ASHLEYS_THEME, OS.TRUE, OS.TRUE, "Ashley's Theme", wwtouched, 7)
+    insert_midi(SILVER_MOUNTAIN, OS.TRUE, OS.TRUE, "Silver Mountain", sbk, 218)
+    insert_midi(WIZPIG, OS.TRUE, OS.TRUE, "Wizpig Challenge", dkr, 284)
+    insert_midi(TALENTSTUDIO, OS.TRUE, OS.TRUE, "Talent Studio Medley", talentstudio, 245)
+    insert_midi(BATTLE_C1, OS.TRUE, OS.TRUE, "Battle C1", smtiv, 16)
     insert_extra_midi(PLAY_A_MINIGAME)
-    insert_midi(CREDITS_BRAWL, OS.TRUE, OS.TRUE, "Credits (Brawl)", ssb)
+    insert_midi(CREDITS_BRAWL, OS.TRUE, OS.TRUE, "Credits (Brawl)", ssb, 58)
+    insert_extra_midi(CRASH_VICTORY)
+    insert_extra_midi(PD_PAUSE)
+    insert_extra_midi(PEACH_VICTORY)
+    insert_midi(PORKY, OS.TRUE, OS.TRUE, "Porky Means Business!", earthbound, 194)
+    insert_midi(UNDERGROUND, OS.TRUE, OS.TRUE, "Underground Theme", smb, 265)
+    insert_named_extra_midi(UNDERGROUND_HURRY, "Underground Theme (Hurry Up!)", smb, 266)
+    insert_midi(CRASH3, OS.TRUE, OS.TRUE, "Time Twister", crash3, 252)
+    insert_midi(NSANITYBEACH, OS.TRUE, OS.TRUE, "N. Sanity Beach", crash, 172)
+    insert_extra_midi(CTR_MENU)
+    insert_midi(DISCOVERYFALLS, OS.TRUE, OS.TRUE, "Discovery Falls", dinoplanet, 68)
+    insert_named_extra_midi(CRASHBONUS, "Bonus", crash_xs, 29)
+    insert_midi(DK_MEDLEY, OS.TRUE, OS.TRUE, "Donkey Kong Medley", dkarc, 70)
+    insert_midi(SM64STAFF, OS.TRUE, OS.TRUE, "Staff Roll (Super Mario 64)", sm64, 229)
+    insert_midi(BIG_BRIDGE, OS.TRUE, OS.TRUE, "Clash on the Big Bridge", ff5, 48)
+    insert_midi(HOGWILD, OS.TRUE, OS.TRUE, "Hog Wild", crash, 129)
+    insert_midi(MARATHON, OS.TRUE, OS.TRUE, "Marathon 2 Title Theme", marathon2, 157)
+    insert_midi(FORGONE, OS.TRUE, OS.TRUE, "Foregone Destruction", ut99, 96)
+    insert_midi(MORRIGAN, OS.TRUE, OS.TRUE, "Theme of Morrigan", mvc, 251)
+    insert_midi(ELADARD, OS.TRUE, OS.TRUE, "Eladard", starfox2, 79)
+    insert_midi(MADMAZEMAUL, OS.TRUE, OS.TRUE, "Mad Maze Maul", dk64, 152)
+    insert_midi(ORANGSPRINT, OS.TRUE, OS.TRUE, "OrangSprint", dk64, 185)
+    insert_midi(DRAKE_LAKE, OS.TRUE, OS.TRUE, "Drake Lake", waverace, 76)
+    insert_midi(BUBBLEGUM_KK, OS.TRUE, OS.TRUE, "Bubblegum K.K.", acnewleaf, 37)
+    insert_midi(FZEROX_MEDLEY, OS.TRUE, OS.TRUE, "F-Zero X Medley", fzero_x, 106)
+    insert_midi(FREEZE, OS.TRUE, OS.TRUE, "Freeze!", papermario, 101)
+    insert_midi(TITANIA, OS.TRUE, OS.TRUE, "Titania", starfox, 253)
+    insert_midi(THEATER, OS.TRUE, OS.TRUE, "Theater", kirby64, 250)
+    insert_extra_midi(ENEMYCARD)
+    insert_midi(SHEVAT, OS.TRUE, OS.TRUE, "Shevat, the Wind is Calling", xenogears, 216)
+    insert_midi(CORTEX, OS.TRUE, OS.TRUE, "Dr. Neo Cortex", crash2, 72)
+    insert_midi(WILY_FIELD, OS.TRUE, OS.TRUE, "Wily's Field", megamanscr, 281)
+    insert_midi(SMS_BOSS, OS.TRUE, OS.TRUE, "Boss Battle (Sunshine)", sunshine, 31)
+    insert_midi(COBALT, OS.TRUE, OS.TRUE, "Cobalt Coast", heypika, 52)
+    insert_midi(VS_DSAMUS, OS.TRUE, OS.TRUE, "Vs. Dark Samus", metroidprime3, 272)
+    insert_midi(STRIKE_THE_EARTH, OS.TRUE, OS.TRUE, "Strike the Earth!", shovelknight, 238)
+    insert_midi(VAMPIREKILLER, OS.TRUE, OS.TRUE, "Vampire Killer", castlevania, 269)
+    insert_midi(KOOPA_BROS, OS.TRUE, OS.TRUE, "Attack of the Koopa Bros.", papermario, 10)
+    insert_midi(REDIAL, OS.TRUE, OS.TRUE, "Redial", bombermanhero, 203)
+    insert_midi(AGAVE, OS.TRUE, OS.TRUE, "Agave", snp, 2)
+    insert_midi(RAIDBLUE, OS.TRUE, OS.TRUE, "Raid Blue", snp, 199)
+    insert_midi(RISKNECK, OS.TRUE, OS.TRUE, "Risk One's Neck", snp, 205)
+    insert_midi(SHERBETLAND, OS.TRUE, OS.TRUE, "Sherbet Land", mariohoops, 215)
+    insert_midi(DEATH_MOUNTAIN, OS.TRUE, OS.TRUE, "Dark Mountain Forest", lttp, 60)
+    insert_midi(BATTLE_AMONG_FRIENDS, OS.TRUE, OS.TRUE, "Battle Among Friends", kirby64, 15)
+    insert_midi(BUTTER_BUILDING, OS.TRUE, OS.TRUE, "Butter Building", kirbyadventure, 41)
+    insert_midi(MURASAKI, OS.TRUE, OS.TRUE, "Murasaki Forest", mother3, 170)
+    insert_midi(SKYWORLD, OS.TRUE, OS.TRUE, "Overworld (Kid Icarus)", kidicarus, 186)
+    insert_midi(FE6_MEDLEY, OS.TRUE, OS.TRUE, "Binding Blade Medley", fe6, 25)
+    insert_named_extra_midi(SNOWGO, "Snow Go", crash2, 222)
+    insert_named_extra_midi(FUTUREFRENZY, "Future Frenzy", crash3, 104)
+    insert_extra_midi(LANKY_VICTORY)
+    insert_midi(SILVERSURFER, OS.TRUE, OS.TRUE, "Level 1 (Silver Surfer)", silversurfer, 144)
+    insert_midi(OPUS_13, OS.TRUE, OS.TRUE, "Opus 13", castlevania_rob, 184)
+    insert_midi(FOURSIDE, OS.TRUE, OS.TRUE, "Fourside", earthbound, 99)
+    insert_midi(BALLOONFIGHT, OS.TRUE, OS.TRUE, "Balloon Fight", balloonfight, 13)
+    insert_midi(LIPS_THEME, OS.TRUE, OS.TRUE, "Lip's Theme", paneldepon, 146)
+    insert_named_extra_midi(CRASHBASH_LOADING, "Crash Bash Loading Screen", crashbash, 56)
+    insert_midi(TREASURE_TROVE_COVE, OS.TRUE, OS.TRUE, "Treasure Trove Cove", banjokazooie, 260)
+    insert_extra_midi(STAGESELBM64)
+    insert_midi(OLDKINGCOAL, OS.TRUE, OS.TRUE, "Old King Coal", banjo2, 178)
+    insert_extra_midi(SONIC_R)
+    insert_midi(GREENGARDEN, OS.TRUE, OS.TRUE, "Green Garden", bomberman, 122)
+    insert_midi(BLUE_RESORT, OS.TRUE, OS.TRUE, "Blue Resort", bomberman, 27)
 
     pushvar origin, base
 
@@ -811,6 +955,7 @@ scope MIDI {
     // TODO: Rock out with this organ!
     add_instrument_sample(rock_organ_m3_0, 0x0, 0x0, 66 * 250, 0x7F, 0x7F, 0x0, 0x7F, 0,  78,  67, 0x0, 0x3F, 0x7E, OS.TRUE, 6027, 16305, 0xFFFFFFFF, OS.FALSE)
     add_instrument_sample(rock_organ_m3_1, 0x0, 0x0, 66 * 250, 0x7F, 0x7F, 0x0, 0x7F, 79,  91,  79, 0x0, 0x3F, 0x7E, OS.TRUE, 3014, 8153, 0xFFFFFFFF, OS.FALSE)
+    add_instrument_sample(rock_organ_m3_2, 0x0, 0x0, 66 * 250, 0x7F, 0x7F, 0x0, 0x7F, 80,  103,  91, 0x0, 0x3F, 0x7E, OS.TRUE, 3014, 8153, 0xFFFFFFFF, OS.FALSE)
     add_instrument(Rock Organ, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
 
     // TODO: Make some cool omninus sounding music with this, or cool backing vocals
@@ -876,7 +1021,8 @@ scope MIDI {
 
     // TODO: for these samples, make sure values are correct (assuming we keep this instrument)
     add_instrument_sample(slap_bass-1, 0x0, 0x0, 66 * 500, 0x7F, 0x7F, 0x0, 0x7F, 0,  39,  28, 0x0, 0x3F, 0x7E, OS.TRUE, 24607, 36249, 0xFFFFFFFF, OS.FALSE)
-    add_instrument_sample(slap_bass-2, 0x0, 0x0, 66 * 500, 0x7F, 0x7F, 0x0, 0x7F, 40, 127, 40, 0x0, 0x3F, 0x7E, OS.TRUE, 9445,  21094, 0xFFFFFFFF, OS.FALSE)
+    add_instrument_sample(slap_bass-2, 0x0, 0x0, 66 * 500, 0x7F, 0x7F, 0x0, 0x7F, 40, 51, 40, 0x0, 0x3F, 0x7E, OS.TRUE, 9445,  21094, 0xFFFFFFFF, OS.FALSE)
+    add_instrument_sample(slap_bass-3, 0x0, 0x0, 66 * 500, 0x7F, 0x7F, 0x0, 0x7F, 52, 64, 52, 0x0, 0x3F, 0x7E, OS.TRUE, 9445,  21094, 0xFFFFFFFF, OS.FALSE)
     add_instrument(Slap Bass, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
 
     // TODO: for these samples, make sure values are correct (assuming we keep this instrument)
@@ -1058,6 +1204,44 @@ scope MIDI {
     add_instrument_sample(yoshi3, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F,  41, 72,  60, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
     add_instrument(Yoshis, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
 
+    // TODO: Marimba on these fools.
+    add_instrument_sample(marimba-1, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F,  0,  64,  55, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(marimba-2, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 65,  77,  67, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(marimba-3, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 78,  91,  79, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(marimba-4, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 89,  103, 91, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument(Marimba, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
+
+    // TODO: Use these samples for a single song and never touch them again
+    add_instrument_sample(DFChant1, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 60,  60,  72, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(DFChant2, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 61,  61,  73, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(DFChant3, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 62,  62,  74, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(DFChant4, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 63,  75,  75, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument(DF_Chants, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
+
+	// TODO: Oook ookie ook hoo hoo haa hoa and hoo ookie ook hoo
+    add_instrument_sample(Monkey01, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 44,  44,  62, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey02, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 45,  45,  63, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey03, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 46,  50,  64, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey04, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 56,  56,  80, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey05, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 57,  57,  81, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey06, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 58,  58,  77, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey07, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 59,  59,  71, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey08, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 60,  60,  72, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey09, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 61,  61,  72, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument_sample(Monkey10, 0x0, 0x0, 66 * 1879, 0x7F, 0x7F, 0x0, 0x7F, 62,  80,  74, 0x0, 0x3F, 0x7E, OS.FALSE, 0, 0, 0, OS.FALSE)
+    add_instrument(Monkey, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
+
+    // TODO: send John 1 million dollars
+    add_instrument_sample(sine-1, 14000, 0x0, 7530, 0x7F, 0x7F, 0x0, 0x7F,  0, 95, 84, 0x0, 0x3F, 0x7E, OS.TRUE, 0, 948, 0xFFFFFFFF, OS.TRUE)
+    add_instrument_sample(sine-2, 14000, 0x0, 7530, 0x7F, 0x7F, 0x0, 0x7F,  96, 107, 96, 0x0, 0x3F, 0x7E, OS.TRUE, 0, 1162, 0xFFFFFFFF, OS.TRUE)
+    add_instrument_sample(sine-3, 14000, 0x0, 7530, 0x7F, 0x7F, 0x0, 0x7F,  108, 120, 108, 0x0, 0x3F, 0x7E, OS.TRUE, 0, 925, 0xFFFFFFFF, OS.TRUE)
+    add_instrument(Sine Wave, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
+
+    // TODO: add a lil bit of blbldlldldldding to some bomberman music or something idk
+    add_instrument_sample(harp-1, 0x0, 700000, 66 * 1879, 0x7F, 0x0, 0x0, 0x7F,  0,  83,  74, 0x0, 0x3F, 0x7E, OS.TRUE, 10276, 15524, 0xFFFFFFFF, OS.TRUE)
+    add_instrument_sample(harp-2, 0x0, 700000, 66 * 1879, 0x7F, 0x0, 0x0, 0x7F, 84,  95,  86, 0x0, 0x3F, 0x7E, OS.TRUE, 5209, 9803, 0xFFFFFFFF, OS.TRUE)
+    add_instrument_sample(harp-3, 0x0, 700000, 66 * 1879, 0x7F, 0x0, 0x0, 0x7F, 96, 127,  98, 0x0, 0x3F, 0x7E, OS.TRUE, 5100, 10312, 0xFFFFFFFF, OS.TRUE)
+    add_instrument(Harp, 0x7E, 0x3F, 0x05, 1200, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)
 
     move_instrument_bank_map()
 
@@ -1097,36 +1281,85 @@ scope MIDI {
         evaluate bgm({bgm})
 
         // create an override array for this bgm if it doesn't exist
-        if !{defined override_{bgm}} {
-            global define override_{bgm}()
+        if !{defined priority_override_{bgm}} {
+            global define priority_override_{bgm}()
 
-            override_array_{bgm}:
-            constant override_array_{bgm}_origin(origin())
+            priority_override_array_{bgm}:
+            constant priority_override_array_{bgm}_origin(origin())
             fill instrument_count
             OS.align(16)
 
             pushvar origin, base
             origin priority_override_table_origin + ({bgm} * 0x4)
-            dw  override_array_{bgm}
+            dw  priority_override_array_{bgm}
             pullvar base, origin
         }
 
         // add the override value for this instrument
         pushvar origin, base
-        origin override_array_{bgm}_origin + {instrument}
+        origin priority_override_array_{bgm}_origin + {instrument}
         db  {priority}
         pullvar base, origin
     }
 
     // @ Description
+    // Adds a bend range override for the given instrument/bgm combination.
+    // Also creates a bend range override array if it doesn't already exist.
+    // bgm - id of bgm
+    // instrument - id of instrument
+    // bend_range - bend_range value to use for this track
+    macro add_bend_range_override(bgm, instrument, bend_range) {
+        evaluate bgm({bgm})
+
+        // create an override array for this bgm if it doesn't exist
+        if !{defined bend_range_override_{bgm}} {
+            global define bend_range_override_{bgm}()
+
+            bend_range_override_array_{bgm}:
+            constant bend_range_override_array_{bgm}_origin(origin())
+            fill instrument_count * 2
+            OS.align(16)
+
+            pushvar origin, base
+            origin bend_range_override_table_origin + ({bgm} * 0x4)
+            dw  bend_range_override_array_{bgm}
+            pullvar base, origin
+        }
+
+        // add the override value for this instrument
+        pushvar origin, base
+        origin bend_range_override_array_{bgm}_origin + ({instrument} * 2)
+        dh  {bend_range}
+        pullvar base, origin
+    }
+
+    // @ Description
+    // Adds a master volume override for the given bgm.
+    // bgm - id of bgm
+    // volume - master volume value to use for this track
+    macro add_master_volume_override(bgm, volume) {
+        evaluate bgm({bgm})
+        // add the override value for this bgm
+        pushvar origin, base
+        origin master_volume_override_table_origin + {bgm}
+        if {volume} > 127 {
+        print "WARNING: Max value for master volume override is 127 \n"
+        db  127
+        } else {
+        db  {volume}
+        }
+        pullvar base, origin
+    }
+
+    // @ Description
     // Alternate version of subroutine 0x8002E2AC which seems to load instrument parameters.
-    // Checks to see if the current BGM gives an alternate priority value for the given instrument.
+    // Checks to see if the current BGM gives an alternate priority or bend range value for the given instrument.
     // a0 - unknown (original)
     // a1 - address of instrument parameters
     // a2 - unknown (original)
-    scope override_instrument_priority_: {
+    scope override_instrument_parameters_: {
         OS.patch_start(0x2C820, 0x8002BC20)
-        jal     override_instrument_priority_
+        jal     override_instrument_parameters_
         OS.patch_end()
 
         lw      t6, 0x0068(a0)              // ~
@@ -1137,36 +1370,74 @@ scope MIDI {
         sw      a1, 0x0000(t7)              // ~
         lw      t9, 0x0068(a0)              // undocumented original logic
 
-        lui     t0, 0x800A                  // ~
-        lw      t0, 0xD974(t0)              // t0 = address of current bgm_id
+        _priority:
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
         lw      t0, 0x0000(t0)              // t0 = current bgm_id
         li      t1, priority_override_table // t1 = priority_override_table
-        sll     t0, t0, 0x2                 // t0 = offset (priority_override_table + (bgm * 4))
+        sll     t0, t0, 0x2                 // t0 = offset (bgm * 4)
         addu    t1, t1, t0                  // t1 = priority_override_table + offset
         lw      t1, 0x0000(t1)              // t1 = address of override array for current bgm
-        beql    t1, r0, _continue           // skip if array pointer = NULL...
+        beql    t1, r0, _bend_range         // skip if array pointer = NULL...
         lbu     t8, 0x0002(a1)              // ...and load original priority to t8
 
-        // if there is an override array for the current bgm, check for an override value for the current instrument
+        // if there is a priority override array for the current bgm, check for an override value for the current instrument
         // fp/s8 is presumed to always contain the instrument id at this point, this is almost certainly safe because it's used for
         // a check for invalid instrument ids right before the function call we replace
         addu    t1, t1, s8                  // t1 = array pointer + offset(instrument id)
         lbu     t8, 0x0000(t1)              // t8 = priority override value
-        beql    t8, r0, _continue           // if priority override = 0...
+        beql    t8, r0, _bend_range         // if priority override = 0...
         lbu     t8, 0x0002(a1)              // ...load original priority to t8 instead
+
+        _bend_range:
+        // t0 = offset (bgm * 4)
+        li      t1, bend_range_override_table // t1 = bend_range_override_table
+        addu    t1, t1, t0                  // t1 = bend_range_override_table + offset
+        lw      t1, 0x0000(t1)              // t1 = address of override array for current bgm
+        beql    t1, r0, _continue           // skip if array pointer = NULL...
+        lh      t1, 0x000C(a1)              // ...and load original bend range to t1 instead
+
+        // if there is a bend range override array for the current bgm, check for an override value for the current instrument
+        // fp/s8 is presumed to always contain the instrument id at this point, this is almost certainly safe because it's used for
+        // a check for invalid instrument ids right before the function call we replace
+        sll     t2, s8, 0x1                 // t2 = offset (instrument id * 2)
+        addu    t1, t1, t2                  // t1 = array pointer + offset
+        lh      t1, 0x0000(t1)              // t1 = bend range override value
+        beql    t1, r0, _continue           // if bend rage override = 0...
+        lh      t1, 0x000C(a1)              // ...load original bend range to t1 instead
 
         _continue:
         addu    t0, t9, v0                  // ~
-        sb      t8, 0x0008(t0)              // ~
+        sb      t8, 0x0008(t0)              // store priority
         lw      t2, 0x0068(a0)              // ~
-        lh      t1, 0x000C(a1)              // ~
         addu    t3, t2, v0                  // ~
-        sh      t1, 0x0004(t3)              // ~
+        sh      t1, 0x0004(t3)              // store bend range
         lw      t5, 0x0068(a0)              // ~
         lbu     t4, 0x0000(a1)              // ~
         addu    t6, t5, v0                  // ~
         jr      ra                          // ~
         sb      t4, 0x0011(t6)              // undocumented original logic
+    }
+
+    // @ Description
+    // Overrides the vanilla master volume with a custom one if the track has it
+    scope override_master_volume_: {
+        OS.patch_start(0x302C0, 0x8002F6C0)
+        j       override_master_volume_
+        lbu     t7, 0x0078(a0)              // t7 = master volume (original line 2)
+        _return:
+        OS.patch_end()
+
+        li      t0, BGM.safe_id             // t0 = address of safe bgm_id
+        lw      t0, 0x0000(t0)              // t0 = current bgm_id
+        li      t1, master_volume_override_table // t1 = master_volume_override_table
+        addu    t1, t1, t0                  // t1 = master_volume_override_table + bgm_id
+        lbu     t1, 0x0000(t1)              // t1 = master volume override for current bgm
+        bnezl   t1, _end                    // if an override value is present...
+        or      t7, t1, r0                  // t7 = new master volume value
+
+        _end:
+        j       _return
+        lh      t6, 0x003A(a0)              // load other volume parameter (original line 2)
     }
 
     // @ Description
@@ -1182,6 +1453,18 @@ scope MIDI {
     priority_override_table:
     constant priority_override_table_origin(origin())
     fill midi_count * 0x4
+    OS.align(16)
+
+    OS.align(16)
+    bend_range_override_table:
+    constant bend_range_override_table_origin(origin())
+    fill midi_count * 0x4
+    OS.align(16)
+
+    OS.align(16)
+    master_volume_override_table:
+    constant master_volume_override_table_origin(origin())
+    fill midi_count
     OS.align(16)
 
     // ADD PRIORITY OVERRIDES HERE
@@ -1202,6 +1485,13 @@ scope MIDI {
 
     add_priority_override({MIDI.id.YOSHI_TALE}, 65, 0x7F)
 
+    add_priority_override({MIDI.id.TABUU}, 58, 0x7F)
+
+    add_priority_override({MIDI.id.DISCOVERYFALLS}, 28, 0x7F)
+    add_priority_override({MIDI.id.DISCOVERYFALLS}, 44, 0x7F)
+    add_priority_override({MIDI.id.DISCOVERYFALLS}, 7, 0x7F)
+    add_priority_override({MIDI.id.DISCOVERYFALLS}, 67, 0x7F)
+
     add_priority_override({MIDI.id.WIZPIG}, 58, 0x7F)
     add_priority_override({MIDI.id.WIZPIG}, 44, 0x7F)
 
@@ -1211,11 +1501,237 @@ scope MIDI {
 
     add_priority_override({MIDI.id.FIRE_EMBLEM}, 34, 0x7F)
 
-    add_priority_override({MIDI.id.GREEN_HILL_ZONE}, 5, 0x7F)
-    add_priority_override({MIDI.id.GREEN_HILL_ZONE}, 7, 0x7F)
-    add_priority_override({MIDI.id.GREEN_HILL_ZONE}, 29, 0x7F)
-
     add_priority_override({MIDI.id.ROCKSOLID}, 7, 0x7F)
+
+    add_priority_override({MIDI.id.BIG_BRIDGE}, 34, 0x7F)
+
+    add_priority_override({MIDI.id.TARGET_TEST}, 56, 0x7F)
+
+    add_priority_override({MIDI.id.SS_AQUA}, 56, 0x7F)
+    add_priority_override({MIDI.id.SS_AQUA}, 51, 0x7F)
+
+    add_priority_override({MIDI.id.ELADARD}, 54, 0x7F)
+    add_priority_override({MIDI.id.ELADARD}, 55, 0x7F)
+
+    add_priority_override({MIDI.id.DRAKE_LAKE}, 1, 0x7F)
+
+    add_priority_override({MIDI.id.BATTLE_AMONG_FRIENDS}, 28, 0x7F)
+
+    add_priority_override({MIDI.id.MURASAKI}, 55, 0x7F)
+
+    add_priority_override({MIDI.id.SKYWORLD}, 1, 0x7F)
+
+    // ADD BEND RANGE OVERRIDES HERE
+    // This can be used when default bend ranges fail to provide satisfactory results.
+    // bgm - id of bgm
+    // instrument - id of instrument
+    // bend_range - bend_range value to use for this track
+
+    add_bend_range_override({MIDI.id.YOSHI_TALE}, 2, 100) // sets vanilla organ to have a pitch bend of +/- 1 semitone instead of 0.1
+
+    add_bend_range_override({MIDI.id.SLIDER}, 29, 1200)
+
+    add_bend_range_override({MIDI.id.WILDLANDS}, 1, 200)
+
+    add_bend_range_override({MIDI.id.OPUS_13}, 47, 100)
+
+    add_bend_range_override({MIDI.id.FUTUREFRENZY}, 24, 1200)
+
+    add_bend_range_override({MIDI.id.MUTE_CITY}, 41, 1200)
+
+    add_bend_range_override({MIDI.id.SILVERSURFER}, 19, 1200)
+    add_bend_range_override({MIDI.id.SILVERSURFER}, 20, 1200)
+
+    add_bend_range_override({MIDI.id.TOWEROFHEAVEN}, 19, 1200)
+
+    add_bend_range_override({MIDI.id.LIPS_THEME}, 19, 1200)
+    add_bend_range_override({MIDI.id.LIPS_THEME}, 14, 1200)
+
+    add_bend_range_override({MIDI.id.WALUIGI_PINBALL}, 12, 1200)
+    add_bend_range_override({MIDI.id.WALUIGI_PINBALL}, 29, 1200)
+
+    add_bend_range_override({MIDI.id.SONIC_R}, 13, 1200)
+
+    add_bend_range_override({MIDI.id.RACEWAYS}, 11, 1200)
+
+    // ADD MASTER VOLUME OVERRIDES HERE
+    // This can be used to adjust the overall volume of a track in-game.
+    // bgm - id of bgm
+    // volume - master volume to use for this track, 0-127, default is 100
+    add_master_volume_override({MIDI.id.CORNERIA}, 93)
+    add_master_volume_override({MIDI.id.DR_MARIO}, 90)
+    add_master_volume_override({MIDI.id.GAME_CORNER}, 90)
+    add_master_volume_override({MIDI.id.SMASHVILLE}, 110)
+    add_master_volume_override({MIDI.id.STONECARVING_CITY}, 112)
+    add_master_volume_override({MIDI.id.GODDESSBALLAD}, 115)
+    add_master_volume_override({MIDI.id.TOWEROFHEAVEN}, 82)
+    add_master_volume_override({MIDI.id.FOD}, 90)
+    add_master_volume_override({MIDI.id.MEMENTOS}, 110)
+    add_master_volume_override({MIDI.id.SPIRAL_MOUNTAIN}, 87)
+    add_master_volume_override({MIDI.id.N64}, 104)
+    add_master_volume_override({MIDI.id.BATTLEFIELD}, 95)
+    add_master_volume_override({MIDI.id.MADMONSTER}, 90)
+    add_master_volume_override({MIDI.id.GREEN_GREENS}, 95)
+    add_master_volume_override({MIDI.id.POKEMON_STADIUM}, 83)
+    add_master_volume_override({MIDI.id.SMB3OVERWORLD}, 90)
+    add_master_volume_override({MIDI.id.DELFINO}, 110)
+    add_master_volume_override({MIDI.id.ONETT}, 105)
+    add_master_volume_override({MIDI.id.ZEBES_LANDING}, 95)
+    add_master_volume_override({MIDI.id.EASTON_KINGDOM}, 83)
+    add_master_volume_override({MIDI.id.WING_CAP}, 85)
+    add_master_volume_override({MIDI.id.RBY_GYMLEADER}, 80)
+    add_master_volume_override({MIDI.id.KITCHEN_ISLAND}, 90)
+    add_master_volume_override({MIDI.id.DK_RAP}, 100)
+    add_master_volume_override({MIDI.id.MACHRIDER}, 95)
+    add_master_volume_override({MIDI.id.POKEFLOATS}, 82)
+    add_master_volume_override({MIDI.id.GERUDO_VALLEY}, 90)
+    add_master_volume_override({MIDI.id.POP_STAR}, 120)
+    add_master_volume_override({MIDI.id.STAR_WOLF}, 83)
+    add_master_volume_override({MIDI.id.POKEMON_CHAMPION}, 85)
+    add_master_volume_override({MIDI.id.POLLYANNA}, 90)
+    add_master_volume_override({MIDI.id.SAMBA_DE_COMBO}, 95)
+    add_master_volume_override({MIDI.id.UNFOUNDED_REVENGE}, 90)
+    add_master_volume_override({MIDI.id.KENGJR}, 86)
+    add_master_volume_override({MIDI.id.BEIN_FRIENDS}, 90)
+    add_master_volume_override({MIDI.id.KK_RIDER}, 95)
+    add_master_volume_override({MIDI.id.SNAKEY_CHANTEY}, 95)
+    add_master_volume_override({MIDI.id.TAZMILY}, 115)
+    add_master_volume_override({MIDI.id.YOSHI_GOLF}, 88)
+    add_master_volume_override({MIDI.id.FINALTEMPLE}, 88)
+    add_master_volume_override({MIDI.id.OBSTACLE}, 90)
+    add_master_volume_override({MIDI.id.EVEN_DRIER_GUYS}, 87)
+    add_master_volume_override({MIDI.id.PEACH_CASTLE}, 105)
+    add_master_volume_override({MIDI.id.BANJO_MAIN}, 95)
+    add_master_volume_override({MIDI.id.GANGPLANK}, 108)
+    add_master_volume_override({MIDI.id.FD_BRAWL}, 90)
+    add_master_volume_override({MIDI.id.ARIA_OF_THE_SOUL}, 118)
+    add_master_volume_override({MIDI.id.KING_OF_THE_KOOPAS}, 90)
+    add_master_volume_override({MIDI.id.SKERRIES}, 95)
+    add_master_volume_override({MIDI.id.BEWARE_THE_FORESTS_MUSHROOMS}, 95)
+    add_master_volume_override({MIDI.id.TARGET_TEST}, 95)
+    add_master_volume_override({MIDI.id.VENOM}, 80)
+    add_master_volume_override({MIDI.id.BK_FINALBATTLE}, 107)
+    add_master_volume_override({MIDI.id.OLE}, 92)
+    add_master_volume_override({MIDI.id.WINDY}, 93)
+    add_master_volume_override({MIDI.id.DATADYNE}, 90)
+    add_master_volume_override({MIDI.id.INVESTIGATION_X}, 85)
+    add_master_volume_override({MIDI.id.NSMB}, 105)
+    add_master_volume_override({MIDI.id.JUNGLEJAPES}, 90)
+    add_master_volume_override({MIDI.id.TOADS_TURNPIKE}, 92)
+    add_master_volume_override({MIDI.id.GB_MEDLEY}, 90)
+    add_master_volume_override({MIDI.id.FLOWER_GARDEN}, 110)
+    add_master_volume_override({MIDI.id.WILDLANDS}, 125)
+    add_master_volume_override({MIDI.id.VS_MARX}, 115)
+    add_master_volume_override({MIDI.id.SS_AQUA}, 86)
+    add_master_volume_override({MIDI.id.METAL_BATTLE}, 110)
+    add_master_volume_override({MIDI.id.KANTO_WILD_BATTLE}, 85)
+    add_master_volume_override({MIDI.id.PIRATELAND}, 90)
+    add_master_volume_override({MIDI.id.FLYINGBATTERY}, 90)
+    add_master_volume_override({MIDI.id.CASINO_NIGHT}, 90)
+    add_master_volume_override({MIDI.id.SONIC2_SPECIAL}, 90)
+    add_master_volume_override({MIDI.id.SONICCD_SPECIAL}, 95)
+    add_master_volume_override({MIDI.id.GIANTWING}, 90)
+    add_master_volume_override({MIDI.id.EMERALDHILL}, 90)
+    add_master_volume_override({MIDI.id.LIVE_AND_LEARN}, 83)
+    add_master_volume_override({MIDI.id.STARDUST}, 95)
+    add_master_volume_override({MIDI.id.GREEN_HILL_ZONE}, 89)
+    add_master_volume_override({MIDI.id.CHEMICAL_PLANT}, 87)
+    add_master_volume_override({MIDI.id.BABY_BOWSER}, 85)
+    add_master_volume_override({MIDI.id.METALLIC_MADNESS}, 85)
+    add_master_volume_override({MIDI.id.EVERYTHING}, 80)
+    add_master_volume_override({MIDI.id.RACEWAYS}, 90)
+    add_master_volume_override({MIDI.id.KIRBY_64_BOSS}, 90)
+    add_master_volume_override({MIDI.id.SMB2_MEDLEY}, 90)
+    add_master_volume_override({MIDI.id.SMW_TITLECREDITS}, 90)
+    add_master_volume_override({MIDI.id.DEDEDE}, 80)
+    add_master_volume_override({MIDI.id.IRON_BLUE_INTENTION}, 90)
+    add_master_volume_override({MIDI.id.DRACULAS_TEARS}, 80)
+    add_master_volume_override({MIDI.id.WARIOWARE}, 110)
+    add_master_volume_override({MIDI.id.FROZEN_HILLSIDE}, 95)
+    add_master_volume_override({MIDI.id.SOCCER_MENU}, 90)
+    add_master_volume_override({MIDI.id.TROUBLE_MAKER}, 90)
+    add_master_volume_override({MIDI.id.WL2_PERFECT}, 85)
+    add_master_volume_override({MIDI.id.CONTROL}, 90)
+    add_master_volume_override({MIDI.id.OEDO_EDO}, 95)
+    add_master_volume_override({MIDI.id.MAJORA_MIDBOSS}, 92)
+    add_master_volume_override({MIDI.id.SMW_ATHLETIC}, 85)
+    add_master_volume_override({MIDI.id.BRAWL_OOT}, 110)
+    add_master_volume_override({MIDI.id.BOSS_E}, 80)
+    add_master_volume_override({MIDI.id.MARINE_FORTRESS}, 75)
+    add_master_volume_override({MIDI.id.TWILIGHT_CITY}, 95)
+    add_master_volume_override({MIDI.id.SOUTHERNISLAND}, 90)
+    add_master_volume_override({MIDI.id.QUEST64_BATTLE}, 83)
+    add_master_volume_override({MIDI.id.DECISIVE}, 90)
+    add_master_volume_override({MIDI.id.HILLTOPCHASE}, 110)
+    add_master_volume_override({MIDI.id.FF4BOSS}, 89)
+    add_master_volume_override({MIDI.id.GRIMREAPERSCAVERN}, 90)
+    add_master_volume_override({MIDI.id.SHANTAEMEDLEY}, 91)
+    add_master_volume_override({MIDI.id.BURNINGTOWN}, 87)
+    add_master_volume_override({MIDI.id.SHANTAEBOSS}, 90)
+    add_master_volume_override({MIDI.id.FORTRESS_BOSS}, 90)
+    add_master_volume_override({MIDI.id.HORROR_LAND}, 94)
+    add_master_volume_override({MIDI.id.DARKWORLD}, 88)
+    add_master_volume_override({MIDI.id.FRAPPE_SNOWLAND}, 92)
+    add_master_volume_override({MIDI.id.SMRPG_BATTLE}, 85)
+    add_master_volume_override({MIDI.id.TRAVELING}, 90)
+    add_master_volume_override({MIDI.id.CHILL}, 112)
+    add_master_volume_override({MIDI.id.ROLL}, 90)
+    add_master_volume_override({MIDI.id.STICKERBRUSH_SYMPHONY}, 93)
+    add_master_volume_override({MIDI.id.DKCTITLE}, 93)
+    add_master_volume_override({MIDI.id.PLANTATION}, 87)
+    add_master_volume_override({MIDI.id.7AM}, 110)
+    add_master_volume_override({MIDI.id.QUEQUE}, 87)
+    add_master_volume_override({MIDI.id.VSRIDLEY}, 95)
+    add_master_volume_override({MIDI.id.FLANDRES_THEME}, 90)
+    add_master_volume_override({MIDI.id.THE_ALOOF_SOLDIER}, 90)
+    add_master_volume_override({MIDI.id.WENDYS_HOUSE}, 90)
+    add_master_volume_override({MIDI.id.DANGEROUS_FOE}, 90)
+    add_master_volume_override({MIDI.id.PIKA_CUP}, 85)
+    add_master_volume_override({MIDI.id.WIZPIG}, 90)
+    add_master_volume_override({MIDI.id.BATTLE_C1}, 80)
+    add_master_volume_override({MIDI.id.CREDITS_BRAWL}, 90)
+    add_master_volume_override({MIDI.id.BATTLE_GOLD_SILVER}, 90)
+    add_master_volume_override({MIDI.id.GOLDENROD_CITY}, 90)
+    add_master_volume_override({MIDI.id.GANONMEDLEY}, 80)
+    add_master_volume_override({MIDI.id.FUGUE}, 85)
+    add_master_volume_override({MIDI.id.SILVER_MOUNTAIN}, 85)
+    add_master_volume_override({MIDI.id.PORKY}, 80)
+    add_master_volume_override({MIDI.id.NSANITYBEACH}, 93)
+    add_master_volume_override({MIDI.id.DISCOVERYFALLS}, 90)
+    add_master_volume_override({MIDI.id.DK_MEDLEY}, 90)
+    add_master_volume_override({MIDI.id.BIG_BRIDGE}, 93)
+    add_master_volume_override({MIDI.id.HOGWILD}, 88)
+    add_master_volume_override({MIDI.id.MARATHON}, 91)
+    add_master_volume_override({MIDI.id.FORGONE}, 95)
+    add_master_volume_override({MIDI.id.ELADARD}, 90)
+    add_master_volume_override({MIDI.id.FZEROX_MEDLEY}, 115)
+    add_master_volume_override({MIDI.id.BUBBLEGUM_KK}, 93)
+    add_master_volume_override({MIDI.id.MADMAZEMAUL}, 80)
+    add_master_volume_override({MIDI.id.TITANIA}, 93)
+    add_master_volume_override({MIDI.id.SHEVAT}, 115)
+    add_master_volume_override({MIDI.id.CORTEX}, 115)
+    add_master_volume_override({MIDI.id.WILY_FIELD}, 111)
+    add_master_volume_override({MIDI.id.SMS_BOSS}, 87)
+    add_master_volume_override({MIDI.id.VS_DSAMUS}, 85)
+    add_master_volume_override({MIDI.id.STRIKE_THE_EARTH}, 80)
+    add_master_volume_override({MIDI.id.VAMPIREKILLER}, 88)
+    add_master_volume_override({MIDI.id.REDIAL}, 95)
+    add_master_volume_override({MIDI.id.AGAVE}, 95)
+    add_master_volume_override({MIDI.id.RAIDBLUE}, 111)
+    add_master_volume_override({MIDI.id.RISKNECK}, 111)
+    add_master_volume_override({MIDI.id.SHERBETLAND}, 86)
+    add_master_volume_override({MIDI.id.DEATH_MOUNTAIN}, 95)
+    add_master_volume_override({MIDI.id.BATTLE_AMONG_FRIENDS}, 95)
+    add_master_volume_override({MIDI.id.NBA_JAM}, 106)
+    add_master_volume_override({MIDI.id.MURASAKI}, 115)
+    add_master_volume_override({MIDI.id.FE6_MEDLEY}, 111)
+    add_master_volume_override({MIDI.id.FUTUREFRENZY}, 107)
+    add_master_volume_override({MIDI.id.LANKY_VICTORY}, 127)
+    add_master_volume_override({MIDI.id.LIPS_THEME}, 95)
+    add_master_volume_override({MIDI.id.CRASHBASH_LOADING}, 95)
+    add_master_volume_override({MIDI.id.TREASURE_TROVE_COVE}, 95)
+    add_master_volume_override({MIDI.id.GREENGARDEN}, 105)
+    add_master_volume_override({MIDI.id.BLUE_RESORT}, 127)
 }
 
 } // __MIDI__

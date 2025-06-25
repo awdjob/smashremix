@@ -70,6 +70,9 @@ scope DragonKing {
 
     VICTORY_2:; insert "moveset/VICTORY_2.bin"
 
+    // Insert AI attack options
+    include "AI/Attacks.asm"
+
     // @ Description
     // Dragon King's extra actions
     scope Action {
@@ -246,16 +249,16 @@ scope DragonKing {
     Character.edit_action(DRAGONKING,   0xE5,                   -1,             DragonKingNSP.main_,            -1,                         DragonKingNSP.physics_aerial_,  DragonKingNSP.air_collision_)
     Character.edit_action(DRAGONKING,   0xE5,                   -1,             -1,                             -1,                         -1,                             -1)
     Character.edit_action(DRAGONKING,   0xE6,                   0x1E,           0x800D94C4,                     0,                          0x800D8BB4,                     0x800DDF44)                 // DSP_Ground
-    Character.edit_action(DRAGONKING,   0xE7,                   0x1E,           0x00000000,                     DragonKingDSP.air_move_,    DragonKingDSP.physics_,         DragonKingDSP.collision_)   // DSP Air Loop
+    Character.edit_action(DRAGONKING,   0xE7,                   0x1E,           0x00000000,                     0,                          DragonKingDSP.physics_,         DragonKingDSP.collision_)   // DSP Air Loop
     Character.edit_action(DRAGONKING,   0xE8,                   0x1E,           0x800D94C4,                     0,                          0x800D8BB4,                     0x800DDF44)                 // DSP Air Landing
-    Character.edit_action(DRAGONKING,   0xE9,                   0x1E,           DragonKingDSP.aerial_main_,     DragonKingDSP.air_move_,    DragonKingDSP.physics_,         DragonKingDSP.collision_)   // DSP Air Begin
+    Character.edit_action(DRAGONKING,   0xE9,                   0x1E,           DragonKingDSP.aerial_main_,     0,                          DragonKingDSP.physics_,         DragonKingDSP.collision_)   // DSP Air Begin
 
     // Add Actions                          // Action Name      // Base Action  //Parameters                    // Staling ID   // Main ASM                         // Interrupt/Other ASM          // Movement/Physics ASM             // Collision ASM
     Character.add_new_action(DRAGONKING,    USPGround,          -1,             ActionParams.USPGround,         0x11,           0x800D94C4,                         0x80160370,                     0x800D8BB4,                         DragonKingUSP.ground_collision_)
     Character.add_new_action(DRAGONKING,    USPGroundThrow,     -1,             ActionParams.USPGroundThrow,    0x11,           DragonKingUSP.throw_main_,          0,                              0x800D8BB4,                         0x80149B78)
     Character.add_new_action(DRAGONKING,    USPAir,             -1,             ActionParams.USPAir,            0x11,           0x801602B0,                         0x80160370,                     0x801603F0,                         0x80160560)
     Character.add_new_action(DRAGONKING,    USPAirPull,         -1,             ActionParams.USPAirPull,        0x11,           DragonKingUSP.air_pull_main_,       0,                              DragonKingUSP.air_pull_physics_,    DragonKingUSP.air_pull_collision_)
-    Character.add_new_action(DRAGONKING,    USPLandingThrow,    -1,             ActionParams.USPLandingThrow,   0x11,           DragonKingUSP.throw_main_,          0,                              0x800D8BB4,                         0x800DDF44)
+    Character.add_new_action(DRAGONKING,    USPLandingThrow,    -1,             ActionParams.USPLandingThrow,   0x11,           DragonKingUSP.throw_main_,          0,                              0x800D8BB4,                         0x80149B78)
 
     // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
     Character.edit_menu_action_parameters(DRAGONKING,   0x0,                File.DKING_IDLE,            0x80000000,                 -1)
@@ -282,13 +285,6 @@ scope DragonKing {
     OS.patch_end()
     Character.table_patch_start(ground_dsp, Character.id.DRAGONKING, 0x4)
     dw      DragonKingDSP.ground_initial_
-    OS.patch_end()
-
-    Character.table_patch_start(variants, Character.id.FALCON, 0x4)
-    db      Character.id.DRAGONKING  // set as SPECIAL variant for FALCON
-    db      0x15                     // set as POLYGON variant for FALCON
-    db      Character.id.JFALCON     // set as JAPANESE variant for FALCON
-    db      Character.id.NONE
     OS.patch_end()
 
     Character.table_patch_start(jab_3, Character.id.DRAGONKING, 0x4)
@@ -322,9 +318,9 @@ scope DragonKing {
     dw 0x8013DD68                           // skips entry script
     OS.patch_end()
 
-    // Set crowd chant FGM to none
+    // Set crowd chant FGM
     Character.table_patch_start(crowd_chant_fgm, Character.id.DRAGONKING, 0x2)
-    dh  0x02B7
+    dh  0x0311
     OS.patch_end()
 
     // Set Kirby hat_id
@@ -349,31 +345,13 @@ scope DragonKing {
     dw 0x10
     OS.patch_end()
 
-    // Set CPU behaviour
-    //Character.table_patch_start(ai_behaviour, Character.id.DRAGONKING, 0x4)
-    //dw      CPU_ATTACKS
-    //OS.patch_end()
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.DRAGONKING, 0x2)
+    dh 0x27
+    OS.patch_end()
 
-    // Edit cpu attack behaviours
-    // edit_attack_behavior(table, attack, override, start_hb, end_hb, min_x, max_x, min_y, max_y)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,   -1,  14,   24,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  12,   31,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  16,   38,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  16,   35,  -1, -1, -1, -1) // todo: coords
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  8,    15,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FAIR,   -1,  7,    19,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  24,   33,  -1, -1, -1, -1) // todo: coords
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  10,   16,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,    6,   -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  5,    8,   -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  7,    17,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  47,   52,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  47,   52,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  7,    17,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  16,   51,  -1, -1, -1, -1)
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  15,   55,  -1, -1, -1, -1) // todo: coords
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  19,   33,  -1, -1, -1, -1) // todo: coords
-    //AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  34,   40,  -1, -1, -1, -1) // todo: coords
+    // Set 1P Victory Image
+    SinglePlayer.set_ending_image(Character.id.DRAGONKING, File.DKING_VICTORY_IMAGE_BOTTOM)
 
     // Set action strings
     Character.table_patch_start(action_string, Character.id.DRAGONKING, 0x4)

@@ -484,13 +484,11 @@ scope Training {
         bnez    t0, _normal                 // skip if spawn_id != custom
         lw      t0, 0x0020(t2)              // t0 = ledge clipping_id
         bltz    t0, _normal                 // if not starting on ledge, skip
-        lli     a1, Action.CliffWait
+        nop
 
         addiu   sp, sp, -0x0030             // allocate stack space
-        sw      r0, 0x0010(sp)              // set flags
-        lli     a2, 0x0000                  // a2 = starting frame = 0
-        jal     0x800E6F24                  // change action
-        lui     a3, 0x3F80                  // a3 = frame speed multiplier = 1.0
+        jal     0x80144C24                  // ftCommonCliffCatchSetStatus(GObj *fighter_gobj)
+        nop
         addiu   sp, sp, 0x0030              // deallocate stack space
 
         j       _return
@@ -624,6 +622,131 @@ scope Training {
     }
 
     // @ Description
+    // Allow anybody to pause
+    scope check_enter_menu_: {
+        OS.patch_start(0x113930, 0x8018D110)
+        j       check_enter_menu_
+        sw      ra, 0x0014(sp)              // original line 1
+        _return:
+        OS.patch_end()
+
+        // first, check if active player port (a0) pressed start
+        andi    t8, t7, 0x1000              // original line 2
+        bnez    t8, _end                    // branch if this port pressed start (no need to check further)
+        nop
+
+        _loop:
+        addiu   a0, a0, 1                   // a0++ (next port)
+        sltiu   t7, a0, 4                   // t7 = 0 if last port...
+        beqzl   t7, pc() + 8                // ...in which case, loop to port 1
+        or      a0, r0, r0                  // a0 = 0 (p1)
+        li      t7, 0x800A4AE3              // t7 = address of human player port
+        lb      t7, 0x0000(t7)              // t7 = human player port
+        beq     t7, a0, _end                // branch if we've finished looping through all ports
+        nop
+        lui     t7, 0x8004                  // calculate offset (will be 0xA * port)
+        sll     t6, a0, 2                   // t6 = (port * 4)
+        addu    t6, t6, a0                  // t6 = t6 + port
+        sll     t6, t6, 1                   // t6 = t6 * 2
+        addu    t7, t7, t6                  // t7 = t7 + offset
+        lhu     t7, 0x522A(t7)              // t7 = buttons pressed for this port
+        andi    t8, t7, 0x1000              // original line 2
+        beqz    t8, _loop                   // branch unless this port pressed start
+        nop
+
+        // give menu control to the player who pressed start
+        _enter_menu:
+        li      t7, 0x800A4AE3              // t7 = address of human player port
+        lb      t6, 0x0000(t7)              // t6 = human player port
+        sb      a0, 0x0000(t7)              // temporarily set human player port to the one who pressed start
+        li      t7, owner_player_port       // t7 = address of owner_player_port
+        sw      t6, 0x0000(t7)              // remember owner player port
+        or      a0, r0, t6                  // restore a0
+
+        _end:
+        j       _return
+        nop
+    }
+
+    // @ Description
+    // Allow anybody to unpause
+    scope check_leave_menu_: {
+        OS.patch_start(0x113A38, 0x8018D218)
+        j       check_leave_menu_
+        sw      ra, 0x0014(sp)              // original line 1
+        _return:
+        OS.patch_end()
+
+        // v0 = human player port
+        _loop:
+        andi    t9, t8, 0x5000              // original line 2
+        bnez    t9, _leave_menu             // branch if this port pressed start or B (no need to check further)
+        nop
+        addiu   v0, v0, 1                   // v0++ (next port)
+        sltiu   t8, v0, 4                   // t8 = 0 if last port...
+        beqzl   t8, pc() + 8                // ...in which case, loop to port 1
+        or      v0, r0, r0                  // v0 = 0 (p1)
+        li      t8, 0x800A4AE3              // t8 = address of human player port
+        lb      t8, 0x0000(t8)              // t8 = human player port
+        beq     t8, v0, _end                // branch if we've finished looping through all ports
+        nop
+        li      t7, 0x80045228              // calculate offset (will be 0xA * port)
+        sll     t6, v0, 2                   // t6 = (port * 4)
+        addu    t6, t6, v0                  // t6 = t6 + port
+        sll     t6, t6, 1                   // t6 = t6 * 2
+        addu    v1, t6, t7                  // v1 = t7 + offset
+        lhu     t8, 0x0002(v1)              // t8 = buttons pressed for this port
+        b       _loop
+        nop
+
+        _leave_menu:
+        li      t8, owner_player_port       // t8 = address of owner_player_port
+        lw      t6, 0x0000(t8)              // t6 = owner player port (0-3 if a different player paused)
+        bltz    t6, _end                    // branch accordingly
+        nop
+        addiu   v0, r0, -1
+        li      t8, 0x800A4AE3              // t8 = address of human player port
+        sb      t6, 0x0000(t8)              // revert human player port back to owner
+        or      v0, r0, t6                  // restore v0
+
+        _end:
+        j       _return
+        nop
+    }
+
+    // @ Description
+    // Handle a disabled port spawning items when paused (fall back to the owner)
+    scope check_disabled_item_spawn_: {
+        OS.patch_start(0x113DCC, 0x8018D5AC)
+        j       check_disabled_item_spawn_
+        nop
+        _return:
+        OS.patch_end()
+
+        OS.read_byte(0x800A4AE3, t2)        // t2 = player port
+        sll     t3, t2, 0x0005              // t3 = t2 * 0x20
+        sll     t2, t2, 0x0002              // t2 = t2 * 0x4
+        addu    t3, t3, t2                  // t3 = offset to port in struct
+        li      t2, struct.port_1.type
+        addu    t2, t2, t3                  // t2 = struct.port_X.type address
+        lw      t3, 0x0000(t2)              // t3 = type of human player selected
+        addiu   t3, t3, -0x0002             // t3 = 0 if disabled
+        bnez    t3, _original               // use this port if the player is not marked as disabled
+        nop                                 // otherwise, reference owner port instead
+        li      t3, owner_player_port       // t3 = address of owner_player_port
+        b       _end
+        lw      t2, 0x0000(t3)              // t2 = owner player port
+
+        _original:
+        lui     t2, 0x800A                  // original line 1
+        lbu     t2, 0x4AE3(t2)              // original line 2
+
+        _end:
+        j       _return
+        nop
+    }
+
+    // @ Description
     // Prevents exiting Training Mode unless A is held.
     scope hold_to_exit_: {
         constant NUM_FRAMES(33)             // visual fill needs extra frame (32+1)
@@ -754,16 +877,31 @@ scope Training {
         sw      t0, 0x0004(sp)              // ~
         sw      t1, 0x0008(sp)              // store t0, t1
 
+        // revoke temporary port ownership if necessary
+        li      t0, owner_player_port       // t0 = address of owner_player_port
+        lw      t1, 0x0000(t0)              // t1 = owner player port (0-3 if a different player paused)
+        bltz    t1, _checked_owner_port     // branch accordingly
+        nop
+        li      t0, 0x800A4AE3              // t0 = address of human player port
+        sb      t1, 0x0000(t0)              // revert human player port back to owner
+        li      t0, owner_player_port       // t0 = address of owner_player_port
+        addiu   t1, r0, -1
+        sw      t1, 0x0000(t0)              // clear temporary owner flag
+
+        _checked_owner_port:
         li      t0, action_control_object
         sw      r0, 0x0000(t0)              // clear action & frame control object pointer
+
+        li      t0, spam_practice_.timer
+        sw      r0, 0x0000(t0)              // clear spam_practice_.timer
 
         li      t0, reset_counter           // t0 = reset_counter
         lw      t1, 0x0000(t0)              // t1 = reset_counter value
         addiu   t1, t1, 0x00001             // t1 = reset counter value + 1
         sw      t1, 0x0000(t0)              // store reset_counter value
 
-        li      t0, player_shield_status    // t0 = player_shield_status
-        sw      r0, 0x0000(t0)              // reset player_shield_status value
+        li      t1, player_shield_status    // t1 = player_shield_status
+        sw      r0, 0x0000(t1)              // reset player_shield_status value
 
         li      t1, advance_frame_.freeze   // ~
         sw      r0, 0x0000(t1)              // freeze = false
@@ -778,6 +916,27 @@ scope Training {
         nop
 
         _reset_game:
+        // Avoid crash when the player marked themselves as disabled
+        OS.read_byte(0x800A4AE3, t0)        // t0 = human player port
+        sll     t1, t0, 0x0005              // t1 = t0 * 0x20
+        sll     t0, t0, 0x0002              // t0 = t0 * 0x4
+        addu    t1, t1, t0                  // t1 = offset to port in struct
+        li      t0, struct.port_1.type
+        addu    t0, t0, t1                  // t0 = struct.port_X.type address
+        lw      t1, 0x0000(t0)              // t1 = type of human player selected
+        addiu   t1, t1, -0x0002             // t1 = 0 if disabled
+        bnez    t1, _end                    // if the player is not marked as disabled, skip
+        li      t1, type_table              // yes, delay slot
+
+        // the player is marked as disabled, so disallow and reenable as human
+        sw      r0, 0x0000(t0)              // set enabled
+        OS.read_byte(0x800A4AE3, t0)        // t0 = human player port
+        sll     t0, t0, 0x0002              // t0 = offset to type menu entry
+        addu    t0, t1, t0                  // t0 = type menu entry address
+        lw      t0, 0x0000(t0)              // t0 = type menu entry
+        sw      r0, 0x0004(t0)              // set to Human
+
+        _end:
         lw      t0, 0x0004(sp)              // ~
         lw      t1, 0x0008(sp)              // load t0, t1
         addiu   sp, sp, 0x0010              // deallocate stack space
@@ -1065,8 +1224,18 @@ scope Training {
 
         _check_freeze:
         lw      t0, 0x0000(t1)              // t0 = bool freeze
-        beqz    t0, _end                    // if (!freeze), end
+        bnez    t0, _frozen                 // if (freeze), branch
         nop
+
+        jal     Speed.handle_rate_training
+        nop
+        li      ra, 0x8018DA58              // return value - skip
+        bnezl   t6, _skip                   // if (skip_advance), skip
+        sw      ra, 0x006C(sp)              // save ra
+        b       _end                        // otherwise branch to end
+        nop
+
+        _frozen:
         li      ra, 0x8018DA50              // return value - freeze
         sw      ra, 0x006C(sp)              // save ra
 
@@ -1463,6 +1632,22 @@ scope Training {
 
         or      a0, v0, r0                  // a0 = object
         li      a1, update_frame_counts_    // a1 = routine
+        lli     a2, 0x0001                  // a2 = ?
+        lli     a3, 0x0000                  // a3 = last group to run
+        jal     Render.REGISTER_OBJECT_ROUTINE_
+        addiu   sp, sp, -0x0030             // create stack space
+        addiu   sp, sp, 0x0030              // restore stack
+
+        lw      a0, 0x0010(sp)              // a0 = object
+        li      a1, di_practice_mode_       // a1 = routine
+        lli     a2, 0x0001                  // a2 = ?
+        lli     a3, 0x0000                  // a3 = last group to run
+        jal     Render.REGISTER_OBJECT_ROUTINE_
+        addiu   sp, sp, -0x0030             // create stack space
+        addiu   sp, sp, 0x0030              // restore stack
+
+        lw      a0, 0x0010(sp)              // a0 = object
+        li      a1, spam_practice_timer_    // a1 = routine
         lli     a2, 0x0001                  // a2 = ?
         lli     a3, 0x0000                  // a3 = last group to run
         jal     Render.REGISTER_OBJECT_ROUTINE_
@@ -2099,8 +2284,15 @@ scope Training {
         li      v1, entry_shield_break_mode
         lw      v1, 0x0004(v1)              // v1 = shield break mode
         beqz    v1, _original               // skip if shield break mode off
-        nop
+        addiu   v1, v1, -0x0002             // v1 = 0 if shield infinite mode
+        bnez    v1, _shield_break_mode      // if not in infinite mode, then do shield break mode
+        lli     v1, 0x0037                  // v1 = max shield value, unstale
 
+        // in infinite mode, force shield to stay 100% charged
+        b       _force_shield
+        sw      v1, 0x0034(a2)              // force max shield
+
+        _shield_break_mode:
         lbu     v1, 0x000D(a2)              // v1 = player index (0 - 3)
         li      t3, player_shield_status
         addu    t3, t3, v1                  // t3 = address of shield status for this player
@@ -2212,26 +2404,216 @@ scope Training {
         lb      v1, 0x0006(v0)              // original line 2
     }
 
-	// @ Description
-	// Fixes a crash if there are less than two players in Sector Z
-	scope fix_sector_z_crashes_: {
-		OS.patch_start(0x82FFC, 0x801077FC)
-		j		fix_sector_z_crashes_
-		nop
-		_return:
-		OS.patch_end()
+    // @ Description
+    // Runs every frame advance in order to force characters into hitlag
+    // @ Arguments
+    // a0 - action & frame control object
+    scope di_practice_mode_: {
+        OS.read_byte(Global.current_screen, a1) // a1 = screen_id
+        lli     t0, Global.screen.TRAINING_MODE
+        bne     a1, t0, _end                // skip if screen_id != training mode
+        nop
 
-		bnezl	a0, _normal
-		lw		v0, 0x0084(a0)			// original line 1
+        li      a1, entry_di_practice_mode
+        lw      a1, 0x0004(a1)              // a1 = DI practice mode
+        beqz    a1, _end                    // skip if DI practice mode off
+        nop
 
-		_exit:
-		j		0x80107900				// skip to end
-		lw		ra, 0x001C(sp)
+        li      t0, Global.p_struct_head
+        lw      t0, 0x0000(t0)              // t0 = 1st player struct
 
-		_normal:
-		j		_return
-		addiu	at, t0, 0xFFFF			// original line 2
-	}
+        _loop:
+        lw      t1, 0x0004(t0)              // t1 = player object
+        beqz    t1, _next                   // if no player object, skip
+        lw      t2, 0x0024(t0)              // t2 = action ID
+
+        sltiu   at, t2, Action.Idle         // at = 1 if dead or reviving
+        bnezl   at, _next                   // if dead or reviving, skip
+        lli     t2, 0x0002                  // t2 = 2
+
+        sw      t2, 0x0040(t0)              // set hitlag to 2
+        li      at, 0x80140878              // at = routine for DI (ftCommon_DamageCommon_ProcLagUpdate)
+        sw      at, 0x0A00(t0)              // set DI routine in player struct (this_fp->proc_lagupdate = ftCommon_DamageCommon_ProcLagUpdate;)
+
+        _next:
+        lw      t0, 0x0000(t0)              // t0 = next player struct
+        bnez    t0, _loop                   // go to next player if there is one
+        nop
+
+        _end:
+        jr      ra
+        nop
+    }
+
+    // @ Description
+    // Adds Spam Practice to CPU behavior
+    scope spam_practice_: {
+        OS.patch_start(0xB4E10, 0x8013A3D0)
+        j       spam_practice_
+        lw      t6, 0xBF7C(at)              // original line 1
+        OS.patch_end()
+
+        OS.read_byte(Global.current_screen, t7) // t7 = screen_id
+        lli     t8, Global.screen.TRAINING_MODE
+        bne     t7, t8, _end                // skip if screen_id != training mode
+        nop
+
+        li      t7, entry_shield_break_mode
+        lw      t7, 0x0004(t7)              // t7 = shield break mode
+        bnez    t7, _end                    // skip if shield break mode is on
+        nop
+
+        li      t7, entry_spam_practice
+        lw      t7, 0x0004(t7)              // t7 = spam practice
+        beqz    t7, _end                    // skip if spam practice off
+        addiu   t7, t7, -0x0001             // t7 = index in spam_command_table
+
+        li      t2, timer
+        lbu     t3, 0x000D(a1)              // t3 = port_id
+        addu    t2, t2, t3                  // t2 = address of timer for this port
+        OS.read_word(entry_spam_interval_random + 0x4, t3) // t3 = random interval if 1
+        beqz    t3, _get_manual_interval    // if random interval is off, get set interval
+        lbu     t3, 0x0000(t2)              // t3 = time remaining
+
+        bnez    t3, _end                    // if timer is not up, don't set routine
+        nop
+
+        addiu   sp, sp, -0x0020             // allocate stack space
+        sw      t2, 0x0004(sp)              // save registers
+        sw      t6, 0x0008(sp)              // ~
+        sw      t7, 0x000C(sp)              // ~
+        sw      a1, 0x0010(sp)              // ~
+        sw      v0, 0x0014(sp)              // ~
+
+        jal     Global.get_random_int_      // v0 = random number from 0 to 99
+        lli     a0, 100
+        or      t8, v0, r0                  // t8 = spam interval
+
+        lw      t2, 0x0004(sp)              // restore registers
+        lw      t6, 0x0008(sp)              // ~
+        lw      t7, 0x000C(sp)              // ~
+        lw      a1, 0x0010(sp)              // ~
+        lw      v0, 0x0014(sp)              // ~
+        b       _set_timer
+        addiu   sp, sp, 0x0020              // deallocate stack space
+
+        _get_manual_interval:
+        li      t8, entry_spam_interval
+        bnez    t3, _end                    // if timer is not up, don't set routine
+        lw      t8, 0x0004(t8)              // t8 = spam interval
+
+        _set_timer:
+        sb      t8, 0x0000(t2)              // set timer
+
+        _set_routine:
+        li      t8, spam_command_table
+        sll     t7, t7, 0x0003              // t7 = offset in spam_command_table
+        addu    t7, t8, t7                  // t7 = address of routine
+        lw      t8, 0x0000(t7)              // t8 = routine
+
+        lw      t6, 0x0044(a1)              // t6 = direction (1 = right, -1 = left)
+        bltzl   t6, pc() + 8                // if facing left, do left routine instead
+        lw      t8, 0x0004(t7)              // t8 = routine
+
+        sw      t8, 0x0008(v0)              // set di routine
+        lli     t8, 0x0001
+        sb      t8, 0x0007(v0)              // set controller command wait timer
+
+        li      t6, 0x8013A49C              // skip CPU AI jump table
+
+        _end:
+        jr      t6                          // original line 2
+        nop                                 // original line 3
+
+        spam_command_table:
+        // RIGHT FACING     LEFT FACING
+        dw 0x80188208,      0x80188208      // UTILT
+        dw 0x80188274,      0x80188274      // DTILT
+        dw AI.FTILT_RIGHT,  AI.FTILT_LEFT   // FTILT
+        dw 0x80188214,      0x80188214      // USMASH
+        dw 0x80188290,      0x80188290      // DSMASH
+        dw AI.FSMASH_RIGHT, AI.FSMASH_LEFT  // FSMASH
+        dw AI.DSP,          AI.DSP          // DSP
+        dw AI.NSP,          AI.NSP          // NSP
+        dw AI.USP,          AI.USP          // USP
+        dw AI.GRAB,         AI.GRAB         // Grab
+        dw AI.JAB,          AI.JAB          // Jab
+        dw AI.SHORT_HOP,    AI.SHORT_HOP    // Short Hop
+        dw AI.FULL_HOP,     AI.FULL_HOP     // Full Hop
+        // dw 0x80188318,      0x8018830C      // Roll Forward
+        // dw 0x8018830C,      0x80188318      // Roll Backward
+
+        timer:
+        db 0, 0, 0, 0
+    }
+
+    // @ Description
+    // Runs every frame advance in order to decrement spam timer
+    // @ Arguments
+    // a0 - action & frame control object
+    scope spam_practice_timer_: {
+        OS.read_byte(Global.current_screen, a1) // a1 = screen_id
+        lli     t0, Global.screen.TRAINING_MODE
+        bne     a1, t0, _end                // skip if screen_id != training mode
+        nop
+
+        li      a1, entry_spam_practice
+        lw      a1, 0x0004(a1)              // a1 = spam practice
+        beqz    a1, _end                    // skip if spam practice off
+        nop
+
+        li      t0, Global.p_struct_head
+        lw      t0, 0x0000(t0)              // t0 = 1st player struct
+
+        _loop:
+        lw      t1, 0x0004(t0)              // t1 = player object
+        beqz    t1, _next                   // if no player object, skip
+        lw      t2, 0x0020(t0)              // t2 = man/cpu
+
+        lli     at, 0x0001                  // at = cpu
+        bne     t2, at, _next               // if not cpu, skip
+        lw      t2, 0x0040(t0)              // t2 = hitlag
+
+        bnez    t2, _next                   // if in hitlag, skip
+        lbu     t1, 0x000D(t0)              // t1 = port_id
+
+        li      t2, spam_practice_.timer
+        addu    t2, t2, t1                  // t2 = address of timer for this port
+        lbu     t1, 0x0000(t2)              // t1 = current timer value
+        addiu   at, t1, -0x0001             // at = t1--
+        bgtzl   t1, _next                   // if current timer is > 0, decrement
+        sb      at, 0x0000(t2)              // timer--
+
+        _next:
+        lw      t0, 0x0000(t0)              // t0 = next player struct
+        bnez    t0, _loop                   // go to next player if there is one
+        nop
+
+        _end:
+        jr      ra
+        nop
+    }
+
+    // @ Description
+    // Fixes a crash if there are less than two players in Sector Z
+    scope fix_sector_z_crashes_: {
+        OS.patch_start(0x82FFC, 0x801077FC)
+        j       fix_sector_z_crashes_
+        nop
+        _return:
+        OS.patch_end()
+
+        bnezl   a0, _normal
+        lw      v0, 0x0084(a0)          // original line 1
+
+        _exit:
+        j       0x80107900              // skip to end
+        lw      ra, 0x001C(sp)
+
+        _normal:
+        j       _return
+        addiu   at, t0, 0xFFFF          // original line 2
+    }
 
     // @ Description
     // Hooks to avoid crashes due to Pokemon opponent targeting when no other ports loaded
@@ -2298,23 +2680,74 @@ scope Training {
 
     // @ Description
     // This allows us to not hear the crowd cheer when entering/resetting Training Mode
+    // Also can skip cheer for Bonus 1/2/3 and HRC
     scope skip_crowd_cheer_: {
+        // Training
         OS.patch_start(0x116D68, 0x80190548)
-        j       skip_crowd_cheer_
+        jal     skip_crowd_cheer_._training
         nop
-        _return:
         OS.patch_end()
 
-        li      a0, Toggles.entry_skip_training_start_cheer
-        lw      a0, 0x0004(a0)              // a0 = 1 if skip crowd noise is enabled, else 0
-        bnez    a0, _end                    // if skip crowd noise is enabled, skip crowd noise lol
+        // Bonus 1/2
+        OS.patch_start(0x112FA8, 0x8018E868)
+        jal     skip_crowd_cheer_._bonus
         nop
+        OS.patch_end()
+
+        // 1P (Bonus 3, HRC)
+        OS.patch_start(0x10E550, 0x8018FCF0)
+        jal     skip_crowd_cheer_._bonus
+        nop
+        OS.patch_end()
+
+        _training:
+        li      a0, Toggles.entry_skip_start_cheer
+        lw      a0, 0x0004(a0)              // a0 = entry_skip_start_cheer (0 if OFF, 1 if skip 'TRAINING' crowd noise is enabled, 2 if skip 'BONUS')
+        bnez    a0, _return                 // if skip crowd noise is enabled, skip crowd noise lol
+        nop
+        b       _play_crowd_cheer_fgm       // ...otherwise, play it
+        nop
+
+        // t6, a0, at are safe
+        _bonus:
+        li      a0, Toggles.entry_skip_start_cheer
+        lw      a0, 0x0004(a0)              // a0 = entry_skip_start_cheer (0 if OFF, 1 if skip 'TRAINING' crowd noise is enabled, 2 if skip 'BONUS')
+        sltiu   a0, a0, 2                   // a0 = 1 if not skip 'BONUS'
+        bnez    a0, _play_crowd_cheer_fgm   // branch accordingly
+        nop
+
+        // check and skip if relevant singleplayer mode
+        li      a0, SinglePlayerModes.singleplayer_mode_flag
+        lw      a0, 0x0000(a0)                  // a0 = singleplayer mode flag
+        lli     t6, SinglePlayerModes.BONUS3_ID
+        beq     a0, t6, _return                 // skip crowd noise if Bonus 3 (RTTF)
+        lli     t6, SinglePlayerModes.HRC_ID
+        beq     a0, t6, _return                 // skip crowd noise if HRC
+        nop
+
+        // verify that the Bonus is Practice (and not 1P Mode)
+        li      a0, Global.previous_screen
+        lbu     a0, 0x0000(a0)                  // a0 = previous screen id
+        lli     t6, Global.screen.BONUS_1_CSS   // t6 = 0x13 (BONUS 1 CSS)
+        beq     a0, t6, pc() + 12               // ~
+        lli     t6, Global.screen.BONUS_2_CSS   // t6 = 0x14 (BONUS 2 CSS)
+        bne     a0, t6, _play_crowd_cheer_fgm   // play crowd noise if not Practice BTT or BTP
+        nop
+        b       _return                         // if we're here, skip crowd noise
+        nop
+
+        _play_crowd_cheer_fgm:
+        addiu   sp, sp,-0x0010              // allocate stack space
+        sw      ra, 0x000C(sp)              // save ra
 
         jal     0x800269C0                  // original line 1 - play fgm
         addiu   a0, r0, 0x0272              // original line 2 - a0 = crowd cheer fgm_id
 
-        _end:
-        j       _return
+        lw      ra, 0x000C(sp)              // restore ra
+        addiu   sp, sp, 0x0010              // deallocate stack space
+
+        _return:
+        jr      ra                          // return
         nop
     }
 
@@ -2352,6 +2785,10 @@ scope Training {
     // Strings used for pagination legend
     pagination_legend_1:; db "Next/", 0x00
     pagination_legend_2:; db "Prev", 0x00
+
+    // @ Description
+    // Shield Break Mode Options
+    shield_break_infinite:; db "Infinite", 0x00
 
     // @ Description
     // Out of Shield Options
@@ -2399,12 +2836,24 @@ scope Training {
     // DPAD Menu Options
     reset_only:; db "Reset Only", 0x00
 
+    // @ Description
+    // Spam Practice Options
+    spam_nsp:; db "Neutral Special", 0x00
+    spam_jab:; db "Jab", 0x00
+    spam_short_hop:; db "Short Hop", 0x00
+    spam_full_hop:; db "Full Hop", 0x00
+
     OS.align(4)
 
     string_table_type:
     dw type_1
     dw type_2
     dw type_3
+
+    string_table_shield_break:
+    dw Menu.bool_0         // Off
+    dw Menu.bool_1         // On
+    dw shield_break_infinite
 
     string_table_oos_options:
     dw oos_jump
@@ -2418,7 +2867,8 @@ scope Training {
     dw oos_shield_drop
     dw oos_shield_drop_dsp
     dw oos_shield_drop_nair
-    constant OOS_MAX(10)
+    dw string_none
+    constant OOS_MAX(11)
 
     string_table_tech_options:
     dw string_random
@@ -2459,6 +2909,25 @@ scope Training {
     dw reset_only
     dw Menu.bool_0
 
+    string_table_spam_practice:
+    dw Menu.bool_0         // Off
+    dw Action.string_0x0C7 // UTilt
+    dw Action.string_0x0C9 // DTilt
+    dw Action.string_0x0C3 // FTilt
+    dw Action.string_0x0CF // USmash
+    dw Action.string_0x0D0 // DSmash
+    dw Action.string_0x0CC // FSmash
+    dw oos_dsp
+    dw spam_nsp
+    dw oos_usp
+    dw oos_grab
+    dw spam_jab
+    dw spam_short_hop
+    dw spam_full_hop
+    // dw tech_roll_forward
+    // dw tech_roll_backward
+    constant SPAM_PRACTICE_MAX(13)
+
     // @ Description
     // Holds button masks and stick values for the first 2 frames after shied stun ends in shield break mode
     oos_inputs_frame_1:
@@ -2474,6 +2943,7 @@ scope Training {
     dh Joypad.Z,            0x00B0      // shield drop
     dh Joypad.Z,            0x00B0      // shield drop dsp
     dh Joypad.Z,            0x00B0      // shield drop nair
+    dh Joypad.Z,            0x0000      // none (keep shielding)
 
     oos_inputs_frame_2:
     // button mask          stick value
@@ -2488,6 +2958,7 @@ scope Training {
     dh Joypad.Z,            0x00B0      // shield drop
     dh Joypad.B,            0x00B0      // shield drop dsp
     dh Joypad.A,            0x0000      // shield drop nair
+    dh Joypad.Z,            0x0000      // none (keep shielding)
 
     // @ Description
     // Character Strings
@@ -2517,7 +2988,7 @@ scope Training {
     string_npikachu:; char_0x17:; db "Poly Pikachu", 0x00
     string_npuff:; char_0x18:; db "Poly Puff", 0x00
     string_nness:; char_0x19:; db "Poly Ness", 0x00
-    string_nwario:; char_Px06:; db "Poly Wario", 0x00
+    string_nwario:; char_Px05:; db "Poly Wario", 0x00
     string_nlucas:; char_Px07:; db "Poly Lucas", 0x00
     string_nbowser:; char_Px08:; db "Poly Bowser", 0x00
     string_nwolf:; char_Px09:; db "Poly Wolf", 0x00
@@ -2527,7 +2998,7 @@ scope Training {
     string_nmarina:; char_Px0F:; db "Poly Marina", 0x00
     string_nfalco:; char_Px01:; db "Poly Falco", 0x00
     string_nganondorf:; char_Px02:; db "Poly Ganondorf", 0x00
-    string_ndarksamus:; char_Px05:; db "Poly Dark Samus", 0x00
+    string_ndarksamus:; char_Px06:; db "Poly Dark Samus", 0x00
     string_nmewtwo:; char_Px0B:; db "Poly Mewtwo", 0x00
     string_nmarth:; char_Px0C:; db "Poly Marth", 0x00
     string_ndedede:; char_Px10:; db "Poly Dedede", 0x00
@@ -2535,6 +3006,8 @@ scope Training {
     string_ngoemon:; char_Px11:; db "Poly Goemon", 0x00
     string_nconker:; char_Px0A:; db "Poly Conker", 0x00
     string_nbanjo:; char_Px12:; db "Poly Banjo", 0x00
+    string_npeach:; char_Px14:; db "Poly Crash", 0x00
+    string_ncrash:; char_Px13:; db "Poly Peach", 0x00
     string_gdk:; char_0x1A:; db "Giant DK", 0x00
     //char_0x1B:; db "NONE", 0x00
     //char_0x1C:; db "NONE", 0x00
@@ -2562,9 +3035,9 @@ scope Training {
     string_jpikachu:; char_0x32:; db "J Pikachu", 0x00
     string_esamus:; char_0x33:; db "E Samus", 0x00
     string_bowser:; char_0x34:; db "Bowser", 0x00
-	string_gbowser:; char_0x35:; db "Giga Bowser", 0x00
+    string_gbowser:; char_0x35:; db "Giga Bowser", 0x00
     string_piano:; char_0x36:; db "Mad Piano", 0x00
-	string_wolf:; char_0x37:; db "Wolf", 0x00
+    string_wolf:; char_0x37:; db "Wolf", 0x00
     string_conker:; char_0x38:; db "Conker", 0x00
     string_mewtwo:; char_0x39:; db "Mewtwo", 0x00
     string_marth:; char_0x3A:; db "Marth", 0x00
@@ -2581,6 +3054,11 @@ scope Training {
     string_mluigi:; char_0x45:; db "Metal Luigi", 0x00
     string_ebi:; char_0x46:; db "Ebisumaru", 0x00
     string_dragonking:; char_0x47:; db "Dragon King", 0x00
+    string_crash:; char_0x48:; db "Crash", 0x00
+    string_peach:; char_0x49:; db "Peach", 0x00
+    string_roy:; char_0x4A:; db "Roy", 0x00
+    string_drluigi:; char_0x4B:; db "Dr. Luigi", 0x00
+    string_lanky:; char_0x4C:; db "Lanky Kong", 0x00
     OS.align(4)
 
     string_table_char:
@@ -2602,10 +3080,8 @@ scope Training {
     dw char_0x1F            // YOUNG LINK
     dw char_0x20            // DR MARIO
     dw char_0x21            // WARIO
-    dw char_0x22            // DARK SAMUS
-    dw char_0x26            // LUCAS
-	dw char_0x34            // BOWSER
-	dw char_0x37            // WOLF
+    dw char_0x34            // BOWSER
+    dw char_0x37            // WOLF
     dw char_0x38            // CONKER
     dw char_0x39            // MEWTWO
     dw char_0x3A            // MARTH
@@ -2615,6 +3091,8 @@ scope Training {
     dw char_0x40            // DEDEDE
     dw char_0x41            // GOEMON
     dw char_0x44            // BANJO
+    dw char_0x48            // CRASH
+    dw char_0x49            // PEACH
 
     dw char_0x2A            // J MARIO
     dw char_0x29            // J FOX
@@ -2634,16 +3112,22 @@ scope Training {
     dw char_0x2D            // E PIKACHU
     dw char_0x2F            // E JIGGLYPUFF
 
-    dw char_0x0D            // METAL MARIO
-    dw char_0x1A            // GIANT DK
-    dw char_0x35            // GIGA BOWSER
-    dw char_0x36            // PIANO
-    dw char_0x3D            // SUPER SONIC
+    dw char_0x22            // DARK SAMUS
+    dw char_0x26            // LUCAS
     dw char_0x42            // PEPPY
     dw char_0x43            // SLIPPY
-    dw char_0x45            // METAL LUIGI
-    dw char_0x46            // EBISUMARU
+    dw char_0x4A            // ROY
+    dw char_0x4B            // DR LUIGI
+    dw char_0x4C            // LANKY KONG
     dw char_0x47            // DRAGONKING
+    dw char_0x46            // EBISUMARU
+    dw char_0x36            // PIANO
+    dw char_0x0D            // METAL MARIO
+    dw char_0x45            // METAL LUIGI
+    dw char_0x1A            // GIANT DK
+    dw char_0x35            // GIGA BOWSER
+    dw char_0x3D            // SUPER SONIC
+
     dw char_0x3C            // SANDBAG
     dw char_0x0E            // POLYGON MARIO
     dw char_0x0F            // POLYGON FOX
@@ -2661,8 +3145,8 @@ scope Training {
     dw char_Px02            // POLYGON GANONDORF
     dw char_Px03            // POLYGON YOUNG LINK
     dw char_Px04            // POLYGON DR MARIO
-    dw char_Px05            // POLYGON DARK SAMUS
-    dw char_Px06            // POLYGON WARIO
+    dw char_Px05            // POLYGON WARIO
+    dw char_Px06            // POLYGON DARK SAMUS
     dw char_Px07            // POLYGON LUCAS
     dw char_Px08            // POLYGON BOWSER
     dw char_Px09            // POLYGON WOLF
@@ -2675,108 +3159,128 @@ scope Training {
     dw char_Px10            // POLYGON DEDEDE
     dw char_Px11            // POLYGON GOEMON
     dw char_Px12            // POLYGON BANJO
+    dw char_Px13            // POLYGON PEACH
+    dw char_Px14            // POLYGON CRASH
 
     // @ Description
     // Training character id is really the order they are displayed in
     // constant names are loosely based on the debug names for characters
     scope id {
+        // Here we use an index logic to avoid having to type all IDs manually
+        evaluate INDEX(0);
+
+        macro register_character_id(name) {
+            constant {name}({INDEX});
+            global evaluate INDEX({INDEX} + 1);
+        }
+
         // original cast
-        constant MARIO(0x00)
-        constant FOX(0x01)
-        constant DK(0x02)
-        constant SAMUS(0x03)
-        constant LUIGI(0x04)
-        constant LINK(0x05)
-        constant YOSHI(0x06)
-        constant CAPTAIN(0x07)
-        constant KIRBY(0x08)
-        constant PIKACHU(0x09)
-        constant JIGGLYPUFF(0x0A)
-        constant NESS(0x0B)
+        register_character_id(MARIO);
+        register_character_id(FOX);
+        register_character_id(DK);
+        register_character_id(SAMUS);
+        register_character_id(LUIGI);
+        register_character_id(LINK);
+        register_character_id(YOSHI);
+        register_character_id(CAPTAIN);
+        register_character_id(KIRBY);
+        register_character_id(PIKACHU);
+        register_character_id(JIGGLYPUFF);
+        register_character_id(NESS);
 
         // custom characters
-        constant FALCO(0x0C)
-        constant GND(0x0D)
-        constant YLINK(0x0E)
-        constant DRM(0x0F)
-        constant WARIO(0x10)
-        constant DSAMUS(0x11)
-        constant LUCAS(0x12)
-		constant BOWSER(0x13)
-		constant WOLF(0x14)
-        constant CONKER(0x15)
-        constant MTWO(0x16)
-        constant MARTH(0x17)
-        constant SONIC(0x18)
-        constant SHEIK(0x19)
-        constant MARINA(0x1A)
-        constant DEDEDE(0x1B)
-        constant GOEMON(0x1C)
-        constant BANJO(0x1D)
+        register_character_id(FALCO);
+        register_character_id(GND);
+        register_character_id(YLINK);
+        register_character_id(DRM);
+        register_character_id(WARIO);
+        register_character_id(BOWSER);
+        register_character_id(WOLF);
+        register_character_id(CONKER);
+        register_character_id(MTWO);
+        register_character_id(MARTH);
+        register_character_id(SONIC);
+        register_character_id(SHEIK);
+        register_character_id(MARINA);
+        register_character_id(DEDEDE);
+        register_character_id(GOEMON);
+        register_character_id(BANJO);
+        register_character_id(CRASH);
+        register_character_id(PEACH);
 
-        // Increment JMARIO after adding more characters above
         // j characters
-        constant JMARIO(0x1E)
-        constant JFOX(JMARIO + 0x01)
-        constant JDK(JMARIO + 0x02)
-        constant JSAMUS(JMARIO + 0x03)
-        constant JLUIGI(JMARIO + 0x04)
-        constant JLINK(JMARIO + 0x05)
-        constant JYOSHI(JMARIO + 0x06)
-        constant JFALCON(JMARIO + 0x07)
-        constant JKIRBY(JMARIO + 0x08)
-        constant JPIKA(JMARIO + 0x09)
-        constant JPUFF(JMARIO + 0x0A)
-        constant JNESS(JMARIO + 0x0B)
-        // e characters
-        constant ESAMUS(JMARIO + 0x0C)
-        constant ELINK(JMARIO + 0x0D)
-        constant EPIKA(JMARIO + 0x0E)
-        constant EPUFF(JMARIO + 0x0F)
-        // bosses and polygons
-        constant METAL(JMARIO + 0x10)
-        constant GDONKEY(JMARIO + 0x11)
-        constant GBOWSER(JMARIO + 0x12)
-        constant PIANO(JMARIO + 0x13)
-        constant SSONIC(JMARIO + 0x14)
-        constant PEPPY(JMARIO + 0x15)
-        constant SLIPPY(JMARIO + 0x16)
-        constant MLUIGI(JMARIO + 0x17)
-        constant EBI(JMARIO + 0x18)
-        constant DRAGONKING(JMARIO + 0x19)
-        constant SANDBAG(JMARIO + 0x1A)
-		constant NMARIO(JMARIO + 0x1B)
-        constant NFOX(JMARIO + 0x1C)
-        constant NDONKEY(JMARIO + 0x1D)
-        constant NSAMUS(JMARIO + 0x1E)
-        constant NLUIGI(JMARIO + 0x1F)
-        constant NLINK(JMARIO + 0x20)
-        constant NYOSHI(JMARIO + 0x21)
-        constant NCAPTAIN(JMARIO + 0x22)
-        constant NKIRBY(JMARIO + 0x23)
-        constant NPIKACHU(JMARIO + 0x24)
-        constant NJIGGLY(JMARIO + 0x25)
-        constant NNESS(JMARIO + 0x26)
-        constant NFALCO(JMARIO + 0x27)
-        constant NGND(JMARIO + 0x28)
-        constant NYLINK(JMARIO + 0x29)
-        constant NDRM(JMARIO + 0x2A)
-        constant NDSAMUS(JMARIO + 0x2B)
-        constant NWARIO(JMARIO + 0x2C)
-        constant NLUCAS(JMARIO + 0x2D)
-        constant NBOWSER(JMARIO + 0x2E)
-        constant NWOLF(JMARIO + 0x2F)
-        constant NCONKER(JMARIO + 0x30)
-        constant NMTWO(JMARIO + 0x31)
-        constant NMARTH(JMARIO + 0x32)
-        constant NSONIC(JMARIO + 0x33)
-        constant NSHEIK(JMARIO + 0x34)
-        constant NMARINA(JMARIO + 0x35)
-        constant NDEDEDE(JMARIO + 0x36)
-        constant NGOEMON(JMARIO + 0x37)
-        constant NBANJO(JMARIO + 0x38)
-    }
+        register_character_id(JMARIO);
+        register_character_id(JFOX);
+        register_character_id(JDK);
+        register_character_id(JSAMUS);
+        register_character_id(JLUIGI);
+        register_character_id(JLINK);
+        register_character_id(JYOSHI);
+        register_character_id(JFALCON);
+        register_character_id(JKIRBY);
+        register_character_id(JPIKA);
+        register_character_id(JPUFF);
+        register_character_id(JNESS);
 
+        // e characters
+        register_character_id(ESAMUS);
+        register_character_id(ELINK);
+        register_character_id(EPIKA);
+        register_character_id(EPUFF);
+
+        // bonus characters
+        register_character_id(DSAMUS);
+        register_character_id(LUCAS);
+        register_character_id(PEPPY);
+        register_character_id(SLIPPY);
+        register_character_id(ROY);
+        register_character_id(DRL);
+        register_character_id(LANKY);
+        register_character_id(DRAGONKING);
+        register_character_id(EBI);
+        register_character_id(PIANO);
+        // ADD BONUS CHARACTERS HERE
+
+        // bosses and polygons
+        register_character_id(METAL);
+        register_character_id(MLUIGI);
+        register_character_id(GDONKEY);
+        register_character_id(GBOWSER);
+        register_character_id(SSONIC);
+        register_character_id(SANDBAG);
+        register_character_id(NMARIO);
+        register_character_id(NFOX);
+        register_character_id(NDONKEY);
+        register_character_id(NSAMUS);
+        register_character_id(NLUIGI);
+        register_character_id(NLINK);
+        register_character_id(NYOSHI);
+        register_character_id(NCAPTAIN);
+        register_character_id(NKIRBY);
+        register_character_id(NPIKACHU);
+        register_character_id(NJIGGLY);
+        register_character_id(NNESS);
+        register_character_id(NFALCO);
+        register_character_id(NGND);
+        register_character_id(NYLINK);
+        register_character_id(NDRM);
+        register_character_id(NWARIO);
+        register_character_id(NDSAMUS);
+        register_character_id(NLUCAS);
+        register_character_id(NBOWSER);
+        register_character_id(NWOLF);
+        register_character_id(NCONKER);
+        register_character_id(NMTWO);
+        register_character_id(NMARTH);
+        register_character_id(NSONIC);
+        register_character_id(NSHEIK);
+        register_character_id(NMARINA);
+        register_character_id(NDEDEDE);
+        register_character_id(NGOEMON);
+        register_character_id(NBANJO);
+        register_character_id(NPEACH);
+        register_character_id(NCRASH);
+    }
 
     entry_id_to_char_id:
     db Character.id.MARIO
@@ -2797,10 +3301,8 @@ scope Training {
     db Character.id.YLINK
     db Character.id.DRM
     db Character.id.WARIO
-    db Character.id.DSAMUS
-    db Character.id.LUCAS
-	db Character.id.BOWSER
-	db Character.id.WOLF
+    db Character.id.BOWSER
+    db Character.id.WOLF
     db Character.id.CONKER
     db Character.id.MTWO
     db Character.id.MARTH
@@ -2810,6 +3312,8 @@ scope Training {
     db Character.id.DEDEDE
     db Character.id.GOEMON
     db Character.id.BANJO
+    db Character.id.CRASH
+    db Character.id.PEACH
 
     db Character.id.JMARIO
     db Character.id.JFOX
@@ -2829,16 +3333,23 @@ scope Training {
     db Character.id.EPIKA
     db Character.id.EPUFF
 
-    db Character.id.METAL
-    db Character.id.GDONKEY
-    db Character.id.GBOWSER
-    db Character.id.PIANO
-    db Character.id.SSONIC
+    db Character.id.DSAMUS
+    db Character.id.LUCAS
     db Character.id.PEPPY
     db Character.id.SLIPPY
-    db Character.id.MLUIGI
-    db Character.id.EBI
+    db Character.id.ROY
+    db Character.id.DRL
+    db Character.id.LANKY
     db Character.id.DRAGONKING
+    db Character.id.EBI
+    db Character.id.PIANO
+
+    db Character.id.METAL
+    db Character.id.MLUIGI
+    db Character.id.GDONKEY
+    db Character.id.GBOWSER
+    db Character.id.SSONIC
+
     db Character.id.SANDBAG
     db Character.id.NMARIO
     db Character.id.NFOX
@@ -2856,8 +3367,8 @@ scope Training {
     db Character.id.NGND
     db Character.id.NYLINK
     db Character.id.NDRM
-    db Character.id.NDSAMUS
     db Character.id.NWARIO
+    db Character.id.NDSAMUS
     db Character.id.NLUCAS
     db Character.id.NBOWSER
     db Character.id.NWOLF
@@ -2870,6 +3381,8 @@ scope Training {
     db Character.id.NDEDEDE
     db Character.id.NGOEMON
     db Character.id.NBANJO
+    db Character.id.NPEACH
+    db Character.id.NCRASH
 
     char_id_to_entry_id:
     db id.MARIO
@@ -2924,10 +3437,10 @@ scope Training {
     db id.JYOSHI
     db id.JPIKA
     db id.ESAMUS
-	db id.BOWSER
-	db id.GBOWSER
+    db id.BOWSER
+    db id.GBOWSER
     db id.PIANO
-	db id.WOLF
+    db id.WOLF
     db id.CONKER
     db id.MTWO
     db id.MARTH
@@ -2944,9 +3457,14 @@ scope Training {
     db id.MLUIGI
     db id.EBI
     db id.DRAGONKING
-	// ADD NEW CHARACTERS Here
+    db id.CRASH
+    db id.PEACH
+    db id.ROY
+    db id.DRL
+    db id.LANKY
+    // ADD NEW CHARACTERS Here
 
-	// REMIX POLYGONS
+    // REMIX POLYGONS
     db id.NWARIO
     db id.NLUCAS
     db id.NBOWSER
@@ -2965,6 +3483,8 @@ scope Training {
     db id.NGOEMON
     db id.NCONKER
     db id.NBANJO
+    db id.NPEACH
+    db id.NCRASH
 
     // @ Description
     // Spawn Position Strings
@@ -3084,6 +3604,12 @@ scope Training {
     dw  entry_percent_toggle_p3
     dw  entry_percent_toggle_p4
 
+    type_table:
+    dw  entry_type_p1
+    dw  entry_type_p2
+    dw  entry_type_p3
+    dw  entry_type_p4
+
     // @ Description
     // Updates tail_px struct with values Training.struct
     macro struct_to_tail(player) {
@@ -3169,7 +3695,8 @@ scope Training {
     evaluate total(17)
     evaluate n(0x2F)
     while {n} < MIDI.midi_count {
-        evaluate can_toggle({MIDI.MIDI_{n}_TOGGLE})
+        evaluate id({Toggles.sorted_midi_{n}})
+        evaluate can_toggle({MIDI.MIDI_{id}_TOGGLE})
         if ({can_toggle} == OS.TRUE) {
             evaluate total({total}+1)
             dw       Toggles.entry_random_music_{n} + 0x28
@@ -3197,9 +3724,10 @@ scope Training {
     dh      BGM.stage.YOSHIS_ISLAND
     evaluate n(0x2F)
     while {n} < MIDI.midi_count {
-        evaluate can_toggle({MIDI.MIDI_{n}_TOGGLE})
+        evaluate id({Toggles.sorted_midi_{n}})
+        evaluate can_toggle({MIDI.MIDI_{id}_TOGGLE})
         if ({can_toggle} == OS.TRUE) {
-            dh       {n}
+            dh       {id}
         }
         evaluate n({n}+1)
     }
@@ -3283,15 +3811,20 @@ scope Training {
         lbu     t7, 0x0000(t4)              // original line 1
     }
 
-    entry_shield_break_mode:; Menu.entry_bool("Shield Break Mode:", OS.FALSE, entry_oos_option)
+    entry_shield_break_mode:; Menu.entry("Shield Break Mode:", Menu.type.INT, 0, 0, 2, OS.NULL, OS.NULL, string_table_shield_break, OS.NULL, entry_oos_option)
     entry_oos_option:; Menu.entry("OOS Action:", Menu.type.INT, 0, 0, OOS_MAX, OS.NULL, OS.NULL, string_table_oos_options, OS.NULL, entry_music)
     entry_music:; Menu.entry("Music:", Menu.type.INT, 0, 0, {total} - 1, play_bgm_, OS.NULL, string_table_music, OS.NULL, entry_bg)
     entry_bg:; Menu.entry_bool("Stage Background:", OS.FALSE, entry_tech_behavior)
     entry_tech_behavior:; Menu.entry("CPU Teching:", Menu.type.INT, 0, 0, TECH_MAX, OS.NULL, OS.NULL, string_table_tech_options, OS.NULL, entry_di_type)
     entry_di_type:; Menu.entry("CPU DI Type:", Menu.type.INT, 0, 0, DI_TYPE_MAX, OS.NULL, OS.NULL, string_table_di_type_options, OS.NULL, entry_di_strength)
     entry_di_strength:; Menu.entry("CPU DI Strength:", Menu.type.INT, 0, 0, DI_STRENGTH_MAX, OS.NULL, OS.NULL, string_table_di_strength_options, OS.NULL, entry_di_direction)
-    entry_di_direction:; Menu.entry("CPU DI Direction:", Menu.type.INT, 0, 0, DI_DIRECTION_MAX, OS.NULL, OS.NULL, string_table_di_direction_options, OS.NULL, entry_dpad_menu)
-    entry_dpad_menu:; Menu.entry("D-pad Controls:", Menu.type.INT, 0, 0, 2, OS.NULL, OS.NULL, string_table_dpad_controls, OS.NULL, OS.NULL)
+    entry_di_direction:; Menu.entry("CPU DI Direction:", Menu.type.INT, 0, 0, DI_DIRECTION_MAX, OS.NULL, OS.NULL, string_table_di_direction_options, OS.NULL, entry_di_first_hit)
+    entry_di_first_hit:; Menu.entry("CPU DI Start on Hit:", Menu.type.INT, 2, 1, 99, OS.NULL, OS.NULL, OS.NULL, OS.NULL, entry_dpad_menu)
+    entry_dpad_menu:; Menu.entry("D-pad Controls:", Menu.type.INT, 0, 0, 2, OS.NULL, OS.NULL, string_table_dpad_controls, OS.NULL, entry_di_practice_mode)
+    entry_di_practice_mode:; Menu.entry_bool("DI Practice Mode:", OS.FALSE, entry_spam_practice)
+    entry_spam_practice:; Menu.entry("Spam Practice:", Menu.type.INT, 0, 0, SPAM_PRACTICE_MAX, OS.NULL, OS.NULL, string_table_spam_practice, OS.NULL, entry_spam_interval)
+    entry_spam_interval:; Menu.entry("Spam Interval:", Menu.type.INT, 1, 1, 999, OS.NULL, OS.NULL, OS.NULL, OS.NULL, entry_spam_interval_random)
+    entry_spam_interval_random:; Menu.entry_bool("Spam Interval Random:", OS.FALSE, OS.NULL)
 
     // @ Description
     // Holds the initial value of the special model display toggle
@@ -3304,6 +3837,9 @@ scope Training {
     p2_action_pointer:; dw 0x00000000
     p3_action_pointer:; dw 0x00000000
     p4_action_pointer:; dw 0x00000000
+
+    owner_player_port:
+    dw -1
 
     hold_A_rect_object:
     dw 0

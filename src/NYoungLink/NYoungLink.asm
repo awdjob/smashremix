@@ -52,6 +52,11 @@ scope NYoungLink {
     Character.edit_menu_action_parameters(NYLINK, 0xD,               -1,                         YoungLink.POSE_1P,                    -1)
     Character.edit_menu_action_parameters(NYLINK, 0xE,               File.YLINK_1P_CPU_POSE,     0x80000000,                 -1)
 
+    // NLINK - putting this in here sucks, but couldn't put it in character.asm this way so
+    // Modify Menu Action Parameters                    // Action           // Animation                // Moveset Data             // Flags
+    Character.edit_menu_action_parameters(NLINK,        0x2,               -1,                          YoungLink.VICTORY_POSE_2,   -1)
+
+
     // @ Description
     // Polygon Young Link's extra actions
     scope Action {

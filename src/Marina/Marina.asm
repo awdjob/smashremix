@@ -114,6 +114,9 @@ scope Marina {
     insert DSP_PULL_FAIL, "moveset/DOWN_SPECIAL_PULL_FAIL.bin"
     insert DSP_STOW, "moveset/DOWN_SPECIAL_STOW.bin"
 
+    HAMMER:; dw 0xC4000007; dw 0xBC000004; dw 0xAC000001; dw 0xAC100001; Moveset.SUBROUTINE(Moveset.shared.HAMMER); dw 0x04000010; dw 0x18000000; Moveset.GO_TO(HAMMER)
+
+
     insert ONEP, "moveset/ONEP.bin"
     insert ENTRY,"moveset/ENTRY.bin"
 	insert CLAP,"moveset/CLAP.bin"
@@ -123,9 +126,7 @@ scope Marina {
 	insert CSS,"moveset/CSS.bin"
 
     // Insert AI attack options
-    constant CPU_ATTACKS_ORIGIN(origin())
-    insert CPU_ATTACKS,"AI/attack_options.bin"
-    OS.align(16)
+    include "AI/Attacks.asm"
 
     // @ Description
     // Marina's extra actions
@@ -369,7 +370,7 @@ scope Marina {
     Character.edit_action_parameters(MARINA, Action.CliffEscapeSlow1,       File.MARINA_CLF_ESC_S_1,            -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.CliffEscapeSlow2,       File.MARINA_CLF_ESC_S_2,            -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.LightItemPickup,        File.MARINA_L_ITM_PICKUP,           -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HeavyItemPickup,        File.MARINA_NSPG_PULL,              -1,                         -1)
+    Character.edit_action_parameters(MARINA, Action.HeavyItemPickup,        File.MARINA_HEAVY_ITM_PICKUP,       -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.ItemDrop,               File.MARINA_ITM_DROP,               -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.ItemThrowDash,          File.MARINA_ITM_THROW_DASH,         -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.ItemThrowF,             File.MARINA_ITM_THROW_F,            -1,                         -1)
@@ -412,18 +413,18 @@ scope Marina {
     Character.edit_action_parameters(MARINA, Action.RayGunShootAir,         File.MARINA_ITM_SHOOT_AIR,          -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.FireFlowerShoot,        File.MARINA_ITM_SHOOT,              -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.FireFlowerShootAir,     File.MARINA_ITM_SHOOT_AIR,          -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerIdle,             File.MARINA_HAMMER_IDLE,            -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerWalk,             File.MARINA_HAMMER_MOVE,            -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerTurn,             File.MARINA_HAMMER_MOVE,            -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerJumpSquat,        File.MARINA_HAMMER_MOVE,            -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerAir,              File.MARINA_HAMMER_MOVE,            -1,                         -1)
-    Character.edit_action_parameters(MARINA, Action.HammerLanding,          File.MARINA_HAMMER_MOVE,            -1,                         -1)
+    Character.edit_action_parameters(MARINA, Action.HammerIdle,             File.MARINA_HAMMER_IDLE,            HAMMER,                     -1)
+    Character.edit_action_parameters(MARINA, Action.HammerWalk,             File.MARINA_HAMMER_MOVE,            HAMMER,                     -1)
+    Character.edit_action_parameters(MARINA, Action.HammerTurn,             File.MARINA_HAMMER_MOVE,            HAMMER,                     -1)
+    Character.edit_action_parameters(MARINA, Action.HammerJumpSquat,        File.MARINA_HAMMER_MOVE,            HAMMER,                     -1)
+    Character.edit_action_parameters(MARINA, Action.HammerAir,              File.MARINA_HAMMER_MOVE,            HAMMER,                     -1)
+    Character.edit_action_parameters(MARINA, Action.HammerLanding,          File.MARINA_HAMMER_MOVE,            HAMMER,                     -1)
     Character.edit_action_parameters(MARINA, Action.ShieldOn,               File.MARINA_SHIELD_ON,              -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.ShieldOff,              File.MARINA_SHIELD_OFF,             -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.RollF,                  File.MARINA_ROLL_F,                 ROLL_F,                     0x50000000)
     Character.edit_action_parameters(MARINA, Action.RollB,                  File.MARINA_ROLL_B,                 ROLL_B,                     0x50000000)
     Character.edit_action_parameters(MARINA, Action.ShieldBreak,            File.MARINA_DMG_FLY_TOP,            SHIELD_BREAK,               -1)
-    Character.edit_action_parameters(MARINA, Action.ShieldBreakFall,        File.MARINA_TUMBLE,                 -1,                         -1)
+    Character.edit_action_parameters(MARINA, Action.ShieldBreakFall,        File.MARINA_TUMBLE,                 SPARKLE,                    -1)
     Character.edit_action_parameters(MARINA, Action.StunLandD,              File.MARINA_DOWN_BNCE_D,            -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.StunLandU,              File.MARINA_DOWN_BNCE_U,            -1,                         -1)
     Character.edit_action_parameters(MARINA, Action.StunStartD,             File.MARINA_DOWN_STND_D,            -1,                         -1)
@@ -658,36 +659,10 @@ scope Marina {
     dh 0x1F
     OS.patch_end()
 
-    // Set CPU behaviour
-    Character.table_patch_start(ai_behaviour, Character.id.MARINA, 0x4)
-    dw      CPU_ATTACKS
+    // Set Remix 1P ending music
+    Character.table_patch_start(remix_1p_end_bgm, Character.id.MARINA, 0x2)
+    dh {MIDI.id.TROUBLE_MAKER}
     OS.patch_end()
-
-	// Set CPU SD prevent routine
-    Character.table_patch_start(ai_attack_prevent, Character.id.MARINA, 0x4)
-    dw    	AI.PREVENT_ATTACK.ROUTINE.MARINA_NSP
-    OS.patch_end()
-
-    // Edit cpu attack behaviours, original table is from Falcon
-    // edit_attack_behavior(table, attack, override,	start_hb, end_hb, 	min_x, max_x, min_y, max_y)
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DAIR,  	-1,  4,   		0,  -132, 276, -90, 329)	// updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPA,   -1,  5,   		0,  0, 100, 100, 330)       // updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSPG,   -1,  5,   		0,  0, 100, 100, 330)       // updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DSMASH, -1,  8,   		0,  -320, 320, -100, 300)	// updated 11-27-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, DTILT,  -1,  7,   		0,  -50, 499, -100, 325)	// Updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, BAIR,   -1,  11,  		0,  -40, 280, 100, 300)	    // updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FSMASH, -1,  12,  		0,  250, 1170, 50, 590)	// updated 11-27-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, FTILT,  -1,  8,   		0,  45, 560, -45, 270)	    // Copied Mario coords. updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, GRAB,   -1,  6,   		0,  50, 240, 65, 355.0)	    // updated 11-24-2022, copied Fox's
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, JAB,    -1,  3,   		0,  25, 495, 280, 510)	    // updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NAIR,   -1,  5,   		0,  -192, 201, -30, 280)	// updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPA,   -1,  20,  		0,  200, 900, 100, 250)	    // updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, NSPG,   -1,  20,  		0,  200, 900, 100, 250)	    // updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UAIR,   -1,  6,   		0,  50, 200, 128, 500)	    // updated 11-24-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPA,   -1,  10,  		0,  89, 475, 242, 1000)     // updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USPG,   -1,  10,  		0,  89, 475, 242, 1700)	    // updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, USMASH, -1,  12,  		0,  -174, 243, 177, 940)	// updated 11-26-2022
-    AI.edit_attack_behavior(CPU_ATTACKS_ORIGIN, UTILT,  -1,  6,   		0,  -274, 326, 196, 717)	// updated 11-26-2022
 
     // Set default costumes
     Character.set_default_costumes(Character.id.MARINA, 0, 2, 4, 5, 1, 2, 3)
@@ -704,6 +679,21 @@ scope Marina {
     // Set Magnifying Glass Scale Override
     Character.table_patch_start(magnifying_glass_zoom, Character.id.MARINA, 0x2)
     dh  0x0053
+    OS.patch_end()
+
+    // Fix the logic for breaking out of ThrownDK since we're using it for our grabbed opponent
+    scope capture_action_fix_: {
+        lli     a3, Action.ThrowF           // a3 = ThrowF
+        lw      t7, 0x0024(a2)              // t7 = grabbing player action
+        bne     a3, t7, _end                // if action != ThrowF, do nothing
+        nop
+        lli v0, 0x1 // During ThrowF return 1, which means it just skips the function completely
+        _end:
+        jr      ra
+        nop
+    }
+    Character.table_patch_start(custom_capture_dk_interrupt, Character.id.MARINA, 0x4)
+    dw capture_action_fix_
     OS.patch_end()
 
     // @ Description
@@ -785,8 +775,23 @@ scope Marina {
         lli     at, Character.id.GND        // at = id.GND
         beql    t7, at, _end                // end if character = GND...
         lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
+        lli     at, Character.id.NGND        // at = id.GND
+        beql    t7, at, _end                // end if character = NGND...
+        lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
+        lli     at, Character.id.SHEIK      // at = id.SHEIK
+        beql    t7, at, _end                // end if character = SHEIK...
+        lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
+        lli     at, Character.id.NSHEIK     // at = id.SHEIK
+        beql    t7, at, _end                // end if character = SHEIK...
+        lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
+        lli     at, Character.id.DRAGONKING // at = id.DRAGONKING
+        beql    t7, at, _end                // end if character = DRAGONKING...
+        lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
         lli     at, Character.id.JFALCON    // at = id.JFALCON
         beql    t7, at, _end                // end if character = CAPTAIN...
+        lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
+        lli     at, Character.id.SANDBAG    // at = id.SANDBAG
+        beql    t7, at, _end                // end if character = SANDBAG...
         lli     a0, File.FALCON_THROWN_MARINA // ...override animation with FALCON_THROWN_MARINA
 
         _end:

@@ -11,17 +11,6 @@ scope pikachu_costumes {
     // Number of original costumes
     constant NUM_COSTUMES(4 + 2) // 2 skipped
 
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
-
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
     // part 0x0 never has images, so we can store extra info here
@@ -116,7 +105,7 @@ scope pikachu_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(0, Pikachu/cos_6_stock_icon.bin)
     }
-    
+
     // Costume 0x7
     scope costume_0x7 {
         diffuse_ambient_pair:; dw 0xFFFFFF00, 0x80808000
@@ -174,7 +163,7 @@ scope pikachu_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(1, Pikachu/cos_7_stock_icon.bin)
     }
-    
+
     // Costume 0x8
     scope costume_0x8 {
         diffuse_ambient_pair:; dw 0xFFFFFF00, 0x80808000
@@ -232,7 +221,7 @@ scope pikachu_costumes {
 
         Costumes.set_stock_icon_palette_for_costume(2, Pikachu/cos_8_stock_icon.bin)
     }
-    
+
     // Costume 0x9
     scope costume_0x9 {
         diffuse_ambient_pair:; dw 0xFFFFFF00, 0x80808000

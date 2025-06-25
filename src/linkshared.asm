@@ -88,6 +88,24 @@ scope LinkShared {
     dw  0x0000076C
     dw  0x000007B4
 
+    entry_anim_struct_1_ROY:
+    dw  0x040A0000
+    dw  Character.ROY_file_8_ptr
+    OS.copy_segment(0xA9CEC, 0x10)
+	dw	0x00000110					        // Roy entry alters these
+	dw  0x00000218
+    dw  0x00000344
+    dw  0x000003A0
+
+    entry_anim_struct_2_ROY:
+    dw  0x040A0000
+    dw  Character.ROY_file_8_ptr
+    OS.copy_segment(0xA9D14, 0x10)
+	dw	0x00000638					        // Roy entry alters these
+	dw  0x00000740
+    dw  0x0000076C
+    dw  0x000007B4
+
     entry_anim_struct_1_MARINA:
     dw  0x040A0000
     dw  Character.MARINA_file_9_ptr
@@ -169,6 +187,9 @@ scope LinkShared {
         ori     t1, r0, Character.id.MARTH  // t1 = id.MARTH
         li      a0, entry_anim_struct_1_MARTH       // a0 = entry_anim_struct
         beq     t0, t1, _custom             // branch if Marth
+        ori     t1, r0, Character.id.ROY  // t1 = id.ROY
+        li      a0, entry_anim_struct_1_ROY         // a0 = entry_anim_struct
+        beq     t0, t1, _custom             // branch if Roy
         ori     t1, r0, Character.id.YLINK  // t1 = id.YLINK
         li      a0, entry_anim_struct_1_YLINK       // a0 = entry_anim_struct
         beq     t0, t1, _custom             // branch if Young Link
@@ -223,6 +244,9 @@ scope LinkShared {
         ori     t1, r0, Character.id.MARTH  // t1 = id.MARTH
         li      a0, entry_anim_struct_2_MARTH       // a0 = entry_anim_struct
         beq     t0, t1, _custom             // branch if Marth
+        ori     t1, r0, Character.id.ROY  // t1 = id.ROY
+        li      a0, entry_anim_struct_2_ROY         // a0 = entry_anim_struct
+        beq     t0, t1, _custom             // branch if Roy
         ori     t1, r0, Character.id.YLINK  // t1 = id.YLINK
         li      a0, entry_anim_struct_2_YLINK       // a0 = entry_anim_struct
         beq     t0, t1, _custom             // branch if Young Link
@@ -698,6 +722,8 @@ scope LinkShared {
 	    beq		a0, at, _pull_bomb			// branch if ELink
 	    addiu 	at, r0, Character.id.JLINK
 	    beq		a0, at, _pull_bomb			// branch if JLink
+	    addiu 	at, r0, Character.id.PEACH
+        beq     a0, at, _pull_bomb          // branch if Peach
 	    addiu 	at, r0, Character.id.MARINA
 	    beq		a0, at, _marina			    // branch if Marina
 	    addiu 	at, r0, Character.id.YLINK
@@ -725,4 +751,43 @@ scope LinkShared {
 
 	}
 
+    // @ Description
+    // Fixes a crash-creating scenario when the boomerang is destroyed twice by being
+    // caught and being outside the blast zone on the same frame. Can happen on scrolling
+    // stages like 1-1. For the fix, we'll make wpLinkBoomerangCheckOwnerCatch() return 1
+    // if the boomerang is caught, 0 if not, and use the result as the return value of
+    // wpLinkBoomerangProcUpdate() so that it properly reports as destroyed.
+    scope boomerang_crash_fix_: {
+        // initialize return value to FALSE
+        OS.patch_start(0xE7DA4, 0x8016D364)
+        jal     boomerang_crash_fix_._initialize_return_value
+        sw      a0, 0x0020(sp)              // original line 1
+        OS.patch_end()
+
+        // set return value to TRUE if boomerang is caught
+        OS.patch_start(0xE7E34, 0x8016D3F4)
+        // don't call this function since it will be called in wpProcessProcWeaponMain()
+        // jal     0x8016800C                  // original line 1 - wpMainDestroyWeapon
+        // lw      a0, 0x0020(sp)              // original line 2
+        lli     v0, OS.TRUE                 // v0 = TRUE
+        sw      v0, 0x0018(sp)              // set return value to TRUE
+        _return:
+        // here at the end of the function, use the return value
+        lw      ra, 0x0014(sp)              // original line 3
+        lw      v0, 0x0018(sp)              // return TRUE/FALSE value
+        jr      ra                          // original line 5
+        addiu   sp, sp, 0x0020              // original line 4
+        OS.patch_end()
+
+        // use return value in wpLinkBoomerangProcUpdate()
+        OS.patch_start(0xE7FCC, 0x8016D58C)
+        // originally, it is: or v0, r0, r0
+        nop                                 // use v0 from wpLinkBoomerangCheckOwnerCatch()
+        OS.patch_end()
+
+        _initialize_return_value:
+        sw      r0, 0x0018(sp)              // initialize return value to FALSE in free stack space
+        jr      ra
+        mtc1    a1, f12                     // original line 2
     }
+}

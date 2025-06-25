@@ -1,7 +1,7 @@
 scope yoshi_costumes {
     // @ Description
     // Number of additional costumes
-    constant NUM_EXTRA_COSTUMES(2)
+    constant NUM_EXTRA_COSTUMES(4)
 
     // @ Description
     // Number of parts
@@ -10,17 +10,6 @@ scope yoshi_costumes {
     // @ Description
     // Number of original costumes
     constant NUM_COSTUMES(6)
-
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
 
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
@@ -140,5 +129,83 @@ scope yoshi_costumes {
         Costumes.set_diffuse_ambient_colors_for_part(1, 1A, 0, diffuse_ambient_pair)
 
         Costumes.set_stock_icon_palette_for_costume(1, Yoshi/cos_7_stock_icon.bin)
+    }
+	// Costume 0x8
+    scope costume_8 {
+        constant PRIM_COLOR_1(0xFF8000FF)
+        constant PRIM_COLOR_2(0xFF8000FF)
+        diffuse_ambient_pair:; dw 0x3910DEFF, 0x0F004CFF
+        palette_1:; insert "Yoshi/cos_8_1.bin"
+        palette_2:; insert "Yoshi/cos_8_2.bin"
+
+        Costumes.set_prim_color_for_part(2, 1, 0, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(2, 1, 1, palette_2)
+        Costumes.set_palette_for_part(2, 1, 2, palette_2)
+        Costumes.set_palette_for_part(2, 1, 3, palette_2)
+        Costumes.set_prim_color_for_part(2, 2, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, 3, 0, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(2, 3, 0, palette_1)
+        Costumes.set_palette_for_part(2, 3, 1, palette_1)
+        Costumes.set_prim_color_for_part(2, 3, 2, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(2, 3, 2, palette_1)
+        Costumes.set_prim_color_for_part(2, 3, 3, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(2, 3, 4, palette_1)
+        Costumes.set_prim_color_for_part(2, 7, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, 8, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(2, 9, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, B, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, C, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, D, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(2, F, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(2, 10, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(2, 12, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(2, 13, 0, PRIM_COLOR_2)
+        Costumes.set_diffuse_ambient_colors_for_part(2, 13, 1, diffuse_ambient_pair)
+        Costumes.set_diffuse_ambient_colors_for_part(2, 15, 0, diffuse_ambient_pair)
+        Costumes.set_prim_color_for_part(2, 17, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(2, 18, 0, PRIM_COLOR_2)
+        Costumes.set_diffuse_ambient_colors_for_part(2, 18, 1, diffuse_ambient_pair)
+        Costumes.set_diffuse_ambient_colors_for_part(2, 1A, 0, diffuse_ambient_pair)
+
+        Costumes.set_stock_icon_palette_for_costume(2, Yoshi/cos_8_stock_icon.bin)
+    }
+	// Costume 0x9
+    scope costume_9 {
+        constant PRIM_COLOR_1(0xa000f0FF)
+        constant PRIM_COLOR_2(0xa000f0FF)
+        diffuse_ambient_pair:; dw 0xE15000FF, 0x562F1AFF
+        palette_1:; insert "Yoshi/cos_9_1.bin"
+        palette_2:; insert "Yoshi/cos_9_1.bin"
+
+        Costumes.set_prim_color_for_part(3, 1, 0, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 1, 1, palette_1)
+        Costumes.set_palette_for_part(3, 1, 2, palette_2)
+        Costumes.set_palette_for_part(3, 1, 3, palette_2)
+        Costumes.set_prim_color_for_part(3, 2, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 3, 0, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 3, 0, palette_1)
+        Costumes.set_palette_for_part(3, 3, 1, palette_1)
+        Costumes.set_prim_color_for_part(3, 3, 2, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 3, 2, palette_1)
+        Costumes.set_prim_color_for_part(3, 3, 3, PRIM_COLOR_1)
+        Costumes.set_palette_for_part(3, 3, 4, palette_1)
+        Costumes.set_prim_color_for_part(3, 7, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, 8, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(3, 9, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, B, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, C, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, D, 0, PRIM_COLOR_1)
+        Costumes.set_prim_color_for_part(3, F, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(3, 10, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(3, 12, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(3, 13, 0, PRIM_COLOR_2)
+        Costumes.set_diffuse_ambient_colors_for_part(3, 13, 1, diffuse_ambient_pair)
+        Costumes.set_diffuse_ambient_colors_for_part(3, 15, 0, diffuse_ambient_pair)
+        Costumes.set_prim_color_for_part(3, 17, 0, PRIM_COLOR_2)
+        Costumes.set_prim_color_for_part(3, 18, 0, PRIM_COLOR_2)
+        Costumes.set_diffuse_ambient_colors_for_part(3, 18, 1, diffuse_ambient_pair)
+        Costumes.set_diffuse_ambient_colors_for_part(3, 1A, 0, diffuse_ambient_pair)
+
+        Costumes.set_stock_icon_palette_for_costume(3, Yoshi/cos_9_stock_icon.bin)
     }
 }

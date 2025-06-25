@@ -1,7 +1,7 @@
 scope goemon_costumes {
     // @ Description
     // Number of additional costumes
-    constant NUM_EXTRA_COSTUMES(1)
+    constant NUM_EXTRA_COSTUMES(2)
 
     // @ Description
     // Number of parts
@@ -10,17 +10,6 @@ scope goemon_costumes {
     // @ Description
     // Number of original costumes
     constant NUM_COSTUMES(6)
-
-    stock_icon_palette_array:
-    fill NUM_COSTUMES * 4
-    constant EXTRA_STOCK_ICON_PALETTE_ARRAY_ORIGIN(origin())
-    fill NUM_EXTRA_COSTUMES * 4
-
-    // @ Description
-    // Points to array of extra costumes' stock icon palettes
-    // NOTE: must be right before parts_table
-    stock_icon_palette_array_pointer:
-    dw stock_icon_palette_array
 
     parts_table:
     constant PARTS_TABLE_ORIGIN(origin())
@@ -59,7 +48,6 @@ scope goemon_costumes {
 
     // Costume 0x6
     // Yellow Team
-    // TODO: update!
     scope costume_0x6 {
         palette_1:; insert "Goemon/cos_6_1.bin"
         palette_2:; insert "Goemon/cos_6_2.bin"
@@ -96,6 +84,45 @@ scope goemon_costumes {
         Costumes.set_palette_for_part(0, 1F, 0, palette_3)
 
         Costumes.set_stock_icon_palette_for_costume(0, Goemon/cos_6_stock.bin)
+    }
+	    // Costume 0x7
+    // Red Team
+    scope costume_0x7 {
+        palette_1:; insert "Goemon/cos_7_1.bin"
+        palette_2:; insert "Goemon/cos_7_2.bin"
+        palette_3:; insert "Goemon/cos_7_3.bin"
+        constant color_shoulder_pads(0xe2e2e2FF)
+        constant color_shirt(0xa00000FF)
+        constant color_pants(0xa00000FF)
+        constant color_hands(0xFFD694FF)
+        constant color_hair_top(0xe20000FF)
+        constant color_hair_back(0x181818FF)
+        constant color_impact_hair_top(0xF8F000FF)
+
+        Costumes.set_palette_for_part(1, 2, 0, palette_1)
+        Costumes.set_palette_for_part(1, 2, 1, palette_1)
+        Costumes.set_prim_color_for_part(1, 2, 2, color_shirt)
+        Costumes.set_prim_color_for_part(1, 2, 3, color_shoulder_pads)
+        Costumes.set_palette_for_part(1, 4, 0, palette_2)
+        Costumes.set_palette_for_part(1, 5, 0, palette_2)
+        Costumes.set_prim_color_for_part(1, 6, 0, color_hands)
+        Costumes.set_prim_color_for_part(1, 8, 1, color_hair_top)
+        Costumes.set_prim_color_for_part(1, 8, 2, color_hair_back)
+        Costumes.set_prim_color_for_part_lo(1, 8, 1, color_hair_back)
+        Costumes.set_prim_color_for_part_lo(1, 8, 2, color_hair_top)
+        Costumes.set_prim_color_for_special_part(1, 8, 1, 1, color_hair_back)
+        Costumes.set_prim_color_for_special_part(1, 8, 1, 2, color_impact_hair_top)
+        Costumes.set_palette_for_part(1, A, 0, palette_2)
+        Costumes.set_palette_for_part(1, B, 0, palette_2)
+        Costumes.set_prim_color_for_part(1, C, 0, color_hands)
+        Costumes.set_prim_color_for_part(1, 17, 0, color_pants)
+        Costumes.set_palette_for_part(1, 18, 0, palette_2)
+        Costumes.set_palette_for_part(1, 1A, 0, palette_3)
+        Costumes.set_prim_color_for_part(1, 1C, 0, color_pants)
+        Costumes.set_palette_for_part(1, 1D, 0, palette_2)
+        Costumes.set_palette_for_part(1, 1F, 0, palette_3)
+
+        Costumes.set_stock_icon_palette_for_costume(1, Goemon/cos_7_stock.bin)
     }
 
 }

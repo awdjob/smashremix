@@ -376,15 +376,45 @@ scope Fireball: {
             sw      ra, 0x0008(sp)          // store f0, ra
             lw      v0, 0x0084(a0)          // v0 = player struct
             OS.save_registers()
+            lw      t1, 0x0008(v0)          // t1 = char_id
             lw      t0, 0x017C(v0)          // t0 = temp variable 1
             beq     t0, r0, _end            // end if temp variable 1 = 0
             nop
-            li      t1, struct_capsule      // t1 = struct_capsule
-            ori     a0, r0, 0x3             // ~
-            jal     Global.get_random_int_  // v0 = (0-2)
+
+            lli     t0, Character.id.KIRBY  // t0 = id.KIRBY
+            beq     t0, t1, _kirby_check    // branch if KIRBY
+            lli     t0, Character.id.JKIRBY // t0 = id.JKIRBY
+            beq     t0, t1, _kirby_check    // branch if JKIRBY
             nop
+            lli     t0, Character.id.DRL    // t0 = id.DRL
+            bne     t0, t1, _drmario        // skip if not Dr. Luigi
+            nop
+            _drluigi:
+            li      t1, struct_drl          // ~
+            b       _palette
+            nop
+
+            _kirby_check:
+            lb      t0, 0x0980(v0)          // t0 = current hat ID
+            addiu   t1, r0, 0x10            // at = Kirbys DRM hat ID
+            beq     t0, t1, _drmario
+            nop
+
+            // if here, then Kirby is wearing Dr Luigis hat
+            b       _drluigi
+            nop
+
+            _drmario:
+            li      t1, struct_capsule      // otherwise, t1 = struct_capsule
+            _palette:
+            ori     a0, r0, 0x3             // ~
+            jal     Global.get_random_int_  // v0 = palette index (0-2)
+            nop
+            li      t0, struct_drl
+            beql    t0, t1, pc() + 8        // if Dr Luigi, adjust palette index
+            addiu   v0, v0, 0x0003          // v0 = palette index (3-5)
             mtc1    v0, f0                  // ~
-            cvt.s.w f0, f0                  // f0 = random palette index (0-2)
+            cvt.s.w f0, f0                  // f0 = random palette index
             swc1    f0, 0x002C(t1)          // store palette index
 
             _end:
@@ -443,9 +473,14 @@ scope Fireball: {
             lw      t1, 0x0ADC(v0)          // t1 = character id of copied power
 
             _capsule_check:
+            lli     t0, Character.id.DRL    // t0 = id.DRL
+            beql    t0, t1, _pill           // skip if char id != DRL
+            nop
             lli     t0, Character.id.DRM    // t0 = id.DRM
             bne     t0, t1, _end            // skip if char id != DRM
             nop
+
+            _pill:
             li      t6, capsule_subroutine_ // t6 = capsule subroutine
 
             _end:
@@ -468,9 +503,11 @@ scope Fireball: {
     struct(struct_jmario, 0, 140, 55, 30, 1.2, 0.85, 0.3490659, -0.08726647, -0.08726647, 50, Character.JMARIO_file_6_ptr, 0)
     struct(struct_jluigi, 0, 90, 55, 30, 0, 0.85, 0.4363323, 0, 0, 36, Character.JLUIGI_file_6_ptr, 1)
     struct(struct_book, 0, 120, 60, 25, 1.4, 0.55, 0.139626, 1.0472, 1.0472, 50, Character.PIANO_file_6_ptr, 0)
+    struct(struct_drl, 0, 100, 55, 30, 0, 0.85, 0.4363323, 0, 0, 36, Character.DRL_file_6_ptr, 0)
 
     // Add fireball structs to characters.
     add_to_character(Character.id.DRM, struct_capsule)
     add_to_character(Character.id.JMARIO, struct_jmario)
     add_to_character(Character.id.JLUIGI, struct_jluigi)
+    add_to_character(Character.id.DRL, struct_drl)
 }
